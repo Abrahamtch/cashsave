@@ -106,17 +106,17 @@ export default function CashPage() {
   }
 
   const summaryCards = [
-    { label: 'Revenus', value: summary.totalIncome, color: '#10B981', bg: 'rgba(16,185,129,0.09)', icon: TrendingUp },
+    { label: 'Revenus', value: summary.totalIncome, color: '#0E9F6E', bg: 'rgba(14,159,110,0.09)', icon: TrendingUp },
     { label: 'Dépenses', value: summary.totalExpense, color: '#F43F5E', bg: 'rgba(244,63,94,0.09)', icon: TrendingDown },
-    { label: 'Bénéfice', value: summary.netProfit, color: summary.netProfit >= 0 ? '#10B981' : '#F43F5E', bg: summary.netProfit >= 0 ? 'rgba(16,185,129,0.09)' : 'rgba(244,63,94,0.09)', icon: Activity },
-    { label: 'Solde', value: summary.balance, color: summary.balance >= 0 ? '#10B981' : '#F43F5E', bg: summary.balance >= 0 ? 'rgba(16,185,129,0.09)' : 'rgba(244,63,94,0.09)', icon: Wallet },
+    { label: 'Bénéfice', value: summary.netProfit, color: summary.netProfit >= 0 ? '#0E9F6E' : '#F43F5E', bg: summary.netProfit >= 0 ? 'rgba(14,159,110,0.09)' : 'rgba(244,63,94,0.09)', icon: Activity },
+    { label: 'Solde', value: summary.balance, color: summary.balance >= 0 ? '#0E9F6E' : '#F43F5E', bg: summary.balance >= 0 ? 'rgba(14,159,110,0.09)' : 'rgba(244,63,94,0.09)', icon: Wallet },
   ];
 
   return (
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1
             className="text-2xl font-semibold tracking-tight"
@@ -147,9 +147,9 @@ export default function CashPage() {
             id="add-income"
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200"
             style={{
-              background: 'rgba(16,185,129,0.08)',
-              border: '1px solid rgba(16,185,129,0.2)',
-              color: '#10B981',
+              background: 'rgba(14,159,110,0.08)',
+              border: '1px solid rgba(14,159,110,0.2)',
+              color: '#0E9F6E',
             }}
           >
             <Plus size={13} strokeWidth={2} />
@@ -210,11 +210,20 @@ export default function CashPage() {
         </div>
       )}
 
-      {/* Transactions */}
-      <div className="glass-card divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
+      {/* Transactions Container — Spaced Cards (No harsh divider lines) */}
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+            Historique des transactions
+          </p>
+          <span className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+            {filtered.length} opération{filtered.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
         {filtered.length === 0 ? (
           <div
-            className="py-16 flex flex-col items-center gap-3"
+            className="py-12 flex flex-col items-center gap-3"
             style={{ color: 'var(--text-tertiary)' }}
           >
             <Wallet size={28} strokeWidth={1} />
@@ -222,47 +231,55 @@ export default function CashPage() {
               {filterMonth || filterCategory ? 'Aucune transaction pour ces filtres' : 'Aucune transaction enregistrée'}
             </p>
           </div>
-        ) : filtered.map(tx => (
-          <div key={tx.id} className="flex items-center gap-4 px-4 py-3.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{
-                background: tx.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)',
-              }}
-            >
-              {tx.type === 'INCOME'
-                ? <ArrowUpRight size={14} strokeWidth={1.5} style={{ color: '#10B981' }} />
-                : <ArrowDownRight size={14} strokeWidth={1.5} style={{ color: '#F43F5E' }} />
-              }
-            </div>
+        ) : (
+          <div className="space-y-1.5">
+            {filtered.map(tx => (
+              <div
+                key={tx.id}
+                className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid transparent' }}
+              >
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: tx.type === 'INCOME' ? 'rgba(14,159,110,0.1)' : 'rgba(244,63,94,0.1)',
+                  }}
+                >
+                  {tx.type === 'INCOME'
+                    ? <ArrowUpRight size={14} strokeWidth={1.5} style={{ color: '#0E9F6E' }} />
+                    : <ArrowDownRight size={14} strokeWidth={1.5} style={{ color: '#F43F5E' }} />
+                  }
+                </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                  {tx.category}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                      {tx.category}
+                    </p>
+                    {tx.is_satisfied !== null && (
+                      tx.is_satisfied
+                        ? <ThumbsUp size={11} strokeWidth={1.5} style={{ color: '#0E9F6E', flexShrink: 0 }} />
+                        : <ThumbsDown size={11} strokeWidth={1.5} style={{ color: '#F43F5E', flexShrink: 0 }} />
+                    )}
+                  </div>
+                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    {tx.note || format(new Date(tx.date), 'd MMM yyyy', { locale: fr })}
+                  </p>
+                </div>
+
+                <p
+                  className="text-sm font-semibold shrink-0"
+                  style={{
+                    color: tx.type === 'INCOME' ? '#0E9F6E' : '#F43F5E',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  {tx.type === 'INCOME' ? '+' : '−'}{formatCFA(tx.amount)}
                 </p>
-                {tx.is_satisfied !== null && (
-                  tx.is_satisfied
-                    ? <ThumbsUp size={11} strokeWidth={1.5} style={{ color: '#10B981', flexShrink: 0 }} />
-                    : <ThumbsDown size={11} strokeWidth={1.5} style={{ color: '#F43F5E', flexShrink: 0 }} />
-                )}
               </div>
-              <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {tx.note || format(new Date(tx.date), 'd MMM yyyy', { locale: fr })}
-              </p>
-            </div>
-
-            <p
-              className="text-sm font-semibold shrink-0"
-              style={{
-                color: tx.type === 'INCOME' ? '#10B981' : '#F43F5E',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {tx.type === 'INCOME' ? '+' : '−'}{formatCFA(tx.amount)}
-            </p>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Modal */}
@@ -363,9 +380,9 @@ export default function CashPage() {
                       onClick={() => setIsSatisfied(true)}
                       className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
                       style={{
-                        background: isSatisfied === true ? 'rgba(16,185,129,0.12)' : 'var(--bg-card-hover)',
-                        border: isSatisfied === true ? '1px solid rgba(16,185,129,0.25)' : '1px solid var(--border)',
-                        color: isSatisfied === true ? '#10B981' : 'var(--text-secondary)',
+                        background: isSatisfied === true ? 'rgba(14,159,110,0.12)' : 'var(--bg-card-hover)',
+                        border: isSatisfied === true ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--border)',
+                        color: isSatisfied === true ? '#0E9F6E' : 'var(--text-secondary)',
                       }}
                     >
                       <ThumbsUp size={14} strokeWidth={1.5} />
@@ -394,7 +411,7 @@ export default function CashPage() {
                 className="btn-primary w-full py-3"
                 id="tx-submit"
                 style={modalType === 'INCOME'
-                  ? { background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 2px 8px rgba(16,185,129,0.3)' }
+                  ? { background: 'linear-gradient(135deg, #0E9F6E, #087A56)', boxShadow: '0 2px 8px rgba(14,159,110,0.3)' }
                   : { background: 'linear-gradient(135deg, #F43F5E, #E11D48)', boxShadow: '0 2px 8px rgba(244,63,94,0.3)' }
                 }
               >

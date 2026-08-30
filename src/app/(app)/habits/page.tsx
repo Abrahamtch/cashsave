@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS } from '@/types';
-import { calculateAllScores, getScoreLevel, getScoreColor } from '@/lib/scoring';
+import { calculateAllScores, getScoreLevel } from '@/lib/scoring';
 import { format, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   ChevronLeft, ChevronRight, Calendar, Save,
-  Check, Minus, Plus,
+  Check, Minus, Plus, Sparkles, CheckCircle2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -152,89 +152,84 @@ export default function HabitsPage() {
     );
   }
 
-  const totalScoreColor =
-    scores.total_score >= 70 ? '#10B981' :
-    scores.total_score >= 40 ? 'var(--accent)' :
-    scores.total_score > 0  ? '#F59E0B' :
-    'var(--text-tertiary)';
+  const completedCount = BOOLEAN_FIELDS.filter(f => habitData[f]).length;
 
   return (
     <div className="space-y-6">
 
       {/* Header */}
-      <div>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
-        >
-          Habitudes
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-          Suivi quotidien de votre discipline
-        </p>
-      </div>
-
-      {/* Date navigator */}
-      <div
-        className="glass-card flex items-center justify-between px-4 py-3"
-      >
-        <button
-          onClick={() => navigateDate('prev')}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
-          style={{ color: 'var(--text-secondary)' }}
-          aria-label="Jour précédent"
-        >
-          <ChevronLeft size={16} strokeWidth={1.5} />
-        </button>
-        <div className="flex items-center gap-2">
-          <Calendar size={14} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
-          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-            {format(new Date(selectedDate), 'EEEE d MMMM yyyy', { locale: fr })}
-          </span>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1
+            className="text-2xl font-semibold tracking-tight"
+            style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
+          >
+            Habitudes
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            Suivi quotidien de votre discipline
+          </p>
         </div>
-        <button
-          onClick={() => navigateDate('next')}
-          disabled={selectedDate === format(new Date(), 'yyyy-MM-dd')}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-25"
-          style={{ color: 'var(--text-secondary)' }}
-          aria-label="Jour suivant"
-        >
-          <ChevronRight size={16} strokeWidth={1.5} />
-        </button>
+
+        {/* Date Navigator */}
+        <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl shadow-sm">
+          <button
+            onClick={() => navigateDate('prev')}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)]"
+            style={{ color: 'var(--text-secondary)' }}
+            aria-label="Jour précédent"
+          >
+            <ChevronLeft size={16} strokeWidth={1.5} />
+          </button>
+          <div className="flex items-center gap-1.5 px-2">
+            <Calendar size={13} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+              {format(new Date(selectedDate), 'dd MMM yyyy', { locale: fr })}
+            </span>
+          </div>
+          <button
+            onClick={() => navigateDate('next')}
+            disabled={selectedDate === format(new Date(), 'yyyy-MM-dd')}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] disabled:opacity-25"
+            style={{ color: 'var(--text-secondary)' }}
+            aria-label="Jour suivant"
+          >
+            <ChevronRight size={16} strokeWidth={1.5} />
+          </button>
+        </div>
       </div>
 
-      {/* Score summary */}
+      {/* Score Summary */}
       <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Score du jour</p>
             <p
-              className="text-3xl font-semibold mt-0.5 tracking-tight"
-              style={{ color: totalScoreColor, letterSpacing: '-0.03em' }}
+              className="text-3xl font-bold mt-0.5 tracking-tight"
+              style={{ color: 'var(--accent)', letterSpacing: '-0.03em' }}
             >
-              {scores.total_score}
+              {scores.total_score} <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>pts</span>
             </p>
           </div>
           <div
-            className="px-3 py-1 rounded-full text-xs font-medium"
+            className="px-3 py-1 rounded-full text-xs font-semibold"
             style={{
               background: 'var(--accent-subtle)',
               color: 'var(--accent)',
+              border: '1px solid var(--accent-border)',
             }}
           >
             {scoreLevel}
           </div>
         </div>
 
-        <div
-          className="grid grid-cols-4 gap-px rounded-lg overflow-hidden"
-          style={{ background: 'var(--border)' }}
-        >
+        {/* Score segments */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
           {SCORE_SEGMENTS.map(({ key, label }) => (
             <div
               key={key}
-              className="flex flex-col items-center py-3 px-2"
-              style={{ background: 'var(--bg-card)' }}
+              className="flex flex-col items-center py-2.5 px-2 rounded-xl"
+              style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
             >
               <p
                 className="text-base font-semibold tracking-tight"
@@ -242,7 +237,7 @@ export default function HabitsPage() {
               >
                 {(scores as any)[key]}
               </p>
-              <p className="text-[10px] mt-0.5 text-center" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-[10px] mt-0.5 text-center font-medium" style={{ color: 'var(--text-tertiary)' }}>
                 {label}
               </p>
             </div>
@@ -250,93 +245,116 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* Boolean habits */}
-      <div className="glass-card divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
-        <div className="px-5 py-4">
-          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+      {/* Boolean Habits Section */}
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
             Habitudes du jour
           </p>
+          <span
+            className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+            style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}
+          >
+            {completedCount} / {BOOLEAN_FIELDS.length} faites
+          </span>
         </div>
-        {BOOLEAN_FIELDS.map((field, i) => {
-          const active = !!habitData[field];
-          return (
-            <button
-              key={field}
-              onClick={() => handleToggle(field)}
-              className="w-full flex items-center justify-between px-5 py-3.5 transition-all duration-150"
-              style={{
-                background: active ? 'var(--accent-subtle)' : 'transparent',
-              }}
-            >
-              <span
-                className="text-sm font-medium"
-                style={{ color: active ? 'var(--accent)' : 'var(--text-secondary)' }}
-              >
-                {HABIT_LABELS[field]}
-              </span>
-              <div
-                className="w-5 h-5 rounded-md flex items-center justify-center transition-all duration-150"
+
+        {/* Spaced Row Items — No harsh divider lines */}
+        <div className="space-y-1.5">
+          {BOOLEAN_FIELDS.map((field) => {
+            const active = !!habitData[field];
+            return (
+              <button
+                key={field}
+                onClick={() => handleToggle(field)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-150 group text-left"
                 style={{
-                  background: active ? 'var(--accent)' : 'var(--bg-card-hover)',
-                  border: active ? 'none' : '1px solid var(--border-strong)',
+                  background: active ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
+                  border: active ? '1px solid var(--accent-border)' : '1px solid transparent',
                 }}
               >
-                {active && <Check size={12} strokeWidth={2.5} color="white" />}
-              </div>
-            </button>
-          );
-        })}
+                <span
+                  className="text-sm font-medium transition-colors"
+                  style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                >
+                  {HABIT_LABELS[field]}
+                </span>
+
+                <div
+                  className="w-5 h-5 rounded-lg flex items-center justify-center transition-all duration-150 shrink-0"
+                  style={{
+                    background: active ? 'var(--accent)' : 'var(--bg-base)',
+                    border: active ? 'none' : '1px solid var(--border-strong)',
+                  }}
+                >
+                  {active && <Check size={13} strokeWidth={2.5} color="white" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Numeric inputs */}
-      <div className="glass-card divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
-        <div className="px-5 py-4">
-          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+      {/* Numeric Inputs Section */}
+      <div className="glass-card p-4 space-y-3">
+        <div className="px-1">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
             Activités &amp; Business
           </p>
         </div>
-        {NUMERIC_FIELDS.map(field => (
-          <div key={field} className="flex items-center justify-between px-5 py-3.5">
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              {NUMERIC_HABIT_LABELS[field]}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleNumericChange(field, (habitData[field] as number || 0) - 1)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                aria-label="Diminuer"
+
+        {/* Spaced Row Items — No harsh divider lines */}
+        <div className="space-y-1.5">
+          {NUMERIC_FIELDS.map(field => {
+            const val = (habitData[field] as number) || 0;
+            return (
+              <div
+                key={field}
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl transition-all"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid transparent' }}
               >
-                <Minus size={12} strokeWidth={2} />
-              </button>
-              <input
-                type="number"
-                value={habitData[field] || 0}
-                onChange={(e) => handleNumericChange(field, parseInt(e.target.value) || 0)}
-                className="input-field py-1.5 text-center font-medium"
-                style={{ width: '56px', fontSize: '14px' }}
-                min={0}
-              />
-              <button
-                onClick={() => handleNumericChange(field, (habitData[field] as number || 0) + 1)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                aria-label="Augmenter"
-              >
-                <Plus size={12} strokeWidth={2} />
-              </button>
-            </div>
-          </div>
-        ))}
+                <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {NUMERIC_HABIT_LABELS[field]}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleNumericChange(field, val - 1)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[var(--border-strong)]"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                    aria-label="Diminuer"
+                  >
+                    <Minus size={12} strokeWidth={2} />
+                  </button>
+                  <input
+                    type="number"
+                    value={val}
+                    onChange={(e) => handleNumericChange(field, parseInt(e.target.value) || 0)}
+                    className="input-field py-1 text-center font-semibold"
+                    style={{ width: '52px', fontSize: '13px' }}
+                    min={0}
+                  />
+                  <button
+                    onClick={() => handleNumericChange(field, val + 1)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[var(--border-strong)]"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                    aria-label="Augmenter"
+                  >
+                    <Plus size={12} strokeWidth={2} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Notes */}
+      {/* Notes Section */}
       <div className="glass-card p-5 space-y-4">
-        <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-          Notes
+        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+          Journal &amp; Notes
         </p>
         <div>
-          <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+          <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
             Commentaires du jour
           </label>
           <textarea
@@ -347,7 +365,7 @@ export default function HabitsPage() {
           />
         </div>
         <div>
-          <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+          <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
             Progression
           </label>
           <textarea
@@ -359,13 +377,13 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* Save button */}
+      {/* Save Button */}
       <button
         onClick={handleSave}
         disabled={saving}
         id="save-habits"
-        className="btn-primary w-full py-3"
-        style={saved ? { background: '#10B981', boxShadow: '0 2px 8px rgba(16,185,129,0.35)' } : undefined}
+        className="btn-primary w-full py-3.5 shadow-lg"
+        style={saved ? { background: '#0E9F6E', boxShadow: '0 4px 16px rgba(14,159,110,0.35)' } : undefined}
       >
         {saving ? (
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -377,7 +395,7 @@ export default function HabitsPage() {
         ) : (
           <>
             <Save size={16} strokeWidth={1.5} />
-            Enregistrer
+            Enregistrer les habitudes
           </>
         )}
       </button>
