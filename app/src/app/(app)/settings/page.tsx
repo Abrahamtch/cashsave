@@ -7,6 +7,8 @@ import { getTrialDaysRemaining } from '@/lib/stats';
 import { useRouter } from 'next/navigation';
 import { User, Crown, Sliders, Moon, Sun, LogOut, Check, Save, Sparkles, RefreshCw } from 'lucide-react';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(DEFAULT_SCORING_SETTINGS);
@@ -24,20 +26,42 @@ export default function SettingsPage() {
   }, []);
 
   async function loadSettings() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const isLive = isLiveSupabaseConfigured();
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (data) {
-      setProfile(data);
-      if (data.scoring_settings) {
-        setScoringSettings({ ...DEFAULT_SCORING_SETTINGS, ...data.scoring_settings });
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (data) {
+            setProfile(data);
+            if (data.scoring_settings) {
+              setScoringSettings({ ...DEFAULT_SCORING_SETTINGS, ...data.scoring_settings });
+            }
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback
       }
+    }
+
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    setProfile({
+      id: 'demo-user',
+      email: localUser.email || 'demo@cashsave.app',
+      full_name: localUser.full_name || 'Utilisateur Cash Save',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: null,
+      scoring_settings: localUser.scoring_settings || DEFAULT_SCORING_SETTINGS,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    if (localUser.scoring_settings) {
+      setScoringSettings({ ...DEFAULT_SCORING_SETTINGS, ...localUser.scoring_settings });
     }
     setLoading(false);
   }
@@ -49,19 +73,19 @@ export default function SettingsPage() {
 
   const saveAlgorithmSettings = async () => {
     setSavingSettings(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSavingSettings(false); return; }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').update({ scoring_settings: scoringSettings }).eq('id', user.id);
+      }
+    } catch (e) {}
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ scoring_settings: scoringSettings })
-      .eq('id', user.id);
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, scoring_settings: scoringSettings }));
 
     setSavingSettings(false);
-    if (!error) {
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2000);
-    }
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2000);
   };
 
   const resetToDefaultScores = () => {
@@ -73,11 +97,15 @@ export default function SettingsPage() {
     const newDark = !isDark;
     setIsDark(newDark);
     document.documentElement.classList.toggle('dark', newDark);
-    localStorage.setItem('cashsave-theme', newDark ? 'dark' : 'light');
+    localStorage.setItem('cashsave_theme', newDark ? 'dark' : 'light');
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    document.cookie = 'cashsave_demo_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    localStorage.removeItem('cashsave_user');
     router.push('/auth/login');
     router.refresh();
   };

@@ -8,6 +8,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, Minus, ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, X, Check, ThumbsUp, ThumbsDown, Filter } from 'lucide-react';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+
 export default function CashPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,26 +30,30 @@ export default function CashPage() {
   useEffect(() => { loadTransactions(); }, []);
 
   async function loadTransactions() {
-    let txList: Transaction[] = [];
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('date', { ascending: false });
-        if (data && data.length > 0) txList = data;
+    const isLive = isLiveSupabaseConfigured();
+
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false });
+          if (data) {
+            setTransactions(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback
       }
-    } catch (e) {
-      // Ignore
     }
 
-    if (txList.length === 0) {
-      txList = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-    }
-
-    setTransactions(txList);
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    setTransactions(localTx);
     setLoading(false);
   }
 

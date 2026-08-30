@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { DailyHabit, Transaction, Profile } from '@/types';
 import { calculateCurrentStreak, calculateRecordStreak, calculateWeeklyAverage, getScoreChartData, getExpensesByCategory, getMonthlyRevenueVsExpenses, formatCFA, getTrialDaysRemaining } from '@/lib/stats';
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { Flame, Trophy, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Crown } from 'lucide-react';
 
@@ -20,47 +21,53 @@ export default function DashboardPage() {
   }, []);
 
   async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const isLive = isLiveSupabaseConfigured();
 
-    const [profileRes, habitsRes, transactionsRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(365),
-      supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-    ]);
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const [profileRes, habitsRes, transactionsRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('id', user.id).single(),
+            supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(365),
+            supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+          ]);
 
-    if (profileRes.data) setProfile(profileRes.data);
-    else {
-      const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-      setProfile({
-        id: 'demo-user',
-        email: localUser.email || 'demo@cashsave.app',
-        full_name: localUser.full_name || 'Utilisateur Cash Save',
-        avatar_url: '',
-        trial_start_date: localUser.trial_start_date || new Date().toISOString(),
-        is_premium: localUser.is_premium || false,
-        premium_expires_at: null,
-        scoring_settings: localUser.scoring_settings || {
-          bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
-          light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
-          content_published: 4, client_projects: 5, learning_minutes: 0.1
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+          if (profileRes.data) setProfile(profileRes.data);
+          if (habitsRes.data) setHabits(habitsRes.data);
+          if (transactionsRes.data) setTransactions(transactionsRes.data);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        // Fallback below
+      }
     }
 
-    if (habitsRes.data && habitsRes.data.length > 0) setHabits(habitsRes.data);
-    else {
-      const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
-      setHabits(localHabits);
-    }
+    // Instant local loading (0ms delay)
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    setProfile({
+      id: 'demo-user',
+      email: localUser.email || 'demo@cashsave.app',
+      full_name: localUser.full_name || 'Utilisateur Cash Save',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: null,
+      scoring_settings: localUser.scoring_settings || {
+        bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
+        light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
+        content_published: 4, client_projects: 5, learning_minutes: 0.1
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
 
-    if (transactionsRes.data && transactionsRes.data.length > 0) setTransactions(transactionsRes.data);
-    else {
-      const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-      setTransactions(localTx);
-    }
+    const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+    setHabits(localHabits);
+
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    setTransactions(localTx);
 
     setLoading(false);
   }

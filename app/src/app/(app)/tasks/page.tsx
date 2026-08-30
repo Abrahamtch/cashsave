@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, GripVertical } from 'lucide-react';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,16 +29,30 @@ export default function TasksPage() {
   }, []);
 
   async function loadTasks() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const isLive = isLiveSupabaseConfigured();
 
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          if (data) {
+            setTasks(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
 
-    if (data) setTasks(data);
+    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
+    setTasks(localTasks);
     setLoading(false);
   }
 
@@ -61,49 +77,60 @@ export default function TasksPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
 
+    const newTask: Task = {
+      id: editingTask ? editingTask.id : `task-${Date.now()}`,
+      user_id: 'demo-user',
+      title,
+      deadline: deadline || null,
+      priority,
+      status,
+      position: editingTask ? editingTask.position : tasks.length,
+      created_at: editingTask ? editingTask.created_at : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        if (editingTask) {
+          await supabase.from('tasks').update(newTask).eq('id', editingTask.id);
+        } else {
+          await supabase.from('tasks').insert({ ...newTask, user_id: user.id });
+        }
+      }
+    } catch (e) {}
+
+    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     if (editingTask) {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          title,
-          deadline: deadline || null,
-          priority,
-          status,
-        })
-        .eq('id', editingTask.id);
-
-      if (!error) {
-        setShowModal(false);
-        loadTasks();
-      }
+      const idx = localTasks.findIndex((t: any) => t.id === editingTask.id);
+      if (idx >= 0) localTasks[idx] = newTask;
     } else {
-      const { error } = await supabase.from('tasks').insert({
-        user_id: user.id,
-        title,
-        deadline: deadline || null,
-        priority,
-        status,
-      });
-
-      if (!error) {
-        setShowModal(false);
-        loadTasks();
-      }
+      localTasks.unshift(newTask);
     }
+    localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks));
+
     setSaving(false);
+    setShowModal(false);
+    loadTasks();
   };
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-    await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
+    localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks.map((t: any) => t.id === taskId ? { ...t, status: newStatus } : t)));
+    try {
+      await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    } catch (e) {}
   };
 
   const handleDelete = async (taskId: string) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    await supabase.from('tasks').delete().eq('id', taskId);
+    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
+    localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks.filter((t: any) => t.id !== taskId)));
+    try {
+      await supabase.from('tasks').delete().eq('id', taskId);
+    } catch (e) {}
   };
 
   const tasksByStatus = {

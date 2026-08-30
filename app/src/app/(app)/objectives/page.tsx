@@ -8,6 +8,8 @@ import { fr } from 'date-fns/locale';
 import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+
 export default function ObjectivesPage() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,16 +30,30 @@ export default function ObjectivesPage() {
   }, []);
 
   async function loadObjectives() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const isLive = isLiveSupabaseConfigured();
 
-    const { data } = await supabase
-      .from('objectives')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('objectives')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          if (data) {
+            setObjectives(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
 
-    if (data) setObjectives(data);
+    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
+    setObjectives(localObj);
     setLoading(false);
   }
 
@@ -62,47 +78,43 @@ export default function ObjectivesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
 
     const isCompleted = progress === 100 ? 'COMPLETED' : status;
+    const newObj: Objective = {
+      id: editingObjective ? editingObjective.id : `obj-${Date.now()}`,
+      user_id: 'demo-user',
+      title,
+      deadline: deadline || null,
+      progress,
+      status: isCompleted,
+      created_at: editingObjective ? editingObjective.created_at : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        if (editingObjective) {
+          await supabase.from('objectives').update(newObj).eq('id', editingObjective.id);
+        } else {
+          await supabase.from('objectives').insert({ ...newObj, user_id: user.id });
+        }
+      }
+    } catch (e) {}
+
+    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
     if (editingObjective) {
-      const { error } = await supabase
-        .from('objectives')
-        .update({
-          title,
-          deadline: deadline || null,
-          progress,
-          status: isCompleted,
-        })
-        .eq('id', editingObjective.id);
-
-      if (!error) {
-        if (progress === 100 && editingObjective.progress !== 100) {
-          triggerConfetti();
-        }
-        setShowModal(false);
-        loadObjectives();
-      }
+      const idx = localObj.findIndex((o: any) => o.id === editingObjective.id);
+      if (idx >= 0) localObj[idx] = newObj;
     } else {
-      const { error } = await supabase.from('objectives').insert({
-        user_id: user.id,
-        title,
-        deadline: deadline || null,
-        progress,
-        status: isCompleted,
-      });
-
-      if (!error) {
-        if (progress === 100) {
-          triggerConfetti();
-        }
-        setShowModal(false);
-        loadObjectives();
-      }
+      localObj.unshift(newObj);
     }
+    localStorage.setItem('cashsave_objectives', JSON.stringify(localObj));
+
+    if (progress === 100) triggerConfetti();
     setSaving(false);
+    setShowModal(false);
+    loadObjectives();
   };
 
   const handleQuickProgressUpdate = async (id: string, newProgress: number) => {
@@ -113,22 +125,25 @@ export default function ObjectivesPage() {
       status: isCompleted ? 'COMPLETED' : o.status
     } : o));
 
-    if (isCompleted) {
-      triggerConfetti();
-    }
+    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
+    localStorage.setItem('cashsave_objectives', JSON.stringify(
+      localObj.map((o: any) => o.id === id ? { ...o, progress: newProgress, status: isCompleted ? 'COMPLETED' : o.status } : o)
+    ));
 
-    await supabase
-      .from('objectives')
-      .update({
-        progress: newProgress,
-        status: isCompleted ? 'COMPLETED' : 'IN_PROGRESS'
-      })
-      .eq('id', id);
+    if (isCompleted) triggerConfetti();
+
+    try {
+      await supabase.from('objectives').update({ progress: newProgress, status: isCompleted ? 'COMPLETED' : 'IN_PROGRESS' }).eq('id', id);
+    } catch (e) {}
   };
 
   const handleDelete = async (id: string) => {
     setObjectives(prev => prev.filter(o => o.id !== id));
-    await supabase.from('objectives').delete().eq('id', id);
+    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
+    localStorage.setItem('cashsave_objectives', JSON.stringify(localObj.filter((o: any) => o.id !== id)));
+    try {
+      await supabase.from('objectives').delete().eq('id', id);
+    } catch (e) {}
   };
 
   const triggerConfetti = () => {

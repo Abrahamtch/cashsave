@@ -9,6 +9,8 @@ import { fr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar, Save, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
 
@@ -23,50 +25,59 @@ export default function HabitsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const isLive = isLiveSupabaseConfigured();
 
-    const [profileRes, habitRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
-    ]);
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const [profileRes, habitRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('id', user.id).single(),
+            supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
+          ]);
 
-    if (profileRes.data) setProfile(profileRes.data);
-    else {
-      const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-      setProfile({
-        id: 'demo-user',
-        email: localUser.email || 'demo@cashsave.app',
-        full_name: localUser.full_name || 'Utilisateur Cash Save',
-        avatar_url: '',
-        trial_start_date: localUser.trial_start_date || new Date().toISOString(),
-        is_premium: localUser.is_premium || false,
-        premium_expires_at: null,
-        scoring_settings: localUser.scoring_settings || {
-          bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
-          light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
-          content_published: 4, client_projects: 5, learning_minutes: 0.1
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    }
-    
-    if (habitRes.data) {
-      setHabitData(habitRes.data);
-    } else {
-      const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
-      const found = localHabits.find((h: any) => h.date === selectedDate);
-      if (found) {
-        setHabitData(found);
-      } else {
-        const emptyData: Partial<DailyHabit> = {};
-        BOOLEAN_FIELDS.forEach(f => { emptyData[f] = false; });
-        NUMERIC_FIELDS.forEach(f => { emptyData[f] = 0; });
-        emptyData.comments = '';
-        emptyData.progression = '';
-        setHabitData(emptyData);
+          if (profileRes.data) setProfile(profileRes.data);
+          if (habitRes.data) {
+            setHabitData(habitRes.data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback
       }
+    }
+
+    // Instant local load
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    setProfile({
+      id: 'demo-user',
+      email: localUser.email || 'demo@cashsave.app',
+      full_name: localUser.full_name || 'Utilisateur Cash Save',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: null,
+      scoring_settings: localUser.scoring_settings || {
+        bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
+        light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
+        content_published: 4, client_projects: 5, learning_minutes: 0.1
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+    const found = localHabits.find((h: any) => h.date === selectedDate);
+    if (found) {
+      setHabitData(found);
+    } else {
+      const emptyData: Partial<DailyHabit> = {};
+      BOOLEAN_FIELDS.forEach(f => { emptyData[f] = false; });
+      NUMERIC_FIELDS.forEach(f => { emptyData[f] = 0; });
+      emptyData.comments = '';
+      emptyData.progression = '';
+      setHabitData(emptyData);
     }
     setLoading(false);
   }, [selectedDate]);
