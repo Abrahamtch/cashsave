@@ -23,10 +23,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FAFAFA" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A0A0F" },
-  ],
+  themeColor: "#0A0A0F",
 };
 
 export default function RootLayout({
@@ -35,22 +32,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className="dark">
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const theme = localStorage.getItem('cashsave-theme') || 'dark';
-                document.documentElement.classList.toggle('dark', theme === 'dark');
-                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.classList.add('dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('cashsave-theme', 'dark');
               })();
             `,
           }}
         />
       </head>
       <body
-        className={`${inter.variable} font-sans antialiased bg-white dark:bg-[#0A0A0F] text-gray-900 dark:text-gray-100 transition-colors duration-300`}
+        className={`${inter.variable} font-sans antialiased bg-[#0A0A0F] text-gray-100`}
       >
         {children}
       </body>

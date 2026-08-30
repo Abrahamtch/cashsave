@@ -5,9 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Profile, ScoringSettings, DEFAULT_SCORING_SETTINGS, HABIT_LABELS, NUMERIC_HABIT_LABELS } from '@/types';
 import { getTrialDaysRemaining } from '@/lib/stats';
 import { useRouter } from 'next/navigation';
-import { User, Crown, Sliders, Moon, Sun, LogOut, Check, Save, Sparkles, RefreshCw } from 'lucide-react';
+import { User, Crown, Sliders, LogOut, Check, Save, Sparkles, RefreshCw } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -180,22 +179,6 @@ export default function SettingsPage() {
             </button>
           )}
         </div>
-      </div>
-
-      {/* App Appearance / Theme Toggle */}
-      <div className="glass-card p-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
-            <Sun className="w-5 h-5 hidden dark:block text-amber-400" />
-            <Moon className="w-5 h-5 block dark:hidden text-indigo-600" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm">Mode Sombre / Mode Clair</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Basculez entre le thème sombre d&apos;action et le thème clair</p>
-          </div>
-        </div>
-
-        <ThemeToggle />
       </div>
 
       {/* Scoring Algorithm Settings */}

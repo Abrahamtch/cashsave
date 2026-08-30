@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,20 +25,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-50 text-gray-900 dark:bg-[#0A0A0F] dark:text-gray-100 transition-colors duration-300">
+    <div className="min-h-dvh flex flex-col bg-[#0A0A0F] text-gray-100">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-gray-200 dark:border-white/5 bg-white/80 dark:bg-[#0D0D14] fixed h-full z-40">
-        {/* Logo & Theme Toggle */}
-        <div className="flex items-center justify-between px-5 h-16 border-b border-gray-200 dark:border-white/5">
+      <aside className="hidden lg:flex flex-col w-64 border-r border-white/5 bg-[#0D0D14] fixed h-full z-40">
+        {/* Logo */}
+        <div className="flex items-center justify-between px-5 h-16 border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-md">
               <span className="text-white font-bold text-sm">CS</span>
             </div>
-            <span className="font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+            <span className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
               Cash Save
             </span>
           </div>
-          <ThemeToggle />
         </div>
 
         {/* Nav Items */}
@@ -85,7 +83,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             Cash Save
           </span>
         </div>
-        <ThemeToggle />
       </header>
 
       {/* Main Content */}
