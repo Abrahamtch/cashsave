@@ -6,8 +6,10 @@ import { Transaction, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import { calculateFinancialSummary, formatCFA } from '@/lib/stats';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Plus, Minus, ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, X, Check, ThumbsUp, ThumbsDown, Filter } from 'lucide-react';
-
+import {
+  Plus, Minus, TrendingUp, TrendingDown, Wallet, Activity,
+  X, Check, ThumbsUp, ThumbsDown, SlidersHorizontal, ArrowUpRight, ArrowDownRight,
+} from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 
 export default function CashPage() {
@@ -19,7 +21,6 @@ export default function CashPage() {
   const [filterCategory, setFilterCategory] = useState('');
   const supabase = createClient();
 
-  // Form state
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -31,71 +32,46 @@ export default function CashPage() {
 
   async function loadTransactions() {
     const isLive = isLiveSupabaseConfigured();
-
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('date', { ascending: false });
-          if (data) {
-            setTransactions(data);
-            setLoading(false);
-            return;
-          }
+          const { data } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false });
+          if (data) { setTransactions(data); setLoading(false); return; }
         }
-      } catch (e) {
-        // Fallback
-      }
+      } catch (e) { /* fallback */ }
     }
-
-    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-    setTransactions(localTx);
+    setTransactions(JSON.parse(localStorage.getItem('cashsave_transactions') || '[]'));
     setLoading(false);
   }
 
   const openModal = (type: 'INCOME' | 'EXPENSE') => {
     setModalType(type);
-    setAmount('');
-    setCategory('');
+    setAmount(''); setCategory('');
     setDate(format(new Date(), 'yyyy-MM-dd'));
-    setNote('');
-    setIsSatisfied(null);
+    setNote(''); setIsSatisfied(null);
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingTx(true);
-
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       user_id: 'demo-user',
       type: modalType,
       amount: parseFloat(amount),
-      category,
-      date,
-      note,
+      category, date, note,
       is_satisfied: modalType === 'EXPENSE' ? isSatisfied : null,
       created_at: new Date().toISOString(),
     };
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('transactions').insert({ ...newTx, user_id: user.id });
-      }
-    } catch (e) {
-      // Ignore
-    }
-
+      if (user) await supabase.from('transactions').insert({ ...newTx, user_id: user.id });
+    } catch (e) { /* silent */ }
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
     localTx.unshift(newTx);
     localStorage.setItem('cashsave_transactions', JSON.stringify(localTx));
-
     setSavingTx(false);
     setShowModal(false);
     loadTransactions();
@@ -105,201 +81,327 @@ export default function CashPage() {
     setTransactions(prev => prev.filter(t => t.id !== id));
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
     localStorage.setItem('cashsave_transactions', JSON.stringify(localTx.filter((t: any) => t.id !== id)));
-    try {
-      await supabase.from('transactions').delete().eq('id', id);
-    } catch (e) {}
+    try { await supabase.from('transactions').delete().eq('id', id); } catch (e) {}
   };
 
   const summary = calculateFinancialSummary(transactions);
   const categories = modalType === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-
-  // Filtered transactions
   const filtered = transactions.filter(t => {
     if (filterMonth && !t.date.startsWith(filterMonth)) return false;
     if (filterCategory && t.category !== filterCategory) return false;
     return true;
   });
-
-  // Available months for filter
   const months = [...new Set(transactions.map(t => t.date.substring(0, 7)))].sort().reverse();
   const allCategories = [...new Set(transactions.map(t => t.category))].sort();
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 skeleton" />
-        <div className="grid grid-cols-2 gap-3">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-24 skeleton" />)}
+      <div className="space-y-6 animate-fade-in-up">
+        <div className="h-6 w-40 skeleton rounded-md" />
+        <div className="grid grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-24 skeleton rounded-xl" />)}
         </div>
       </div>
     );
   }
 
+  const summaryCards = [
+    { label: 'Revenus', value: summary.totalIncome, color: '#10B981', bg: 'rgba(16,185,129,0.09)', icon: TrendingUp },
+    { label: 'Dépenses', value: summary.totalExpense, color: '#F43F5E', bg: 'rgba(244,63,94,0.09)', icon: TrendingDown },
+    { label: 'Bénéfice', value: summary.netProfit, color: summary.netProfit >= 0 ? '#10B981' : '#F43F5E', bg: summary.netProfit >= 0 ? 'rgba(16,185,129,0.09)' : 'rgba(244,63,94,0.09)', icon: Activity },
+    { label: 'Solde', value: summary.balance, color: summary.balance >= 0 ? '#10B981' : '#F43F5E', bg: summary.balance >= 0 ? 'rgba(16,185,129,0.09)' : 'rgba(244,63,94,0.09)', icon: Wallet },
+  ];
+
   return (
     <div className="space-y-6">
+
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">My Cash</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Gestion de trésorerie</p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 stagger-children">
-        <div className="glass-card p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs text-gray-500">Revenus</span>
-          </div>
-          <p className="text-lg font-bold text-emerald-400">{formatCFA(summary.totalIncome)}</p>
-        </div>
-        <div className="glass-card p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowDownRight className="w-4 h-4 text-rose-400" />
-            <span className="text-xs text-gray-500">Dépenses</span>
-          </div>
-          <p className="text-lg font-bold text-rose-400">{formatCFA(summary.totalExpense)}</p>
-        </div>
-        <div className="glass-card p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs text-gray-500">Bénéfice</span>
-          </div>
-          <p className={`text-lg font-bold ${summary.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {formatCFA(summary.netProfit)}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1
+            className="text-2xl font-semibold tracking-tight"
+            style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
+          >
+            Trésorerie
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            Suivi de vos revenus et dépenses
           </p>
         </div>
-        <div className="glass-card p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <DollarSign className="w-4 h-4 text-amber-400" />
-            <span className="text-xs text-gray-500">Solde</span>
-          </div>
-          <p className={`text-lg font-bold ${summary.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {formatCFA(summary.balance)}
-          </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => openModal('EXPENSE')}
+            id="add-expense"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200"
+            style={{
+              background: 'rgba(244,63,94,0.08)',
+              border: '1px solid rgba(244,63,94,0.18)',
+              color: '#F43F5E',
+            }}
+          >
+            <Minus size={13} strokeWidth={2} />
+            Dépense
+          </button>
+          <button
+            onClick={() => openModal('INCOME')}
+            id="add-income"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200"
+            style={{
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+              color: '#10B981',
+            }}
+          >
+            <Plus size={13} strokeWidth={2} />
+            Revenu
+          </button>
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Summary */}
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => openModal('INCOME')} className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium text-sm hover:bg-emerald-500/20 transition-all" id="add-income">
-          <Plus className="w-5 h-5" /> Ajouter un revenu
-        </button>
-        <button onClick={() => openModal('EXPENSE')} className="flex items-center justify-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 font-medium text-sm hover:bg-rose-500/20 transition-all" id="add-expense">
-          <Minus className="w-5 h-5" /> Ajouter une dépense
-        </button>
+        {summaryCards.map(({ label, value, color, bg, icon: Icon }) => (
+          <div key={label} className="glass-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ background: bg }}
+              >
+                <Icon size={14} strokeWidth={1.5} style={{ color }} />
+              </div>
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</span>
+            </div>
+            <p
+              className="text-base font-semibold tracking-tight"
+              style={{ color, letterSpacing: '-0.01em' }}
+            >
+              {formatCFA(value)}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-3 flex gap-2 items-center overflow-x-auto">
-        <Filter className="w-4 h-4 text-gray-500 shrink-0" />
-        <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="input-field py-1.5 text-xs w-auto min-w-[120px]">
-          <option value="">Tous les mois</option>
-          {months.map(m => (
-            <option key={m} value={m}>{format(new Date(m + '-01'), 'MMMM yyyy', { locale: fr })}</option>
-          ))}
-        </select>
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="input-field py-1.5 text-xs w-auto min-w-[120px]">
-          <option value="">Toutes catégories</option>
-          {allCategories.map(c => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
+      {(months.length > 0 || allCategories.length > 0) && (
+        <div
+          className="glass-card flex items-center gap-3 px-4 py-3 overflow-x-auto"
+        >
+          <SlidersHorizontal size={13} strokeWidth={1.5} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="input-field py-1.5 text-xs"
+            style={{ minWidth: '130px', width: 'auto' }}
+          >
+            <option value="">Tous les mois</option>
+            {months.map(m => (
+              <option key={m} value={m}>{format(new Date(m + '-01'), 'MMMM yyyy', { locale: fr })}</option>
+            ))}
+          </select>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="input-field py-1.5 text-xs"
+            style={{ minWidth: '130px', width: 'auto' }}
+          >
+            <option value="">Toutes catégories</option>
+            {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      )}
 
-      {/* Transaction List */}
-      <div className="space-y-2">
+      {/* Transactions */}
+      <div className="glass-card divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
         {filtered.length === 0 ? (
-          <div className="glass-card p-8 text-center text-gray-500 text-sm">
-            Aucune transaction{filterMonth || filterCategory ? ' pour ces filtres' : ''}
+          <div
+            className="py-16 flex flex-col items-center gap-3"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            <Wallet size={28} strokeWidth={1} />
+            <p className="text-sm">
+              {filterMonth || filterCategory ? 'Aucune transaction pour ces filtres' : 'Aucune transaction enregistrée'}
+            </p>
           </div>
-        ) : (
-          filtered.map(tx => (
-            <div key={tx.id} className="glass-card p-3 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                tx.type === 'INCOME' ? 'bg-emerald-500/15' : 'bg-rose-500/15'
-              }`}>
-                {tx.type === 'INCOME' ? (
-                  <ArrowUpRight className="w-5 h-5 text-emerald-400" />
-                ) : (
-                  <ArrowDownRight className="w-5 h-5 text-rose-400" />
+        ) : filtered.map(tx => (
+          <div key={tx.id} className="flex items-center gap-4 px-4 py-3.5">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+              style={{
+                background: tx.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)',
+              }}
+            >
+              {tx.type === 'INCOME'
+                ? <ArrowUpRight size={14} strokeWidth={1.5} style={{ color: '#10B981' }} />
+                : <ArrowDownRight size={14} strokeWidth={1.5} style={{ color: '#F43F5E' }} />
+              }
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                  {tx.category}
+                </p>
+                {tx.is_satisfied !== null && (
+                  tx.is_satisfied
+                    ? <ThumbsUp size={11} strokeWidth={1.5} style={{ color: '#10B981', flexShrink: 0 }} />
+                    : <ThumbsDown size={11} strokeWidth={1.5} style={{ color: '#F43F5E', flexShrink: 0 }} />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{tx.category}</p>
-                  {tx.is_satisfied !== null && (
-                    tx.is_satisfied ? <ThumbsUp className="w-3 h-3 text-emerald-400" /> : <ThumbsDown className="w-3 h-3 text-rose-400" />
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 truncate">
-                  {tx.note || format(new Date(tx.date), 'd MMM yyyy', { locale: fr })}
-                </p>
-              </div>
-              <p className={`text-sm font-bold shrink-0 ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {tx.type === 'INCOME' ? '+' : '-'}{formatCFA(tx.amount)}
+              <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {tx.note || format(new Date(tx.date), 'd MMM yyyy', { locale: fr })}
               </p>
             </div>
-          ))
-        )}
+
+            <p
+              className="text-sm font-semibold shrink-0"
+              style={{
+                color: tx.type === 'INCOME' ? '#10B981' : '#F43F5E',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {tx.type === 'INCOME' ? '+' : '−'}{formatCFA(tx.amount)}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold">
-                {modalType === 'INCOME' ? '💰 Nouveau revenu' : '💸 Nouvelle dépense'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-white/10">
-                <X className="w-5 h-5" />
+        <div
+          className="modal-overlay"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="modal-content p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {modalType === 'INCOME' ? 'Nouveau revenu' : 'Nouvelle dépense'}
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                  {modalType === 'INCOME' ? 'Enregistrez un revenu' : 'Enregistrez une dépense'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150"
+                style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
+                aria-label="Fermer"
+              >
+                <X size={15} strokeWidth={1.5} />
               </button>
             </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Montant (FCFA)</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" required min="1" className="input-field text-2xl font-bold text-center" id="tx-amount" />
+                <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Montant (FCFA)
+                </label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
+                  required min="1"
+                  className="input-field text-2xl font-semibold text-center"
+                  style={{ letterSpacing: '-0.02em' }}
+                  id="tx-amount"
+                />
               </div>
+
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Catégorie</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} required className="input-field" id="tx-category">
-                  <option value="">Choisir...</option>
+                <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Catégorie
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
+                  className="input-field"
+                  id="tx-category"
+                >
+                  <option value="">Sélectionner...</option>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Date</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
+                <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="input-field"
+                />
               </div>
+
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Note / Raison</label>
-                <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Description..." className="input-field" />
+                <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Note
+                </label>
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Description optionnelle..."
+                  className="input-field"
+                />
               </div>
+
               {modalType === 'EXPENSE' && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-2">Satisfait de cette dépense ?</label>
-                  <div className="flex gap-3">
-                    <button type="button" onClick={() => setIsSatisfied(true)} className={`flex-1 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-                      isSatisfied === true ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-white/5 border border-white/10 text-gray-400'
-                    }`}>
-                      <ThumbsUp className="w-4 h-4" /> Oui
+                  <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Satisfait de cette dépense ?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsSatisfied(true)}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+                      style={{
+                        background: isSatisfied === true ? 'rgba(16,185,129,0.12)' : 'var(--bg-card-hover)',
+                        border: isSatisfied === true ? '1px solid rgba(16,185,129,0.25)' : '1px solid var(--border)',
+                        color: isSatisfied === true ? '#10B981' : 'var(--text-secondary)',
+                      }}
+                    >
+                      <ThumbsUp size={14} strokeWidth={1.5} />
+                      Oui
                     </button>
-                    <button type="button" onClick={() => setIsSatisfied(false)} className={`flex-1 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-                      isSatisfied === false ? 'bg-rose-500/20 border border-rose-500/30 text-rose-400' : 'bg-white/5 border border-white/10 text-gray-400'
-                    }`}>
-                      <ThumbsDown className="w-4 h-4" /> Non
+                    <button
+                      type="button"
+                      onClick={() => setIsSatisfied(false)}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+                      style={{
+                        background: isSatisfied === false ? 'rgba(244,63,94,0.1)' : 'var(--bg-card-hover)',
+                        border: isSatisfied === false ? '1px solid rgba(244,63,94,0.2)' : '1px solid var(--border)',
+                        color: isSatisfied === false ? '#F43F5E' : 'var(--text-secondary)',
+                      }}
+                    >
+                      <ThumbsDown size={14} strokeWidth={1.5} />
+                      Non
                     </button>
                   </div>
                 </div>
               )}
-              <button type="submit" disabled={savingTx} className={`btn-primary w-full py-3 ${
-                modalType === 'INCOME' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/25'
-              }`} id="tx-submit">
-                {savingTx ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <><Check className="w-5 h-5" /> Enregistrer</>
-                )}
+
+              <button
+                type="submit"
+                disabled={savingTx}
+                className="btn-primary w-full py-3"
+                id="tx-submit"
+                style={modalType === 'INCOME'
+                  ? { background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 2px 8px rgba(16,185,129,0.3)' }
+                  : { background: 'linear-gradient(135deg, #F43F5E, #E11D48)', boxShadow: '0 2px 8px rgba(244,63,94,0.3)' }
+                }
+              >
+                {savingTx
+                  ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <><Check size={15} strokeWidth={2} /> Enregistrer</>
+                }
               </button>
             </form>
           </div>

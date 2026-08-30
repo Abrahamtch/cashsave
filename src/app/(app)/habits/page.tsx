@@ -6,13 +6,22 @@ import { DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS } from '@/types
 import { calculateAllScores, getScoreLevel, getScoreColor } from '@/lib/scoring';
 import { format, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, Save, Sparkles } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Calendar, Save,
+  Check, Minus, Plus,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
-
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
+
+const SCORE_SEGMENTS = [
+  { key: 'habit_score', label: 'Habitudes' },
+  { key: 'work_score', label: 'Travail' },
+  { key: 'business_score', label: 'Business' },
+  { key: 'learning_score', label: 'Apprentissage' },
+] as const;
 
 export default function HabitsPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -35,20 +44,12 @@ export default function HabitsPage() {
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
           ]);
-
           if (profileRes.data) setProfile(profileRes.data);
-          if (habitRes.data) {
-            setHabitData(habitRes.data);
-            setLoading(false);
-            return;
-          }
+          if (habitRes.data) { setHabitData(habitRes.data); setLoading(false); return; }
         }
-      } catch (e) {
-        // Fallback
-      }
+      } catch (e) { /* fallback */ }
     }
 
-    // Instant local load
     const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
     setProfile({
       id: 'demo-user',
@@ -61,7 +62,7 @@ export default function HabitsPage() {
       scoring_settings: localUser.scoring_settings || {
         bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
         light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
-        content_published: 4, client_projects: 5, learning_minutes: 0.1
+        content_published: 4, client_projects: 5, learning_minutes: 0.1,
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -82,14 +83,13 @@ export default function HabitsPage() {
     setLoading(false);
   }, [selectedDate]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Calculate scores in real time
-  const scores = profile ? calculateAllScores(habitData, profile.scoring_settings) : { habit_score: 0, work_score: 0, business_score: 0, learning_score: 0, total_score: 0 };
+  const scores = profile
+    ? calculateAllScores(habitData, profile.scoring_settings)
+    : { habit_score: 0, work_score: 0, business_score: 0, learning_score: 0, total_score: 0 };
+
   const scoreLevel = getScoreLevel(scores.total_score);
-  const scoreColor = getScoreColor(scoreLevel);
 
   const handleToggle = (field: typeof BOOLEAN_FIELDS[number]) => {
     setHabitData(prev => ({ ...prev, [field]: !prev[field] }));
@@ -118,205 +118,266 @@ export default function HabitsPage() {
       progression: habitData.progression || '',
       ...scores,
     };
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('daily_habits').upsert({ ...dataToSave, user_id: user.id }, { onConflict: 'user_id,date' });
       }
-    } catch (e) {
-      // Ignore
-    }
-
-    // Save to local storage
+    } catch (e) { /* silent */ }
     const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
-    const existingIndex = localHabits.findIndex((h: any) => h.date === selectedDate);
-    if (existingIndex >= 0) {
-      localHabits[existingIndex] = dataToSave;
-    } else {
-      localHabits.push(dataToSave);
-    }
+    const idx = localHabits.findIndex((h: any) => h.date === selectedDate);
+    if (idx >= 0) localHabits[idx] = dataToSave;
+    else localHabits.push(dataToSave);
     localStorage.setItem('cashsave_habits', JSON.stringify(localHabits));
-
     setSaving(false);
     setSaved(true);
-
     if (scores.total_score >= 50) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B'],
-      });
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B'] });
     }
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2500);
   };
 
-  const navigateDate = (direction: 'prev' | 'next') => {
+  const navigateDate = (dir: 'prev' | 'next') => {
     const current = new Date(selectedDate);
-    const newDate = direction === 'prev' ? subDays(current, 1) : addDays(current, 1);
-    if (newDate <= new Date()) {
-      setSelectedDate(format(newDate, 'yyyy-MM-dd'));
-    }
+    const next = dir === 'prev' ? subDays(current, 1) : addDays(current, 1);
+    if (next <= new Date()) setSelectedDate(format(next, 'yyyy-MM-dd'));
   };
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 skeleton" />
-        <div className="grid grid-cols-1 gap-3">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-16 skeleton" />)}
-        </div>
+      <div className="space-y-6 animate-fade-in-up">
+        <div className="h-6 w-40 skeleton rounded-md" />
+        {[...Array(4)].map((_, i) => <div key={i} className="h-14 skeleton rounded-xl" />)}
       </div>
     );
   }
 
+  const totalScoreColor =
+    scores.total_score >= 70 ? '#10B981' :
+    scores.total_score >= 40 ? 'var(--accent)' :
+    scores.total_score > 0  ? '#F59E0B' :
+    'var(--text-tertiary)';
+
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">My Habits</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Suivi quotidien de vos habitudes</p>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
+        >
+          Habitudes
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+          Suivi quotidien de votre discipline
+        </p>
       </div>
 
-      {/* Date Selector */}
-      <div className="glass-card p-3 flex items-center justify-between">
-        <button onClick={() => navigateDate('prev')} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
-          <ChevronLeft className="w-5 h-5" />
+      {/* Date navigator */}
+      <div
+        className="glass-card flex items-center justify-between px-4 py-3"
+      >
+        <button
+          onClick={() => navigateDate('prev')}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
+          style={{ color: 'var(--text-secondary)' }}
+          aria-label="Jour précédent"
+        >
+          <ChevronLeft size={16} strokeWidth={1.5} />
         </button>
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-indigo-400" />
-          <span className="font-medium text-sm">
+          <Calendar size={14} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {format(new Date(selectedDate), 'EEEE d MMMM yyyy', { locale: fr })}
           </span>
         </div>
         <button
           onClick={() => navigateDate('next')}
           disabled={selectedDate === format(new Date(), 'yyyy-MM-dd')}
-          className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-30"
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-25"
+          style={{ color: 'var(--text-secondary)' }}
+          aria-label="Jour suivant"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight size={16} strokeWidth={1.5} />
         </button>
       </div>
 
-      {/* Score Display */}
-      <div className="glass-card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-400">Score Total</h3>
-          <div className={`text-3xl font-bold ${scoreColor} animate-count-up`}>
-            {scores.total_score}
+      {/* Score summary */}
+      <div className="glass-card p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Score du jour</p>
+            <p
+              className="text-3xl font-semibold mt-0.5 tracking-tight"
+              style={{ color: totalScoreColor, letterSpacing: '-0.03em' }}
+            >
+              {scores.total_score}
+            </p>
+          </div>
+          <div
+            className="px-3 py-1 rounded-full text-xs font-medium"
+            style={{
+              background: 'var(--accent-subtle)',
+              color: 'var(--accent)',
+            }}
+          >
+            {scoreLevel}
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: 'Habitudes', value: scores.habit_score, color: 'text-purple-400' },
-            { label: 'Travail', value: scores.work_score, color: 'text-blue-400' },
-            { label: 'Business', value: scores.business_score, color: 'text-emerald-400' },
-            { label: 'Apprentissage', value: scores.learning_score, color: 'text-amber-400' },
-          ].map(score => (
-            <div key={score.label} className="text-center">
-              <p className={`text-lg font-bold ${score.color}`}>{score.value}</p>
-              <p className="text-[10px] text-gray-500">{score.label}</p>
+
+        <div
+          className="grid grid-cols-4 gap-px rounded-lg overflow-hidden"
+          style={{ background: 'var(--border)' }}
+        >
+          {SCORE_SEGMENTS.map(({ key, label }) => (
+            <div
+              key={key}
+              className="flex flex-col items-center py-3 px-2"
+              style={{ background: 'var(--bg-card)' }}
+            >
+              <p
+                className="text-base font-semibold tracking-tight"
+                style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}
+              >
+                {(scores as any)[key]}
+              </p>
+              <p className="text-[10px] mt-0.5 text-center" style={{ color: 'var(--text-tertiary)' }}>
+                {label}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Boolean Habits (Switches) */}
-      <div className="glass-card p-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">Habitudes du jour</h3>
-        <div className="space-y-2">
-          {BOOLEAN_FIELDS.map(field => (
+      {/* Boolean habits */}
+      <div className="glass-card divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
+        <div className="px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+            Habitudes du jour
+          </p>
+        </div>
+        {BOOLEAN_FIELDS.map((field, i) => {
+          const active = !!habitData[field];
+          return (
             <button
               key={field}
               onClick={() => handleToggle(field)}
-              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
-                habitData[field]
-                  ? 'bg-indigo-500/10 border border-indigo-500/20'
-                  : 'bg-white/[0.02] border border-white/5 hover:bg-white/5'
-              }`}
+              className="w-full flex items-center justify-between px-5 py-3.5 transition-all duration-150"
+              style={{
+                background: active ? 'var(--accent-subtle)' : 'transparent',
+              }}
             >
-              <span className="text-sm">{HABIT_LABELS[field]}</span>
-              <div className={`toggle-switch ${habitData[field] ? 'active' : ''}`} />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Numeric Inputs */}
-      <div className="glass-card p-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">Activités & Business</h3>
-        <div className="space-y-3">
-          {NUMERIC_FIELDS.map(field => (
-            <div key={field} className="flex items-center justify-between gap-4">
-              <span className="text-sm flex-1">{NUMERIC_HABIT_LABELS[field]}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleNumericChange(field, (habitData[field] as number || 0) - 1)}
-                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-lg"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  value={habitData[field] || 0}
-                  onChange={(e) => handleNumericChange(field, parseInt(e.target.value) || 0)}
-                  className="w-16 text-center input-field py-1.5"
-                  min={0}
-                />
-                <button
-                  onClick={() => handleNumericChange(field, (habitData[field] as number || 0) + 1)}
-                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-lg"
-                >
-                  +
-                </button>
+              <span
+                className="text-sm font-medium"
+                style={{ color: active ? 'var(--accent)' : 'var(--text-secondary)' }}
+              >
+                {HABIT_LABELS[field]}
+              </span>
+              <div
+                className="w-5 h-5 rounded-md flex items-center justify-center transition-all duration-150"
+                style={{
+                  background: active ? 'var(--accent)' : 'var(--bg-card-hover)',
+                  border: active ? 'none' : '1px solid var(--border-strong)',
+                }}
+              >
+                {active && <Check size={12} strokeWidth={2.5} color="white" />}
               </div>
-            </div>
-          ))}
-        </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Text Fields */}
-      <div className="glass-card p-4 space-y-3">
-        <h3 className="text-sm font-medium text-gray-400 mb-1">Notes</h3>
+      {/* Numeric inputs */}
+      <div className="glass-card divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
+        <div className="px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+            Activités &amp; Business
+          </p>
+        </div>
+        {NUMERIC_FIELDS.map(field => (
+          <div key={field} className="flex items-center justify-between px-5 py-3.5">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {NUMERIC_HABIT_LABELS[field]}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleNumericChange(field, (habitData[field] as number || 0) - 1)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                aria-label="Diminuer"
+              >
+                <Minus size={12} strokeWidth={2} />
+              </button>
+              <input
+                type="number"
+                value={habitData[field] || 0}
+                onChange={(e) => handleNumericChange(field, parseInt(e.target.value) || 0)}
+                className="input-field py-1.5 text-center font-medium"
+                style={{ width: '56px', fontSize: '14px' }}
+                min={0}
+              />
+              <button
+                onClick={() => handleNumericChange(field, (habitData[field] as number || 0) + 1)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                aria-label="Augmenter"
+              >
+                <Plus size={12} strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Notes */}
+      <div className="glass-card p-5 space-y-4">
+        <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+          Notes
+        </p>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Commentaires</label>
+          <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+            Commentaires du jour
+          </label>
           <textarea
             value={habitData.comments || ''}
             onChange={(e) => handleTextChange('comments', e.target.value)}
-            placeholder="Notes du jour..."
-            className="input-field min-h-[60px] resize-none"
+            placeholder="Observations, réflexions..."
+            className="input-field min-h-[72px] resize-none"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Progression</label>
+          <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+            Progression
+          </label>
           <textarea
             value={habitData.progression || ''}
             onChange={(e) => handleTextChange('progression', e.target.value)}
-            placeholder="Ce que j'ai accompli..."
-            className="input-field min-h-[60px] resize-none"
+            placeholder="Ce que j'ai accompli aujourd'hui..."
+            className="input-field min-h-[72px] resize-none"
           />
         </div>
       </div>
 
-      {/* Save Button */}
+      {/* Save button */}
       <button
         onClick={handleSave}
         disabled={saving}
-        className={`btn-primary w-full py-3 text-base ${saved ? 'bg-emerald-600 hover:bg-emerald-600' : ''}`}
         id="save-habits"
+        className="btn-primary w-full py-3"
+        style={saved ? { background: '#10B981', boxShadow: '0 2px 8px rgba(16,185,129,0.35)' } : undefined}
       >
         {saving ? (
-          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : saved ? (
           <>
-            <Sparkles className="w-5 h-5" />
-            Sauvegardé !
+            <Check size={16} strokeWidth={2} />
+            Enregistré
           </>
         ) : (
           <>
-            <Save className="w-5 h-5" />
-            Sauvegarder
+            <Save size={16} strokeWidth={1.5} />
+            Enregistrer
           </>
         )}
       </button>
