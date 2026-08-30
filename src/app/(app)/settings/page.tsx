@@ -6,13 +6,12 @@ import { Profile, ScoringSettings, DEFAULT_SCORING_SETTINGS, HABIT_LABELS, NUMER
 import { getTrialDaysRemaining } from '@/lib/stats';
 import { useRouter } from 'next/navigation';
 import { User, Crown, Sliders, Moon, Sun, LogOut, Check, Save, Sparkles, RefreshCw } from 'lucide-react';
-
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(DEFAULT_SCORING_SETTINGS);
-  const [isDark, setIsDark] = useState(true);
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -21,8 +20,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadSettings();
-    const currentTheme = document.documentElement.classList.contains('dark');
-    setIsDark(currentTheme);
   }, []);
 
   async function loadSettings() {
@@ -91,13 +88,6 @@ export default function SettingsPage() {
   const resetToDefaultScores = () => {
     setScoringSettings(DEFAULT_SCORING_SETTINGS);
     setSavedSuccess(false);
-  };
-
-  const toggleTheme = () => {
-    const newDark = !isDark;
-    setIsDark(newDark);
-    document.documentElement.classList.toggle('dark', newDark);
-    localStorage.setItem('cashsave_theme', newDark ? 'dark' : 'light');
   };
 
   const handleLogout = async () => {
@@ -192,105 +182,98 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* App Appearance */}
+      {/* App Appearance / Theme Toggle */}
       <div className="glass-card p-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {isDark ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-amber-400" />}
+          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+            <Sun className="w-5 h-5 hidden dark:block text-amber-400" />
+            <Moon className="w-5 h-5 block dark:hidden text-indigo-600" />
+          </div>
           <div>
-            <h3 className="font-semibold text-sm">Thème de l&apos;interface</h3>
-            <p className="text-xs text-gray-400">{isDark ? 'Mode sombre activé' : 'Mode clair activé'}</p>
+            <h3 className="font-semibold text-sm">Mode Sombre / Mode Clair</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Basculez entre le thème sombre d&apos;action et le thème clair</p>
           </div>
         </div>
 
-        <button
-          onClick={toggleTheme}
-          className={`toggle-switch ${isDark ? 'active' : ''}`}
-          aria-label="Changer le thème"
-        />
+        <ThemeToggle />
       </div>
 
       {/* Scoring Algorithm Settings */}
       <div className="glass-card p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-white/5">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/5">
           <div className="flex items-center gap-2">
             <Sliders className="w-5 h-5 text-indigo-400" />
             <div>
               <h3 className="font-semibold text-sm">Configuration de l&apos;Algorithme</h3>
-              <p className="text-xs text-gray-400">Ajustez la valeur en points attribuée à chaque action</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Ajustez la valeur en points attribuée à chaque action</p>
             </div>
           </div>
 
           <button
             onClick={resetToDefaultScores}
             className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+            title="Réinitialiser les valeurs par défaut"
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Réinitialiser
+            <RefreshCw className="w-3.5 h-3.5" /> Par défaut
           </button>
         </div>
 
         {/* Boolean Habits Coefficients */}
-        <div>
-          <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Coefficients Habitudes (Booléens)</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {Object.entries(HABIT_LABELS).map(([key, label]) => {
-              const k = key as keyof ScoringSettings;
-              return (
-                <div key={key} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
-                  <span className="text-xs font-medium">{label}</span>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={scoringSettings[k] ?? 0}
-                    onChange={(e) => handleScoreChange(k, parseFloat(e.target.value) || 0)}
-                    className="input-field w-16 py-1 text-center text-xs"
-                  />
-                </div>
-              );
-            })}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Habitudes (Oui/Non)</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(Object.keys(HABIT_LABELS) as Array<keyof typeof HABIT_LABELS>).map((key) => (
+              <div key={key} className="flex items-center justify-between bg-gray-100 dark:bg-white/5 p-2.5 rounded-xl">
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{HABIT_LABELS[key]}</span>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={scoringSettings[key] ?? 3}
+                  onChange={(e) => handleScoreChange(key as keyof ScoringSettings, parseFloat(e.target.value) || 0)}
+                  className="w-16 text-right text-xs bg-white dark:bg-white/10 border border-gray-300 dark:border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Numeric Habits Coefficients */}
-        <div>
-          <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Coefficients Numériques (Multiplicateurs)</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {Object.entries(NUMERIC_HABIT_LABELS).map(([key, label]) => {
-              const k = key as keyof ScoringSettings;
-              return (
-                <div key={key} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
-                  <span className="text-xs font-medium">{label}</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={scoringSettings[k] ?? 0}
-                    onChange={(e) => handleScoreChange(k, parseFloat(e.target.value) || 0)}
-                    className="input-field w-16 py-1 text-center text-xs"
-                  />
-                </div>
-              );
-            })}
+        <div className="space-y-3 pt-2">
+          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Business & Apprentissage (Points / Unité)</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(Object.keys(NUMERIC_HABIT_LABELS) as Array<keyof typeof NUMERIC_HABIT_LABELS>).map((key) => (
+              <div key={key} className="flex items-center justify-between bg-gray-100 dark:bg-white/5 p-2.5 rounded-xl">
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{NUMERIC_HABIT_LABELS[key]}</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={scoringSettings[key] ?? 1}
+                  onChange={(e) => handleScoreChange(key as keyof ScoringSettings, parseFloat(e.target.value) || 0)}
+                  className="w-16 text-right text-xs bg-white dark:bg-white/10 border border-gray-300 dark:border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Save Coefficients Button */}
-        <button
-          onClick={saveAlgorithmSettings}
-          disabled={savingSettings}
-          className="btn-primary w-full py-2.5 mt-2"
-          id="save-algorithm-btn"
-        >
-          {savingSettings ? (
-            'Enregistrement...'
-          ) : savedSuccess ? (
-            <>
-              <Check className="w-4 h-4" /> Coefficients enregistrés !
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" /> Sauvegarder les coefficients
-            </>
-          )}
-        </button>
+        {/* Save Button */}
+        <div className="pt-2">
+          <button
+            onClick={saveAlgorithmSettings}
+            disabled={savingSettings}
+            className="btn-primary w-full py-2.5 text-xs flex items-center justify-center gap-2"
+          >
+            {savedSuccess ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-300" /> Paramètres enregistrés !
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> {savingSettings ? 'Enregistrement...' : 'Sauvegarder l\'algorithme'}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
