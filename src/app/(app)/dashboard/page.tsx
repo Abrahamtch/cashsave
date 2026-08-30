@@ -6,7 +6,8 @@ import { DailyHabit, Transaction, Profile } from '@/types';
 import { calculateCurrentStreak, calculateRecordStreak, calculateWeeklyAverage, getScoreChartData, getExpensesByCategory, getMonthlyRevenueVsExpenses, formatCFA, getTrialDaysRemaining } from '@/lib/stats';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
-import { Flame, Trophy, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Crown } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { Flame, Trophy, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Crown, Check } from 'lucide-react';
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -14,10 +15,18 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [chartPeriod, setChartPeriod] = useState<7 | 30 | 365>(30);
   const [loading, setLoading] = useState(true);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     loadData();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('payment') === 'success' || params.get('payment') === 'success_demo') {
+        setShowPaymentSuccess(true);
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+      }
+    }
   }, []);
 
   async function loadData() {
