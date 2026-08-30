@@ -19,15 +19,44 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    handlePaymentSuccessCheck();
     loadData();
+  }, []);
+
+  async function handlePaymentSuccessCheck() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('payment') === 'success' || params.get('payment') === 'success_demo') {
         setShowPaymentSuccess(true);
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        
+        // Mettre à jour le localStorage démo
+        const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+        localStorage.setItem('cashsave_user', JSON.stringify({
+          ...localUser,
+          is_premium: true,
+          premium_expires_at: expiresAt,
+        }));
+
+        // Mettre à jour le profil Supabase si connecté
+        if (isLiveSupabaseConfigured()) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('profiles').update({
+                is_premium: true,
+                premium_expires_at: expiresAt,
+              }).eq('id', user.id);
+            }
+          } catch (e) {
+            console.error('Erreur activation premium Supabase:', e);
+          }
+        }
       }
     }
-  }, []);
+  }
 
   async function loadData() {
     const isLive = isLiveSupabaseConfigured();
