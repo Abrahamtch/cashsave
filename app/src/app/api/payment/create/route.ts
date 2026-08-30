@@ -7,27 +7,35 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const redirectUrl = `${appUrl}/dashboard?payment=success`;
+    const userId = user?.id || 'demo-user';
+    const userEmail = user?.email || 'demo@cashsave.app';
 
-    // Si pas de clé Maketou configurée pour les tests sandbox, rediriger vers sandbox mock
-    if (!process.env.MAKETOU_API_KEY || process.env.MAKETOU_API_KEY.includes('your_')) {
-      // Mock payment pour démo local si clés pas saisies
-      await supabase.from('profiles').update({
-        is_premium: true,
-        premium_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      }).eq('id', user.id);
+    const apiKey = process.env.MAKETOU_API_KEY;
+    const docId = process.env.MAKETOU_PRODUCT_DOCUMENT_ID;
 
-      return NextResponse.json({ url: `${appUrl}/dashboard?payment=mock_success` });
+    // Si le document_id du produit Maketou n'a pas encore été renseigné, simuler le succès du paiement en mode démo
+    if (!apiKey || apiKey.includes('your_') || !docId || docId.includes('your_')) {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      if (user) {
+        await supabase.from('profiles').update({
+          is_premium: true,
+          premium_expires_at: expiresAt,
+        }).eq('id', user.id);
+      }
+
+      // Mettre à jour le statut démo dans le local storage côté client
+      return NextResponse.json({
+        url: `${appUrl}/dashboard?payment=success_demo`,
+        is_demo: true,
+      });
     }
 
     const cart = await createMaketouCart({
-      userId: user.id,
-      userEmail: user.email || '',
+      userId,
+      userEmail,
       redirectUrl,
     });
 
