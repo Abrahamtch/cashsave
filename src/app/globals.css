@@ -1,119 +1,123 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Cash Save — Premium Theme System
-   Two moods, one identity.
+   Cash Save — Official Brand System
+   Identity: "Luxury Financial Productivity"
 
-   Dark  : Obsidian — deep, immersive, precise
-   Light : Stone    — warm off-white, refined, editorial
+   Primary Brand Color  : Emerald Luxe (#0E9F6E)
+   Primary Hover Color  : Deep Emerald (#087A56)
+   Premium Accent Color : Champagne Gold (#D6B36A)
 
-   RULE: ALL colors through CSS variables.
-         No hardcoded hex in components.
-         No Tailwind dark: modifiers.
+   Light Theme Background : #F7F7F3 (Warm Off-White)
+   Dark Theme Background  : #0B0E0D (Deep Emerald Charcoal)
    ============================================================ */
 
 /* ----------------------------------------------------------------
-   DARK THEME — Obsidian
-   Reference: premium fintech & productivity tools
-   Base palette: near-blacks with cool-blue undertone
-   Depth through tonal steps, not shadows
+   DARK THEME — Cash Save Charcoal & Emerald Luxe
    ---------------------------------------------------------------- */
 :root {
-  /* Backgrounds — 4 tonal steps */
-  --bg-base:       #09090E;   /* page floor — deepest */
-  --bg-surface:    #0C0C13;   /* sidebar, navigation */
-  --bg-card:       #141420;   /* elevated card surface */
-  --bg-card-hover: #1C1C2A;   /* interactive hover */
-  --bg-input:      rgba(255,255,255,0.055); /* form fields */
+  /* Backgrounds */
+  --bg-base:       #0B0E0D;   /* page background */
+  --bg-surface:    #131817;   /* sidebar, nav */
+  --bg-card:       #1A201E;   /* card surface */
+  --bg-card-hover: #222927;   /* hover state */
+  --bg-input:      rgba(255, 255, 255, 0.05);
 
   /* Borders */
-  --border:        rgba(255,255,255,0.07);
-  --border-strong: rgba(255,255,255,0.13);
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
-  /* Text — 3 levels */
-  --text-primary:   #EEEEF0;  /* headings, values */
-  --text-secondary: #8F9BB3;  /* labels, descriptions */
-  --text-tertiary:  #5C6680;  /* timestamps, placeholders */
-  --text-inverse:   #0F172A;  /* on accent fills */
+  /* Typography */
+  --text-primary:   #F2F4F1;  /* headings, financial figures */
+  --text-secondary: #929A96;  /* labels, captions */
+  --text-tertiary:  #626A66;  /* timestamps, placeholders */
+  --text-inverse:   #FFFFFF;
 
-  /* Accent — Indigo */
-  --accent:        #5B5EF4;
-  --accent-hover:  #7B7EF8;
-  --accent-subtle: rgba(91,94,244,0.11);
-  --accent-border: rgba(91,94,244,0.22);
+  /* Brand Primary — Emerald Luxe */
+  --accent:         #0E9F6E;
+  --accent-hover:   #087A56;
+  --accent-subtle:  rgba(14, 159, 110, 0.12);
+  --accent-border:  rgba(14, 159, 110, 0.24);
 
-  /* Semantic — stable across themes */
-  --color-success:       #10B981;
-  --color-success-bg:    rgba(16,185,129,0.10);
-  --color-success-border:rgba(16,185,129,0.20);
-  --color-danger:        #F04F68;
-  --color-danger-bg:     rgba(240,79,104,0.10);
-  --color-danger-border: rgba(240,79,104,0.20);
-  --color-warning:       #F5A623;
-  --color-warning-bg:    rgba(245,166,35,0.10);
-  --color-warning-border:rgba(245,166,35,0.20);
+  /* Brand Gold Accent — Champagne Gold (for milestones & achievements) */
+  --gold:           #D6B36A;
+  --gold-subtle:    rgba(214, 179, 106, 0.12);
+  --gold-border:    rgba(214, 179, 106, 0.25);
 
-  /* Shadows — depth, not decoration */
-  --shadow-sm:     0 1px 4px rgba(0,0,0,0.35);
-  --shadow-md:     0 4px 20px rgba(0,0,0,0.40), 0 1px 4px rgba(0,0,0,0.25);
-  --shadow-accent: 0 4px 20px rgba(91,94,244,0.25);
+  /* Financial & Status Semantics */
+  --color-success:        #0E9F6E;
+  --color-success-bg:     rgba(14, 159, 110, 0.10);
+  --color-success-border: rgba(14, 159, 110, 0.20);
+  --color-danger:         #F04F68;
+  --color-danger-bg:      rgba(240, 79, 104, 0.10);
+  --color-danger-border:  rgba(240, 79, 104, 0.20);
+  --color-warning:        #D6B36A;
+  --color-warning-bg:     rgba(214, 179, 106, 0.10);
+  --color-warning-border: rgba(214, 179, 106, 0.20);
+
+  /* Shadows */
+  --shadow-sm:     0 1px 4px rgba(0, 0, 0, 0.35);
+  --shadow-md:     0 4px 20px rgba(0, 0, 0, 0.40), 0 1px 4px rgba(0, 0, 0, 0.25);
+  --shadow-accent: 0 4px 20px rgba(14, 159, 110, 0.25);
 
   /* Navigation */
-  --nav-indicator: var(--accent);
+  --nav-indicator: #0E9F6E;
 }
 
 /* ----------------------------------------------------------------
-   LIGHT THEME — Stone
-   Reference: high-end editorial, luxury product interfaces
-   Base palette: warm off-whites with stone undertone
-   Depth through warm neutral layering, not brightness
+   LIGHT THEME — Cash Save Warm Stone & Emerald Luxe
    ---------------------------------------------------------------- */
 :root.light {
-  /* Backgrounds — 4 tonal steps, warm neutrals */
-  --bg-base:       #F4F3F1;   /* warm off-white — page floor */
-  --bg-surface:    #EEEDE9;   /* sidebar, slightly deeper stone */
-  --bg-card:       #FAFAF8;   /* card surface — lighter than base */
-  --bg-card-hover: #F1F0ED;   /* hover — matches base tone */
-  --bg-input:      #FFFFFF;   /* inputs: pure white to stand out */
+  /* Backgrounds */
+  --bg-base:       #F7F7F3;   /* official brand light floor */
+  --bg-surface:    #EFEFEA;   /* sidebar / navigation */
+  --bg-card:       #FFFFFF;   /* primary card surface */
+  --bg-card-hover: #F2F2ED;   /* hover state */
+  --bg-input:      #FFFFFF;
 
-  /* Borders — warm neutral, not blue-tinted */
-  --border:        #E0DDD8;
-  --border-strong: #C8C4BC;
+  /* Borders */
+  --border:        #E4E4DD;
+  --border-strong: #D1D1C5;
 
-  /* Text — high contrast, editorial */
-  --text-primary:   #1A1917;  /* near-black warm — headings */
-  --text-secondary: #4A4845;  /* warm gray — labels */
-  --text-tertiary:  #9C9891;  /* muted stone — timestamps */
-  --text-inverse:   #FAFAF8;  /* on accent fills */
+  /* Typography */
+  --text-primary:   #171A19;  /* official brand dark text */
+  --text-secondary: #737A76;  /* official brand secondary text */
+  --text-tertiary:  #9CA29E;  /* placeholders, timestamps */
+  --text-inverse:   #FFFFFF;
 
-  /* Accent — Indigo, slightly deeper for light bg */
-  --accent:        #4845E4;
-  --accent-hover:  #5B5EF4;
-  --accent-subtle: rgba(72,69,228,0.07);
-  --accent-border: rgba(72,69,228,0.18);
+  /* Brand Primary — Emerald Luxe */
+  --accent:         #0E9F6E;
+  --accent-hover:   #087A56;
+  --accent-subtle:  rgba(14, 159, 110, 0.08);
+  --accent-border:  rgba(14, 159, 110, 0.18);
 
-  /* Semantic — same across themes */
-  --color-success:       #0EA371;
-  --color-success-bg:    rgba(14,163,113,0.08);
-  --color-success-border:rgba(14,163,113,0.18);
-  --color-danger:        #DC3554;
-  --color-danger-bg:     rgba(220,53,84,0.08);
-  --color-danger-border: rgba(220,53,84,0.16);
-  --color-warning:       #D4890A;
-  --color-warning-bg:    rgba(212,137,10,0.08);
-  --color-warning-border:rgba(212,137,10,0.16);
+  /* Brand Gold Accent — Champagne Gold */
+  --gold:           #C5A156;
+  --gold-subtle:    rgba(197, 161, 86, 0.08);
+  --gold-border:    rgba(197, 161, 86, 0.20);
 
-  /* Shadows — warm and grounded */
-  --shadow-sm:     0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:     0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
-  --shadow-accent: 0 4px 16px rgba(72,69,228,0.18);
+  /* Financial & Status Semantics */
+  --color-success:        #0E9F6E;
+  --color-success-bg:     rgba(14, 159, 110, 0.08);
+  --color-success-border: rgba(14, 159, 110, 0.18);
+  --color-danger:         #DC3554;
+  --color-danger-bg:      rgba(220, 53, 84, 0.08);
+  --color-danger-border:  rgba(220, 53, 84, 0.16);
+  --color-warning:        #C5A156;
+  --color-warning-bg:     rgba(197, 161, 86, 0.08);
+  --color-warning-border: rgba(197, 161, 86, 0.18);
+
+  /* Shadows */
+  --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03);
+  --shadow-accent: 0 4px 16px rgba(14, 159, 110, 0.20);
 
   /* Navigation */
-  --nav-indicator: var(--accent);
+  --nav-indicator: #0E9F6E;
 }
 
 /* ----------------------------------------------------------------
-   @theme — Tailwind Design Tokens
+   Tailwind Font Token
    ---------------------------------------------------------------- */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -172,14 +176,18 @@ body {
 }
 
 /* ================================================================
-   GRADIENTS
+   BRAND GRADIENTS
    ================================================================ */
 .gradient-primary {
-  background: linear-gradient(135deg, #5B5EF4 0%, #7C3AED 100%);
+  background: linear-gradient(135deg, #0E9F6E 0%, #087A56 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #D6B36A 0%, #B8934A 100%);
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  background: linear-gradient(135deg, #0E9F6E 0%, #066B4A 100%);
 }
 
 .gradient-danger {
@@ -206,8 +214,8 @@ body {
   100% { background-position:  200% 0; }
 }
 @keyframes pulse-glow {
-  0%,100% { box-shadow: 0 0 0 0 rgba(91,94,244,0.4); }
-  50%     { box-shadow: 0 0 0 8px rgba(91,94,244,0); }
+  0%,100% { box-shadow: 0 0 0 0 rgba(14, 159, 110, 0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(14, 159, 110, 0); }
 }
 
 .animate-fade-in-up   { animation: fadeInUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
@@ -302,7 +310,7 @@ body {
 .btn-primary:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(91,94,244,0.38);
+  box-shadow: 0 6px 24px rgba(14, 159, 110, 0.38);
 }
 .btn-primary:active { transform: translateY(0); }
 

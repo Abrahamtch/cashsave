@@ -44,7 +44,7 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success' || params.get('payment') === 'success_demo') {
       setShowPaymentSuccess(true);
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, colors: ['#6366F1', '#8B5CF6', '#A78BFA'] });
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, colors: ['#0E9F6E', '#087A56', '#D6B36A'] });
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
       localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, is_premium: true, premium_expires_at: expiresAt }));

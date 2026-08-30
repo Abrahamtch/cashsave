@@ -47,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-md">
               <span className="text-white font-bold text-sm">CS</span>
             </div>
-            <span className="font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+            <span className="font-bold text-lg" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               Cash Save
             </span>
           </div>
@@ -119,7 +119,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center shadow-sm">
             <span className="text-white font-bold text-xs">CS</span>
           </div>
-          <span className="font-bold text-base bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+          <span className="font-bold text-base" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             Cash Save
           </span>
         </div>

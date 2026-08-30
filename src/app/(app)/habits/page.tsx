@@ -132,7 +132,7 @@ export default function HabitsPage() {
     setSaving(false);
     setSaved(true);
     if (scores.total_score >= 50) {
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B'] });
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#0E9F6E', '#087A56', '#D6B36A'] });
     }
     setTimeout(() => setSaved(false), 2500);
   };

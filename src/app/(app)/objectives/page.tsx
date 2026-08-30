@@ -150,7 +150,7 @@ export default function ObjectivesPage() {
       particleCount: 120,
       spread: 80,
       origin: { y: 0.6 },
-      colors: ['#6366F1', '#10B981', '#F59E0B'],
+      colors: ['#0E9F6E', '#087A56', '#D6B36A'],
     });
   };
 
