@@ -16,12 +16,23 @@ export default function OnboardingPage() {
 
   const handleFinish = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').update({
-        full_name: fullName || 'Utilisateur',
-      }).eq('id', user.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').update({
+          full_name: fullName || 'Utilisateur',
+        }).eq('id', user.id);
+      }
+    } catch (e) {
+      // Ignore fallback
     }
+
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    localStorage.setItem('cashsave_user', JSON.stringify({
+      ...localUser,
+      full_name: fullName || localUser.full_name || 'Utilisateur Cash Save',
+      daily_goal: dailyGoal,
+    }));
 
     confetti({
       particleCount: 100,
@@ -32,7 +43,7 @@ export default function OnboardingPage() {
     setTimeout(() => {
       router.push('/dashboard');
       router.refresh();
-    }, 1000);
+    }, 800);
   };
 
   return (

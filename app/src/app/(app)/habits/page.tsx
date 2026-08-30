@@ -32,17 +32,41 @@ export default function HabitsPage() {
     ]);
 
     if (profileRes.data) setProfile(profileRes.data);
+    else {
+      const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+      setProfile({
+        id: 'demo-user',
+        email: localUser.email || 'demo@cashsave.app',
+        full_name: localUser.full_name || 'Utilisateur Cash Save',
+        avatar_url: '',
+        trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+        is_premium: localUser.is_premium || false,
+        premium_expires_at: null,
+        scoring_settings: localUser.scoring_settings || {
+          bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
+          light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
+          content_published: 4, client_projects: 5, learning_minutes: 0.1
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
     
     if (habitRes.data) {
       setHabitData(habitRes.data);
     } else {
-      // Initialize empty habit data
-      const emptyData: Partial<DailyHabit> = {};
-      BOOLEAN_FIELDS.forEach(f => { emptyData[f] = false; });
-      NUMERIC_FIELDS.forEach(f => { emptyData[f] = 0; });
-      emptyData.comments = '';
-      emptyData.progression = '';
-      setHabitData(emptyData);
+      const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+      const found = localHabits.find((h: any) => h.date === selectedDate);
+      if (found) {
+        setHabitData(found);
+      } else {
+        const emptyData: Partial<DailyHabit> = {};
+        BOOLEAN_FIELDS.forEach(f => { emptyData[f] = false; });
+        NUMERIC_FIELDS.forEach(f => { emptyData[f] = 0; });
+        emptyData.comments = '';
+        emptyData.progression = '';
+        setHabitData(emptyData);
+      }
     }
     setLoading(false);
   }, [selectedDate]);
@@ -73,11 +97,9 @@ export default function HabitsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !profile) { setSaving(false); return; }
-
     const dataToSave = {
-      user_id: user.id,
+      id: habitData.id || `habit-${Date.now()}`,
+      user_id: 'demo-user',
       date: selectedDate,
       ...Object.fromEntries(BOOLEAN_FIELDS.map(f => [f, habitData[f] || false])),
       ...Object.fromEntries(NUMERIC_FIELDS.map(f => [f, habitData[f] || 0])),
@@ -86,25 +108,37 @@ export default function HabitsPage() {
       ...scores,
     };
 
-    const { error } = await supabase
-      .from('daily_habits')
-      .upsert(dataToSave, { onConflict: 'user_id,date' });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('daily_habits').upsert({ ...dataToSave, user_id: user.id }, { onConflict: 'user_id,date' });
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // Save to local storage
+    const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+    const existingIndex = localHabits.findIndex((h: any) => h.date === selectedDate);
+    if (existingIndex >= 0) {
+      localHabits[existingIndex] = dataToSave;
+    } else {
+      localHabits.push(dataToSave);
+    }
+    localStorage.setItem('cashsave_habits', JSON.stringify(localHabits));
 
     setSaving(false);
+    setSaved(true);
 
-    if (!error) {
-      setSaved(true);
-      // Confetti if score is high
-      if (scores.total_score >= 50) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B'],
-        });
-      }
-      setTimeout(() => setSaved(false), 2000);
+    if (scores.total_score >= 50) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B'],
+      });
     }
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {

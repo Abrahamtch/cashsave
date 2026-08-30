@@ -30,8 +30,38 @@ export default function DashboardPage() {
     ]);
 
     if (profileRes.data) setProfile(profileRes.data);
-    if (habitsRes.data) setHabits(habitsRes.data);
-    if (transactionsRes.data) setTransactions(transactionsRes.data);
+    else {
+      const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+      setProfile({
+        id: 'demo-user',
+        email: localUser.email || 'demo@cashsave.app',
+        full_name: localUser.full_name || 'Utilisateur Cash Save',
+        avatar_url: '',
+        trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+        is_premium: localUser.is_premium || false,
+        premium_expires_at: null,
+        scoring_settings: localUser.scoring_settings || {
+          bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
+          light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2, calls_made: 3,
+          content_published: 4, client_projects: 5, learning_minutes: 0.1
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    if (habitsRes.data && habitsRes.data.length > 0) setHabits(habitsRes.data);
+    else {
+      const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+      setHabits(localHabits);
+    }
+
+    if (transactionsRes.data && transactionsRes.data.length > 0) setTransactions(transactionsRes.data);
+    else {
+      const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+      setTransactions(localTx);
+    }
+
     setLoading(false);
   }
 

@@ -28,14 +28,26 @@ export default function CashPage() {
   useEffect(() => { loadTransactions(); }, []);
 
   async function loadTransactions() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false });
-    if (data) setTransactions(data);
+    let txList: Transaction[] = [];
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false });
+        if (data && data.length > 0) txList = data;
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    if (txList.length === 0) {
+      txList = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    }
+
+    setTransactions(txList);
     setLoading(false);
   }
 
@@ -52,29 +64,44 @@ export default function CashPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingTx(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSavingTx(false); return; }
 
-    const { error } = await supabase.from('transactions').insert({
-      user_id: user.id,
+    const newTx: Transaction = {
+      id: `tx-${Date.now()}`,
+      user_id: 'demo-user',
       type: modalType,
       amount: parseFloat(amount),
       category,
       date,
       note,
       is_satisfied: modalType === 'EXPENSE' ? isSatisfied : null,
-    });
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('transactions').insert({ ...newTx, user_id: user.id });
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    localTx.unshift(newTx);
+    localStorage.setItem('cashsave_transactions', JSON.stringify(localTx));
 
     setSavingTx(false);
-    if (!error) {
-      setShowModal(false);
-      loadTransactions();
-    }
+    setShowModal(false);
+    loadTransactions();
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('transactions').delete().eq('id', id);
     setTransactions(prev => prev.filter(t => t.id !== id));
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    localStorage.setItem('cashsave_transactions', JSON.stringify(localTx.filter((t: any) => t.id !== id)));
+    try {
+      await supabase.from('transactions').delete().eq('id', id);
+    } catch (e) {}
   };
 
   const summary = calculateFinancialSummary(transactions);
