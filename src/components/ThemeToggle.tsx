@@ -1,49 +1,87 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-export function ThemeToggle({ className = '' }: { className?: string }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+export function ThemeToggle() {
+  const [isDark, setIsDark] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = (localStorage.getItem('cashsave-theme') as 'dark' | 'light') || 'dark';
-    setTheme(savedTheme);
-    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    const saved = localStorage.getItem('cashsave-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = saved ? saved === 'dark' : prefersDark;
+    applyTheme(dark);
+    setIsDark(dark);
   }, []);
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('cashsave-theme', nextTheme);
-    document.documentElement.classList.toggle('dark', nextTheme === 'dark');
-    document.documentElement.setAttribute('data-theme', nextTheme);
-  };
-
-  if (!mounted) {
-    return <div className={`w-9 h-9 rounded-xl bg-white/5 ${className}`} />;
+  function applyTheme(dark: boolean) {
+    const root = document.documentElement;
+    if (dark) {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('cashsave-theme', dark ? 'dark' : 'light');
   }
+
+  function toggle() {
+    const next = !isDark;
+    setIsDark(next);
+    applyTheme(next);
+  }
+
+  if (!mounted) return null;
 
   return (
     <button
-      onClick={toggleTheme}
-      type="button"
-      aria-label="Changer de thème (Sombre / Clair)"
-      title={theme === 'dark' ? 'Passer au mode Clair ☀️' : 'Passer au mode Sombre 🌙'}
-      className={`p-2 rounded-xl border transition-all duration-200 flex items-center justify-center ${
-        theme === 'dark'
-          ? 'bg-white/10 border-white/10 text-amber-300 hover:bg-white/15 hover:border-amber-400/40 shadow-sm'
-          : 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300 shadow-sm'
-      } ${className}`}
+      onClick={toggle}
+      aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      title={isDark ? 'Mode clair' : 'Mode sombre'}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '34px',
+        height: '34px',
+        borderRadius: '10px',
+        border: '1px solid var(--border)',
+        background: 'var(--bg-card-hover)',
+        color: 'var(--text-secondary)',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        outline: 'none',
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget;
+        el.style.borderColor = 'var(--accent)';
+        el.style.color = 'var(--accent)';
+        el.style.background = 'var(--accent-subtle)';
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget;
+        el.style.borderColor = 'var(--border)';
+        el.style.color = 'var(--text-secondary)';
+        el.style.background = 'var(--bg-card-hover)';
+      }}
     >
-      {theme === 'dark' ? (
-        <Sun className="w-5 h-5 transition-transform duration-300 hover:rotate-45" />
-      ) : (
-        <Moon className="w-5 h-5 transition-transform duration-300 hover:-rotate-12" />
-      )}
+      <span
+        style={{
+          display: 'flex',
+          transform: isDark ? 'rotate(0deg)' : 'rotate(180deg)',
+          transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+      >
+        {isDark ? (
+          <Sun size={16} strokeWidth={2} />
+        ) : (
+          <Moon size={16} strokeWidth={2} />
+        )}
+      </span>
     </button>
   );
 }
