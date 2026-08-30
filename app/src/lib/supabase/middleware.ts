@@ -9,8 +9,9 @@ const PROTECTED_MUTATION_ROUTES = ['/habits', '/cash', '/tasks', '/objectives'];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_anon_key';
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = (rawUrl && rawUrl.startsWith('http')) ? rawUrl : 'https://demo.supabase.co';
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'demo_anon_key';
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
