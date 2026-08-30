@@ -34,38 +34,56 @@ export default function PaywallPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-8 gradient-mesh">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg animate-fade-in-up space-y-6">
         {/* Badge Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
-            <Crown className="w-4 h-4" /> Passer à Cash Save Premium
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{
+              background: 'var(--color-warning-bg)',
+              color: 'var(--color-warning)',
+              border: '1px solid var(--color-warning-border)',
+            }}
+          >
+            <Crown size={14} strokeWidth={1.5} /> Passer à Cash Save Premium
           </div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-amber-300 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+          <h1
+            className="text-3xl font-semibold tracking-tight"
+            style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}
+          >
             Débloquez 100% de votre potentiel
           </h1>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">
+          <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--text-tertiary)' }}>
             Votre période d&apos;essai de 42 jours est terminée. Vos données sont conservées en toute sécurité.
           </p>
         </div>
 
         {/* Pricing Card */}
-        <div className="glass-card p-6 border-indigo-500/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-white/10">
+        <div className="glass-card p-6 relative overflow-hidden">
+          <div
+            className="flex items-baseline justify-between mb-6 pb-4"
+            style={{ borderBottom: '1px solid var(--border)' }}
+          >
             <div>
-              <span className="text-xs text-gray-400 block font-medium">Abonnement Mensuel</span>
-              <span className="text-3xl font-black text-white">3 000 FCFA</span>
-              <span className="text-xs text-gray-400 font-normal"> / mois</span>
+              <span className="text-xs block font-medium" style={{ color: 'var(--text-tertiary)' }}>Abonnement Mensuel</span>
+              <span className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>3 000 FCFA</span>
+              <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}> / mois</span>
             </div>
-            <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+            <span
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-md"
+              style={{
+                background: 'var(--color-success-bg)',
+                color: 'var(--color-success)',
+                border: '1px solid var(--color-success-border)',
+              }}
+            >
               Sans engagement
             </span>
           </div>
 
           {/* Features */}
-          <ul className="space-y-3 text-xs text-gray-300 mb-6">
+          <ul className="space-y-3 text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
             {[
               'Suivi quotidien des habitudes & algorithme de scoring',
               'Gestion de trésorerie & calcul du bénéfice net',
@@ -76,28 +94,42 @@ export default function PaywallPage() {
               'Accès mobile PWA offline & sauvegardes cloud sécurisées',
             ].map((feature, idx) => (
               <li key={idx} className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 size={15} strokeWidth={2} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '1px' }} />
                 <span>{feature}</span>
               </li>
             ))}
           </ul>
 
           {/* Payment Providers */}
-          <div className="bg-white/5 rounded-xl p-3 mb-6">
-            <p className="text-[11px] text-gray-400 mb-2 font-medium flex items-center gap-1.5">
-              <Smartphone className="w-3.5 h-3.5 text-indigo-400" /> Moyens de paiement acceptés :
+          <div
+            className="rounded-xl p-3 mb-6"
+            style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
+          >
+            <p className="text-[11px] mb-2 font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+              <Smartphone size={13} strokeWidth={1.5} style={{ color: 'var(--accent)' }} /> Moyens de paiement acceptés :
             </p>
-            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-gray-300">
-              <span className="bg-white/10 px-2 py-1 rounded">Flooz</span>
-              <span className="bg-white/10 px-2 py-1 rounded">TMoney</span>
-              <span className="bg-white/10 px-2 py-1 rounded">Orange Money</span>
-              <span className="bg-white/10 px-2 py-1 rounded">MTN MoMo</span>
-              <span className="bg-white/10 px-2 py-1 rounded">Carte Bancaire (Visa/Mastercard)</span>
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {['Flooz', 'TMoney', 'Orange Money', 'MTN MoMo', 'Carte Bancaire (Visa/Mastercard)'].map((p) => (
+                <span
+                  key={p}
+                  className="px-2 py-1 rounded-md"
+                  style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                >
+                  {p}
+                </span>
+              ))}
             </div>
           </div>
 
           {error && (
-            <div className="mb-4 text-rose-400 text-xs bg-rose-500/10 rounded-lg p-3 border border-rose-500/20">
+            <div
+              className="mb-4 text-xs rounded-lg p-3"
+              style={{
+                color: 'var(--color-danger)',
+                background: 'var(--color-danger-bg)',
+                border: '1px solid var(--color-danger-border)',
+              }}
+            >
               {error}
             </div>
           )}
@@ -106,20 +138,20 @@ export default function PaywallPage() {
           <button
             onClick={handleSubscribe}
             disabled={loading}
-            className="btn-primary w-full py-3 text-base font-bold shadow-lg shadow-indigo-500/25"
+            className="btn-primary w-full py-3.5 text-sm font-semibold"
             id="paywall-submit-btn"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                S&apos;abonner pour 3 000 FCFA <ArrowRight className="w-5 h-5" />
+                S&apos;abonner pour 3 000 FCFA <ArrowRight size={16} strokeWidth={2} />
               </>
             )}
           </button>
 
-          <p className="text-center text-[10px] text-gray-500 mt-3 flex items-center justify-center gap-1">
-            <Lock className="w-3 h-3 text-gray-500" /> Paiement sécurisé via Maketou Payment Gateway
+          <p className="text-center text-[10px] mt-3 flex items-center justify-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+            <Lock size={12} strokeWidth={1.5} /> Paiement sécurisé via Maketou Payment Gateway
           </p>
         </div>
       </div>

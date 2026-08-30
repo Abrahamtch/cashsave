@@ -5,9 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Objective, ObjectiveStatus } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Sparkles } from 'lucide-react';
+import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 
 export default function ObjectivesPage() {
@@ -157,10 +156,10 @@ export default function ObjectivesPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 skeleton" />
+      <div className="space-y-6 animate-fade-in-up">
+        <div className="h-6 w-40 skeleton rounded-md" />
         <div className="grid grid-cols-1 gap-3">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-32 skeleton" />)}
+          {[...Array(3)].map((_, i) => <div key={i} className="h-32 skeleton rounded-xl" />)}
         </div>
       </div>
     );
@@ -171,44 +170,59 @@ export default function ObjectivesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Objectifs</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Suivi de vos grands objectifs stratégiques</p>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            Objectifs
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            Suivi de vos grands objectifs stratégiques
+          </p>
         </div>
         <button
           onClick={openCreateModal}
           className="btn-primary"
           id="add-objective-btn"
         >
-          <Plus className="w-4 h-4" /> Nouvel objectif
+          <Plus size={15} strokeWidth={2} /> Nouvel objectif
         </button>
       </div>
 
       {/* Objectives List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {objectives.length === 0 ? (
-          <div className="glass-card p-10 text-center text-gray-500">
-            <Target className="w-10 h-10 mx-auto mb-3 opacity-30 text-indigo-400" />
-            <p className="text-sm">Aucun objectif défini pour le moment.</p>
-            <button onClick={openCreateModal} className="btn-secondary text-xs mt-3">
+          <div className="glass-card p-12 text-center flex flex-col items-center justify-center">
+            <Target size={36} strokeWidth={1} style={{ color: 'var(--accent)', opacity: 0.5, marginBottom: '12px' }} />
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Aucun objectif défini pour le moment.
+            </p>
+            <button onClick={openCreateModal} className="btn-secondary text-xs mt-4">
               Définir mon premier objectif
             </button>
           </div>
         ) : (
           objectives.map((obj) => (
-            <div key={obj.id} className="glass-card p-5 space-y-4 hover:border-indigo-500/30 transition-all">
+            <div key={obj.id} className="glass-card p-5 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-base">{obj.title}</h3>
+                    <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+                      {obj.title}
+                    </h3>
                     {obj.status === 'COMPLETED' && (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-400 font-medium px-2 py-0.5 rounded-full bg-emerald-500/10">
-                        <CheckCircle className="w-3 h-3" /> Atteint
+                      <span
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                        style={{
+                          background: 'var(--color-success-bg)',
+                          color: 'var(--color-success)',
+                          border: '1px solid var(--color-success-border)',
+                        }}
+                      >
+                        <CheckCircle size={12} strokeWidth={2} /> Atteint
                       </span>
                     )}
                   </div>
                   {obj.deadline && (
-                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                      <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                    <p className="text-xs flex items-center gap-1 mt-1 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                      <Calendar size={13} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
                       Échéance : {format(new Date(obj.deadline), 'dd MMMM yyyy', { locale: fr })}
                     </p>
                   )}
@@ -217,15 +231,19 @@ export default function ObjectivesPage() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(obj)}
-                    className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    aria-label="Éditer l'objectif"
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Edit3 size={15} strokeWidth={1.5} />
                   </button>
                   <button
                     onClick={() => handleDelete(obj.id)}
-                    className="p-1.5 text-gray-400 hover:text-rose-400 rounded-lg hover:bg-white/5 transition-colors"
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    aria-label="Supprimer l'objectif"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 size={15} strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
@@ -233,8 +251,8 @@ export default function ObjectivesPage() {
               {/* Progress Bar & Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-400">Progression</span>
-                  <span className="font-bold text-indigo-400">{obj.progress}%</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>Progression</span>
+                  <span className="font-semibold" style={{ color: 'var(--accent)' }}>{obj.progress}%</span>
                 </div>
                 <div className="progress-bar">
                   <div
@@ -249,7 +267,8 @@ export default function ObjectivesPage() {
                   step="5"
                   value={obj.progress}
                   onChange={(e) => handleQuickProgressUpdate(obj.id, parseInt(e.target.value))}
-                  className="w-full accent-indigo-500 cursor-pointer"
+                  className="w-full cursor-pointer"
+                  style={{ accentColor: 'var(--accent)' }}
                 />
               </div>
             </div>
@@ -261,18 +280,25 @@ export default function ObjectivesPage() {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
                 {editingObjective ? "Éditer l'objectif" : 'Nouvel objectif'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
+                aria-label="Fermer"
+              >
+                <X size={15} strokeWidth={1.5} />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Intitulé de l&apos;objectif</label>
+                <label className="block text-xs mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Intitulé de l&apos;objectif
+                </label>
                 <input
                   type="text"
                   value={title}
@@ -284,7 +310,9 @@ export default function ObjectivesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Échéance</label>
+                <label className="block text-xs mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Échéance
+                </label>
                 <input
                   type="date"
                   value={deadline}
@@ -294,7 +322,7 @@ export default function ObjectivesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">
+                <label className="block text-xs mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                   Progression initiale ({progress}%)
                 </label>
                 <input
@@ -304,14 +332,15 @@ export default function ObjectivesPage() {
                   step="5"
                   value={progress}
                   onChange={(e) => setProgress(parseInt(e.target.value))}
-                  className="w-full accent-indigo-500"
+                  className="w-full cursor-pointer"
+                  style={{ accentColor: 'var(--accent)' }}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={saving}
-                className="btn-primary w-full py-2.5 mt-2"
+                className="btn-primary w-full py-3 mt-2"
               >
                 {saving ? 'Enregistrement...' : editingObjective ? 'Mettre à jour' : 'Créer l\'objectif'}
               </button>

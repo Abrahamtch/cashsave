@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     try {
       const { error: sbError } = await supabase.auth.signInWithPassword({ email, password });
-      
+
       document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
       if (!localStorage.getItem('cashsave_user')) {
         localStorage.setItem('cashsave_user', JSON.stringify({
@@ -70,15 +70,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-4 gradient-mesh">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4">
       <div className="text-center mb-8 animate-fade-in-up">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4 shadow-lg shadow-indigo-500/25">
-          <Sparkles className="w-8 h-8 text-white" />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl gradient-primary mb-4 shadow-lg">
+          <Sparkles className="w-7 h-7 text-white" />
         </div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
           Cash Save
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+        <p className="text-sm mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
           Connectez-vous pour accéder à votre espace
         </p>
       </div>
@@ -87,11 +87,11 @@ export default function LoginPage() {
         <div className="glass-card p-6">
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+              <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                 <input
                   type="email"
                   value={email}
@@ -105,11 +105,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+              <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Mot de passe
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -122,7 +122,9 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  aria-label="Afficher / masquer le mot de passe"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -130,7 +132,14 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="text-rose-400 text-xs bg-rose-500/10 rounded-lg p-3 border border-rose-500/20">
+              <div
+                className="text-xs rounded-lg p-3"
+                style={{
+                  color: 'var(--color-danger)',
+                  background: 'var(--color-danger-bg)',
+                  border: '1px solid var(--color-danger-border)',
+                }}
+              >
                 {error}
               </div>
             )}
@@ -138,11 +147,11 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               id="login-submit"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 'Se connecter'
               )}
@@ -150,15 +159,15 @@ export default function LoginPage() {
           </form>
 
           <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-gray-500">ou</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>ou</span>
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
           </div>
 
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="btn-secondary w-full"
+            className="btn-secondary w-full py-2.5"
             id="login-google"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -171,9 +180,9 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <p className="text-center text-sm mt-6" style={{ color: 'var(--text-tertiary)' }}>
           Pas encore de compte ?{' '}
-          <Link href="/auth/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
+          <Link href="/auth/register" className="font-semibold transition-colors" style={{ color: 'var(--accent)' }}>
             S&apos;inscrire gratuitement
           </Link>
         </p>

@@ -1,237 +1,665 @@
 ---
+
 name: premium-theme-system
-description: >
-  Système de thèmes Dark/Light premium pour Cash Save.
-  Active ce skill pour tout ce qui concerne la gestion des couleurs,
-  variables CSS, bascule de thème, anti-flash, et cohérence visuelle
-  entre le mode sombre et le mode clair.
+description: Designs and implements refined, luxurious and visually captivating light and dark themes for modern web interfaces. Use whenever creating, redesigning, or improving a light mode, dark mode, theme system, color system, or theme switcher.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Premium Theme System Skill
+
+## Role
+
+Act as a senior digital art director, UI designer and frontend design-system specialist.
+
+Your responsibility is to create light and dark interfaces that feel:
+
+* luxurious
+* refined
+* minimalist
+* elegant
+* modern
+* immersive
+* visually captivating
+* calm
+* intentional
+* highly polished
+
+The interface must never feel visually overloaded.
+
+The goal is not to make the interface "fancy".
+
+The goal is to make it feel expensive through:
+
+* restraint
+* contrast
+* typography
+* spacing
+* depth
+* materiality
+* visual hierarchy
+* subtle motion
+* consistency
+
+Take inspiration from the design quality of premium technology, automotive, architecture, fashion and luxury brands without copying their visual identity, layouts or distinctive assets.
+
 ---
 
-# Premium Theme System — Cash Save
+# 1. Core Philosophy
 
-## Rôle
+Follow this principle:
 
-Garantir que chaque élément de l'interface respecte le système de thèmes
-Dark/Light défini pour Cash Save, avec une cohérence absolue et zéro
-régression visuelle lors du changement de mode.
+> Luxury comes from restraint, not decoration.
 
----
+Avoid adding visual effects simply to make the interface look impressive.
 
-## 1. Architecture du système
+Prefer:
 
-### Principe fondamental
+* fewer colors
+* stronger contrast
+* generous whitespace
+* precise alignment
+* subtle depth
+* sophisticated typography
+* controlled visual hierarchy
+* carefully selected accents
 
-> Toutes les couleurs passent exclusivement par des variables CSS.
-> Aucune couleur hardcodée. Aucune classe Tailwind `dark:`.
+Every color and visual effect must have a purpose.
 
-### Fichier de référence
-
-Le fichier source des variables est :
-`src/app/globals.css`
-
-### Activation des thèmes
-
-Les thèmes sont activés par une classe sur `document.documentElement` :
-
-| Classe | Mode |
-|--------|------|
-| `.dark` | Mode sombre (défaut) |
-| `.light` | Mode clair |
+If removing an element makes the interface better, remove it.
 
 ---
 
-## 2. Variables CSS à utiliser
+# 2. Light Mode
 
-### Backgrounds
+Light mode must NOT simply be:
+
+* white background
+* black text
+* gray cards
+* blue buttons
+
+Instead, create a sophisticated tonal system.
+
+Prefer layered neutrals such as:
+
+* warm whites
+* cool whites
+* soft ivory
+* refined gray
+* graphite
+* muted secondary tones
+
+Avoid using pure white everywhere unless it is intentional.
+
+Avoid excessive contrast between every surface.
+
+Create subtle differences between:
+
+* page background
+* section background
+* elevated surface
+* cards
+* borders
+* inputs
+* navigation
+* overlays
+
+Example conceptual hierarchy:
+
+Background
+→ Surface
+→ Elevated surface
+→ Interactive surface
+
+Each layer should be distinguishable without looking noisy.
+
+---
+
+# 3. Dark Mode
+
+Dark mode must NOT simply invert the light theme.
+
+Never assume:
+
+`white → black`
+
+and
+
+`black → white`
+
+is a good dark-mode implementation.
+
+Use sophisticated dark surfaces such as:
+
+* near-black
+* charcoal
+* graphite
+* deep neutral
+* deep tinted surfaces when appropriate
+
+Avoid using pure black everywhere unless the visual concept specifically requires it.
+
+Dark interfaces should create depth through subtle tonal differences.
+
+Example:
+
+* page background: deepest tone
+* sections: slightly lighter
+* cards: elevated dark surface
+* borders: subtle low-contrast line
+* primary text: soft high-contrast tone
+* secondary text: muted tone
+* accent: controlled highlight
+
+The result should feel immersive rather than gloomy.
+
+---
+
+# 4. Theme Is a Design System
+
+Do not hardcode colors throughout components.
+
+Create semantic design tokens.
+
+Prefer variables such as:
 
 ```css
-var(--bg-base)        /* Fond principal de la page */
-var(--bg-surface)     /* Fond de la sidebar, header */
-var(--bg-card)        /* Fond des cartes et surfaces élevées */
-var(--bg-card-hover)  /* Fond au survol, inputs */
-var(--bg-input)       /* Fond des champs de formulaire */
+--background
+--foreground
+--surface
+--surface-elevated
+--surface-hover
+--border
+--border-subtle
+--text-primary
+--text-secondary
+--text-muted
+--accent
+--accent-hover
+--accent-foreground
+--success
+--warning
+--error
 ```
 
-### Bordures
+The actual color values should change between themes while the semantic meaning remains consistent.
+
+Components should consume semantic tokens rather than raw colors.
+
+Bad:
 
 ```css
-var(--border)         /* Bordures légères — dividers, cartes */
-var(--border-strong)  /* Bordures plus visibles — focus, accent */
+background: #ffffff;
+color: #111111;
 ```
 
-### Texte
+Better:
 
 ```css
-var(--text-primary)    /* Texte principal — titres, valeurs importantes */
-var(--text-secondary)  /* Texte secondaire — labels, descriptions */
-var(--text-tertiary)   /* Texte discret — placeholders, métadonnées */
-var(--text-inverse)    /* Texte sur fond coloré (ex: bouton primary) */
+background: var(--background);
+color: var(--text-primary);
 ```
 
-### Accent
+---
+
+# 5. Color Hierarchy
+
+Use a limited palette.
+
+A typical premium interface should have:
+
+* 1 dominant background family
+* 1 surface family
+* 1 text family
+* 1 accent family
+* semantic feedback colors when necessary
+
+Do not introduce a new color for every section.
+
+Color should establish hierarchy rather than create noise.
+
+---
+
+# 6. Accent Colors
+
+Accent colors should be used strategically.
+
+Good uses:
+
+* primary CTA
+* active navigation state
+* important links
+* selected controls
+* highlights
+* meaningful visual details
+
+Do NOT use the accent color everywhere.
+
+If everything is highlighted, nothing is highlighted.
+
+The accent should feel valuable.
+
+---
+
+# 7. Contrast
+
+Maintain strong readability while avoiding harsh visual contrast.
+
+Primary text should have strong contrast.
+
+Secondary text should be visibly less dominant but still readable.
+
+Muted text must remain accessible.
+
+Do not sacrifice accessibility to achieve a luxurious appearance.
+
+Check contrast for:
+
+* body text
+* headings
+* buttons
+* links
+* inputs
+* placeholders
+* navigation
+* disabled states
+
+---
+
+# 8. Surfaces and Depth
+
+Create hierarchy through subtle surface differences.
+
+Use:
+
+* tonal contrast
+* subtle borders
+* restrained shadows
+* controlled blur
+* carefully used gradients
+
+Do not rely on enormous shadows.
+
+Avoid:
+
+* excessive glow
+* heavy drop shadows
+* neon effects
+* excessive glassmorphism
+* overly bright borders
+
+Premium depth should be subtle.
+
+---
+
+# 9. Borders
+
+Borders should be quiet.
+
+Prefer:
+
+* low-contrast borders
+* thin separators
+* subtle outlines
+
+Avoid:
+
+* thick borders
+* bright borders everywhere
+* unnecessary boxes around every element
+
+A border should clarify structure, not draw attention to itself.
+
+---
+
+# 10. Shadows
+
+Use shadows primarily to communicate elevation.
+
+A premium shadow should generally be:
+
+* soft
+* diffused
+* restrained
+* consistent
+
+Do not give every component a shadow.
+
+Flat surfaces can often be separated through tonal contrast alone.
+
+---
+
+# 11. Gradients
+
+Gradients are allowed but must be intentional.
+
+Use them for:
+
+* subtle background depth
+* hero atmosphere
+* accent transitions
+* image overlays
+* atmospheric highlights
+
+Avoid:
+
+* generic purple-blue gradients
+* excessive rainbow gradients
+* gradients on every button
+* gradients that reduce text readability
+
+A gradient should enhance the composition, not become the composition.
+
+---
+
+# 12. Luxury Visual Language
+
+When appropriate, consider subtle combinations such as:
+
+### Minimal monochrome
+
+Near-white / graphite / black / subtle gray
+
+### Warm luxury
+
+Ivory / champagne / warm gray / deep charcoal
+
+### Modern technology
+
+Cool white / graphite / silver-gray / restrained accent
+
+### Premium editorial
+
+Off-white / black / muted gray / one sophisticated accent
+
+### Cinematic dark
+
+Near-black / charcoal / soft white / controlled highlight
+
+Choose the palette according to the brand.
+
+Never apply the same palette blindly to every project.
+
+---
+
+# 13. Typography and Themes
+
+Typography must remain excellent in both modes.
+
+Check:
+
+* heading contrast
+* body readability
+* font weight
+* line height
+* letter spacing
+* hierarchy
+
+Avoid making dark-mode text pure white everywhere.
+
+Slightly softened text can create a more refined appearance while maintaining sufficient contrast.
+
+Do not reduce readability merely to make the design look subtle.
+
+---
+
+# 14. Images and Media
+
+Images must work correctly in both themes.
+
+Check:
+
+* image contrast
+* overlays
+* captions
+* borders
+* shadows
+* background interaction
+
+If an image looks excellent in light mode but disappears in dark mode, adapt the treatment.
+
+Do not unnecessarily modify the original image.
+
+Use overlays only when they improve readability or composition.
+
+---
+
+# 15. Components Must Support Both Themes
+
+Every component must be evaluated in both modes.
+
+Check:
+
+* navbar
+* hero
+* buttons
+* cards
+* forms
+* inputs
+* dropdowns
+* modals
+* tables
+* testimonials
+* pricing sections
+* footers
+* navigation
+* tooltips
+* notifications
+
+Never assume a component designed for light mode automatically works in dark mode.
+
+---
+
+# 16. Theme Switching
+
+Theme switching should feel instantaneous and polished.
+
+When appropriate:
+
+* respect the user's system preference
+* support manual switching
+* persist the user's preference
+* avoid unnecessary flashing during page load
+* ensure correct initial theme detection
+
+If animation is used during theme switching, keep it subtle.
+
+Do not use dramatic transitions that delay interaction.
+
+---
+
+# 17. Theme Toggle
+
+Theme toggles must look like professional interface controls.
+
+Avoid using emojis such as:
+
+☀️ 🌙
+
+as the primary UI icon.
+
+Use a professional icon library such as:
+
+* Lucide
+* Phosphor
+* Radix Icons
+* Heroicons
+
+Prefer a simple sun/moon icon or another minimal professional symbol.
+
+The toggle should have:
+
+* clear affordance
+* appropriate touch target
+* subtle hover state
+* visible focus state
+* consistent styling with the rest of the interface
+
+---
+
+# 18. Micro-interactions
+
+Use subtle transitions when changing:
+
+* background
+* surface
+* border
+* text
+* accent
+* shadows
+
+Do not animate every property unnecessarily.
+
+Transitions should feel:
+
+* smooth
+* controlled
+* fast enough to remain responsive
+* almost invisible
+
+Respect:
 
 ```css
-var(--accent)          /* Couleur principale d'action — indigo */
-var(--accent-hover)    /* Accent au survol */
-var(--accent-subtle)   /* Fond léger de l'accent (états actifs) */
-```
-
-### Ombres
-
-```css
-var(--shadow-sm)       /* Ombre légère — cartes au repos */
-var(--shadow-md)       /* Ombre standard — cartes au survol, modals */
-var(--shadow-accent)   /* Ombre colorée — boutons primaires */
-```
-
-### Couleurs sémantiques
-
-```css
-var(--color-success)        /* Vert — revenus, succès */
-var(--color-success-light)  /* Vert clair */
-var(--color-danger)         /* Rouge — dépenses, erreurs */
-var(--color-danger-light)   /* Rouge clair */
-var(--color-warning)        /* Ambre — alertes, séries */
-var(--color-warning-light)  /* Ambre clair */
+prefers-reduced-motion
 ```
 
 ---
 
-## 3. Valeurs des thèmes
+# 19. Responsive Theme Design
 
-### Mode Sombre (`.dark`)
+Theme quality must remain consistent across:
 
-| Variable | Valeur |
-|----------|--------|
-| `--bg-base` | `#0A0A0F` |
-| `--bg-surface` | `#0D0D14` |
-| `--bg-card` | `#16161E` |
-| `--bg-card-hover` | `#1E1E2A` |
-| `--border` | `rgba(255,255,255,0.08)` |
-| `--border-strong` | `rgba(255,255,255,0.14)` |
-| `--text-primary` | `#F1F5F9` |
-| `--text-secondary` | `#94A3B8` |
-| `--text-tertiary` | `#64748B` |
-| `--accent` | `#6366F1` |
+* mobile
+* tablet
+* desktop
+* large displays
 
-### Mode Clair (`.light`)
+Do not allow dark-mode elements to become visually cramped on mobile.
 
-| Variable | Valeur |
-|----------|--------|
-| `--bg-base` | `#FFFFFF` |
-| `--bg-surface` | `#F8F9FF` |
-| `--bg-card` | `#FFFFFF` |
-| `--bg-card-hover` | `#F3F4FD` |
-| `--border` | `#E8EAFF` |
-| `--border-strong` | `#C7CAF0` |
-| `--text-primary` | `#0F172A` |
-| `--text-secondary` | `#475569` |
-| `--text-tertiary` | `#94A3B8` |
-| `--accent` | `#4F46E5` |
+Maintain the same hierarchy while adapting spacing and component dimensions.
 
 ---
 
-## 4. Composant ThemeToggle
+# 20. Avoid Generic AI Aesthetics
 
-Le composant de bascule est situé dans :
-`src/components/ThemeToggle.tsx`
+Do NOT automatically produce:
 
-### Comportement
+* purple neon dark mode
+* blue gradient buttons
+* glowing cards
+* excessive glassmorphism
+* huge rounded containers
+* emoji icons
+* excessive blur
+* random colorful backgrounds
+* unnecessary gradients
+* excessive shadows
+* "cyberpunk" styling without a reason
 
-1. Au montage, lit `localStorage.getItem('cashsave-theme')`
-2. Fallback sur `prefers-color-scheme` du système
-3. Applique `.dark` ou `.light` sur `document.documentElement`
-4. Stocke le choix dans `localStorage` sous la clé `cashsave-theme`
+Dark mode does not mean neon.
 
-### Placement
+Light mode does not mean boring.
 
-- **Desktop** : dans la sidebar, à droite du logo
-- **Mobile** : dans le header, à droite du titre
-
-### Icônes
-
-- Mode sombre actif → afficher icône **Sun** (pour passer en clair)
-- Mode clair actif → afficher icône **Moon** (pour passer en sombre)
-- Animation de rotation `180deg` sur la transition
-- Utiliser Lucide : `import { Sun, Moon } from 'lucide-react'`
+Premium design comes from control.
 
 ---
 
-## 5. Script anti-flash
+# 21. Implementation Rules
 
-Le script suivant doit être présent dans `src/app/layout.tsx`
-dans une balise `<script dangerouslySetInnerHTML>` **avant** le `<body>`,
-pour appliquer le thème avant le premier rendu et éviter tout flash :
+Before modifying a theme:
 
-```js
-(function() {
-  try {
-    var saved = localStorage.getItem('cashsave-theme');
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var dark = saved ? saved === 'dark' : prefersDark;
-    var root = document.documentElement;
-    if (dark) {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
-  } catch(e) {
-    document.documentElement.classList.add('dark');
-  }
-})();
-```
+1. Inspect the existing codebase.
+2. Identify the framework.
+3. Identify the current styling system.
+4. Identify existing design tokens.
+5. Identify existing components.
+6. Determine whether a theme system already exists.
+7. Reuse the existing architecture when possible.
+8. Introduce semantic tokens where needed.
+9. Avoid unnecessary dependencies.
+10. Do not rewrite unrelated code.
+
+If a theme system already exists, improve it rather than replacing it unnecessarily.
 
 ---
 
-## 6. Règles strictes
+# 22. Visual QA
 
-### Ne jamais faire
+Always evaluate BOTH themes before considering the implementation complete.
 
-- Utiliser des classes Tailwind `dark:` pour les couleurs
-- Écrire des couleurs hex directement dans le JSX ou Tailwind
-- Utiliser `bg-gray-900`, `text-white`, `bg-white`, `text-gray-500`, etc.
-- Mélanger des valeurs hardcodées et des variables CSS sur le même composant
+For each theme inspect:
 
-### Toujours faire
+### Composition
 
-- Passer **toutes** les couleurs par `var(--nom-de-la-variable)`
-- Utiliser `style={{ color: 'var(--text-primary)' }}` en inline si nécessaire
-- Pour les couleurs sémantiques fixes (succès/danger), les écrire directement
-  en hex car elles ne changent pas entre les thèmes : `#10B981`, `#F43F5E`
+* Is the hierarchy clear?
+* Does the interface feel balanced?
+
+### Color
+
+* Are the surfaces distinguishable?
+* Is the accent restrained?
+* Are there unnecessary colors?
+
+### Typography
+
+* Is text readable?
+* Is the hierarchy clear?
+
+### Components
+
+* Do buttons look premium?
+* Do cards feel intentional?
+* Are inputs readable?
+* Are borders subtle?
+
+### Depth
+
+* Are shadows restrained?
+* Is the surface hierarchy clear?
+
+### Accessibility
+
+* Is text sufficiently contrasted?
+* Are interactive elements clearly identifiable?
+* Are focus states visible?
+
+### Polish
+
+* Are there inconsistent colors?
+* Are there accidental hardcoded values?
+* Does anything look like a default component?
+* Does either theme feel unfinished?
+
+Fix visual inconsistencies before finishing.
 
 ---
 
-## 7. Couleurs sémantiques stables (identiques dans les deux thèmes)
+# 23. Golden Rules
 
-Ces couleurs sont les mêmes en dark et light. Les écrire en hex direct :
+Follow these rules whenever possible:
 
-| Usage | Couleur | Hex |
-|-------|---------|-----|
-| Revenus / Succès | Vert émeraude | `#10B981` |
-| Dépenses / Erreur | Rose vif | `#F43F5E` |
-| Série / Alerte | Ambre | `#F59E0B` |
+1. Never simply invert colors to create dark mode.
+2. Never make light mode pure white everywhere.
+3. Never use emojis as interface icons.
+4. Never introduce colors without a purpose.
+5. Never use effects to compensate for weak design.
+6. Never sacrifice readability for aesthetics.
+7. Never create separate visual identities for light and dark mode.
+8. Both themes must feel like the same premium product.
+9. Use semantic color tokens.
+10. Prefer restraint over decoration.
 
-Backgrounds semi-transparents associés :
+The final experience should make the user think:
 
-| Usage | Background |
-|-------|-----------|
-| Succès | `rgba(16,185,129,0.10)` |
-| Danger | `rgba(244,63,94,0.10)` |
-| Warning | `rgba(245,158,11,0.10)` |
+> "This feels incredibly polished."
+
+not:
+
+> "This website has a lot of effects."
 
 ---
 
-## 8. Checklist avant livraison
+# Final Principle
 
-Avant de considérer un composant comme terminé, vérifier :
+Premium design is not about how much you can add.
 
-- [ ] Aucune couleur hardcodée en dehors des couleurs sémantiques stables
-- [ ] Toutes les bordures utilisent `var(--border)` ou `var(--border-strong)`
-- [ ] Tous les textes utilisent `var(--text-primary/secondary/tertiary)`
-- [ ] Tous les fonds utilisent `var(--bg-base/surface/card/card-hover)`
-- [ ] Le composant a été vérifié visuellement en mode sombre ET en mode clair
-- [ ] Aucune ombre hardcodée — utiliser `var(--shadow-sm/md)`
-- [ ] Les charts Recharts utilisent des tooltips adaptatifs via CSS variables
-- [ ] Le ThemeToggle est présent et fonctionnel sur mobile et desktop
+It is about how precisely you decide what deserves to remain.

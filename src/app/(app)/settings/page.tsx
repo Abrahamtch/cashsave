@@ -112,28 +112,29 @@ export default function SettingsPage() {
   const trialDays = profile ? getTrialDaysRemaining(profile.trial_start_date) : 0;
 
   return (
-    <div className="space-y-6 stagger-children">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Paramètres</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Gestion de votre compte & configuration</p>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Paramètres</h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Gestion de votre compte &amp; configuration</p>
       </div>
 
       {/* Profile & Account */}
       <div className="glass-card p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-lg">
+          <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center font-bold text-base" style={{ color: 'var(--text-inverse)' }}>
             {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
           </div>
           <div>
-            <h3 className="font-semibold text-base">{profile?.full_name || 'Utilisateur Cash Save'}</h3>
-            <p className="text-xs text-gray-400">{profile?.email}</p>
+            <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{profile?.full_name || 'Utilisateur Cash Save'}</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{profile?.email}</p>
           </div>
         </div>
 
         <button
           onClick={handleLogout}
-          className="btn-secondary w-full py-2 text-rose-400 hover:text-rose-300 border-rose-500/20 hover:border-rose-500/30 text-xs"
+          className="btn-secondary w-full py-2 text-xs"
+          style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger-border)' }}
         >
           <LogOut className="w-4 h-4" /> Se déconnecter
         </button>
@@ -144,25 +145,30 @@ export default function SettingsPage() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-amber-400" />
-              <h3 className="font-semibold text-sm">Statut de l&apos;abonnement</h3>
+              <Crown className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Statut de l&apos;abonnement</h3>
             </div>
 
             {profile?.is_premium ? (
               <div className="mt-2">
-                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ color: 'var(--color-success)', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)' }}
+                >
                   <Check className="w-3.5 h-3.5" /> Compte Premium Actif
                 </span>
               </div>
             ) : (
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-300">
-                  Période d&apos;essai : <span className="font-bold text-amber-400">{trialDays} jours restants</span> (sur 42)
+              <div className="mt-2 space-y-2">
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Période d&apos;essai :{' '}
+                  <span className="font-semibold" style={{ color: 'var(--color-warning)' }}>{trialDays} jours restants</span>
+                  {' '}(sur 42)
                 </p>
-                <div className="progress-bar max-w-xs mt-2">
+                <div className="progress-bar max-w-xs">
                   <div
-                    className="progress-bar-fill bg-amber-500"
-                    style={{ width: `${Math.min(100, Math.max(0, (trialDays / 42) * 100))}%` }}
+                    className="progress-bar-fill"
+                    style={{ width: `${Math.min(100, Math.max(0, (trialDays / 42) * 100))}%`, background: 'var(--color-warning)' }}
                   />
                 </div>
               </div>
@@ -183,37 +189,53 @@ export default function SettingsPage() {
 
       {/* Scoring Algorithm Settings */}
       <div className="glass-card p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/5">
+        <div
+          className="flex items-center justify-between pb-4"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
           <div className="flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-indigo-400" />
+            <Sliders className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <div>
-              <h3 className="font-semibold text-sm">Configuration de l&apos;Algorithme</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Ajustez la valeur en points attribuée à chaque action</p>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Algorithme de score</h3>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Points attribués à chaque action</p>
             </div>
           </div>
 
           <button
             onClick={resetToDefaultScores}
-            className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+            className="text-xs flex items-center gap-1.5 transition-colors duration-150"
+            style={{ color: 'var(--text-tertiary)' }}
             title="Réinitialiser les valeurs par défaut"
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Par défaut
+            <RefreshCw className="w-3 h-3" /> Défaut
           </button>
         </div>
 
         {/* Boolean Habits Coefficients */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Habitudes (Oui/Non)</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <h4
+            className="text-[10px] font-semibold uppercase"
+            style={{ color: 'var(--text-tertiary)', letterSpacing: '0.09em' }}
+          >
+            Habitudes (Oui / Non)
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {(Object.keys(HABIT_LABELS) as Array<keyof typeof HABIT_LABELS>).map((key) => (
-              <div key={key} className="flex items-center justify-between bg-gray-100 dark:bg-white/5 p-2.5 rounded-xl">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{HABIT_LABELS[key]}</span>
+              <div
+                key={key}
+                className="flex items-center justify-between p-2.5 rounded-xl"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
+              >
+                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {HABIT_LABELS[key]}
+                </span>
                 <input
                   type="number"
                   step="0.5"
                   value={scoringSettings[key] ?? 3}
                   onChange={(e) => handleScoreChange(key as keyof ScoringSettings, parseFloat(e.target.value) || 0)}
-                  className="w-16 text-right text-xs bg-white dark:bg-white/10 border border-gray-300 dark:border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500"
+                  className="input-field text-right py-1"
+                  style={{ width: '60px', fontSize: '12px' }}
                 />
               </div>
             ))}
@@ -221,18 +243,30 @@ export default function SettingsPage() {
         </div>
 
         {/* Numeric Habits Coefficients */}
-        <div className="space-y-3 pt-2">
-          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Business & Apprentissage (Points / Unité)</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-3">
+          <h4
+            className="text-[10px] font-semibold uppercase"
+            style={{ color: 'var(--text-tertiary)', letterSpacing: '0.09em' }}
+          >
+            Business &amp; Apprentissage (pts / unité)
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {(Object.keys(NUMERIC_HABIT_LABELS) as Array<keyof typeof NUMERIC_HABIT_LABELS>).map((key) => (
-              <div key={key} className="flex items-center justify-between bg-gray-100 dark:bg-white/5 p-2.5 rounded-xl">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{NUMERIC_HABIT_LABELS[key]}</span>
+              <div
+                key={key}
+                className="flex items-center justify-between p-2.5 rounded-xl"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
+              >
+                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  {NUMERIC_HABIT_LABELS[key]}
+                </span>
                 <input
                   type="number"
                   step="0.1"
                   value={scoringSettings[key] ?? 1}
                   onChange={(e) => handleScoreChange(key as keyof ScoringSettings, parseFloat(e.target.value) || 0)}
-                  className="w-16 text-right text-xs bg-white dark:bg-white/10 border border-gray-300 dark:border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500"
+                  className="input-field text-right py-1"
+                  style={{ width: '60px', fontSize: '12px' }}
                 />
               </div>
             ))}

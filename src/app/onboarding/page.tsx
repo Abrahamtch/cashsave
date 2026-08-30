@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Sparkles, Target, Award, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Target } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function OnboardingPage() {
@@ -47,22 +47,28 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-4 gradient-mesh">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md animate-fade-in-up">
         <div className="glass-card p-8 text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl gradient-primary mx-auto flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="w-14 h-14 rounded-2xl gradient-primary mx-auto flex items-center justify-center shadow-lg">
+            <Sparkles className="w-7 h-7 text-white" />
           </div>
 
           {step === 1 ? (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Bienvenue sur Cash Save ! 🚀</h2>
-              <p className="text-sm text-gray-400">
-                Transformez vos habitudes quotidiennes et reprenez le contrôle total de vos finances et de votre productivité.
-              </p>
-
+            <div className="space-y-5">
               <div>
-                <label className="block text-xs text-left font-medium text-gray-400 mb-1">Comment souhaitez-vous être appelé ?</label>
+                <h2 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  Bienvenue sur Cash Save
+                </h2>
+                <p className="text-sm mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                  Transformez vos habitudes quotidiennes et reprenez le contrôle de vos finances.
+                </p>
+              </div>
+
+              <div className="text-left">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Comment souhaitez-vous être appelé ?
+                </label>
                 <input
                   type="text"
                   value={fullName}
@@ -76,20 +82,27 @@ export default function OnboardingPage() {
                 onClick={() => setStep(2)}
                 className="btn-primary w-full py-3"
               >
-                Continuer <ArrowRight className="w-4 h-4" />
+                Continuer <ArrowRight size={15} strokeWidth={2} />
               </button>
             </div>
           ) : (
             <div className="space-y-5">
-              <h2 className="text-2xl font-bold">Fixez votre premier objectif</h2>
-              <p className="text-sm text-gray-400">
-                Quel score quotidien visez-vous pour rester au sommet de vos performances ?
-              </p>
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  Fixez votre objectif
+                </h2>
+                <p className="text-sm mt-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                  Quel score quotidien visez-vous pour maintenir votre discipline ?
+                </p>
+              </div>
 
-              <div className="glass-card p-4 space-y-3 bg-white/5">
+              <div
+                className="p-4 space-y-3 rounded-xl"
+                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
+              >
                 <div className="flex justify-between items-center text-sm font-semibold">
-                  <span>Score quotidien cible</span>
-                  <span className="text-indigo-400 text-lg font-bold">{dailyGoal} pts</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>Score quotidien cible</span>
+                  <span className="text-lg font-bold" style={{ color: 'var(--accent)' }}>{dailyGoal} pts</span>
                 </div>
                 <input
                   type="range"
@@ -98,10 +111,11 @@ export default function OnboardingPage() {
                   step="5"
                   value={dailyGoal}
                   onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                  className="w-full accent-indigo-500"
+                  className="w-full cursor-pointer"
+                  style={{ accentColor: 'var(--accent)' }}
                 />
-                <p className="text-[11px] text-gray-500">
-                  Un score supérieur à 50 vous permettra de maintenir des streaks impressionnants !
+                <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                  Un score supérieur à 50 vous permettra de maintenir vos séries actives.
                 </p>
               </div>
 
@@ -110,7 +124,7 @@ export default function OnboardingPage() {
                 disabled={loading}
                 className="btn-primary w-full py-3"
               >
-                {loading ? 'Initialisation...' : 'Démarrer mon aventure Cash Save ⚡'}
+                {loading ? 'Initialisation...' : 'Démarrer l\'aventure'}
               </button>
             </div>
           )}
