@@ -1,5 +1,5 @@
 /**
- * Client d'intégration API Maketou Payment & Redirection Boutique
+ * Client d'intégration API Maketou Payment & Redirection Boutique Direct Checkout
  * Documentation: https://docs-api.maketou.com
  */
 
@@ -12,7 +12,7 @@ export interface CreateCartParams {
 export async function createMaketouCart({ userId, userEmail, redirectUrl }: CreateCartParams) {
   const apiKey = process.env.MAKETOU_API_KEY;
   const productDocId = process.env.MAKETOU_PRODUCT_DOCUMENT_ID;
-  const directProductUrl = process.env.MAKETOU_PRODUCT_URL || 'https://cash-save.mymaketou.shop/en/products/abonnement-cash-save-3-000-fcfamois';
+  const directCheckoutUrl = process.env.MAKETOU_PRODUCT_URL || 'https://cash-save.mymaketou.shop/en/products/abonnement-cash-save-3-000-fcfamois/checkout';
 
   // Tenter l'appel API Maketou REST s'il est disponible
   if (apiKey && productDocId) {
@@ -40,15 +40,15 @@ export async function createMaketouCart({ userId, userEmail, redirectUrl }: Crea
 
       if (response.ok) {
         const data = await response.json();
-        return { url: data.payment_url || data.url || directProductUrl };
+        return { url: data.payment_url || data.url || directCheckoutUrl };
       }
     } catch (e) {
-      console.warn('Fallback vers l\'URL directe de la boutique Maketou:', e);
+      console.warn('Fallback vers l\'URL de paiement direct Maketou:', e);
     }
   }
 
-  // Redirection directe garantie vers la page de paiement du produit Maketou 3 000 FCFA
-  return { url: directProductUrl };
+  // Redirection directe garantie vers l'écran de paiement (checkout) du produit Maketou 3 000 FCFA
+  return { url: directCheckoutUrl };
 }
 
 export async function verifyMaketouCart(cartId: string) {
