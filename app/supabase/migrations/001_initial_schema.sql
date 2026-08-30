@@ -1,15 +1,10 @@
 -- ============================================
--- Cash Save — Schéma initial de base de données
--- Supabase / PostgreSQL
+-- Cash Save — Schéma Supabase ultra-robuste
+-- Exécutable directement dans Supabase SQL Editor
 -- ============================================
 
--- Extension UUID
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- ============================================
--- TABLE: profiles (extension de auth.users)
--- ============================================
-CREATE TABLE public.profiles (
+-- 1. TABLE: profiles (extension de auth.users)
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
   full_name TEXT DEFAULT '',
@@ -37,7 +32,7 @@ CREATE TABLE public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Trigger pour créer un profil automatiquement à l'inscription
+-- Trigger auto à la création d'un utilisateur dans auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -47,23 +42,22 @@ BEGIN
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'avatar_url', '')
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ============================================
--- TABLE: daily_habits (My Habits - Daily Tracker)
--- ============================================
-CREATE TABLE public.daily_habits (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 2. TABLE: daily_habits (My Habits)
+CREATE TABLE IF NOT EXISTS public.daily_habits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
-  -- Champs booléens (habitudes)
   bible BOOLEAN DEFAULT FALSE,
   prayer BOOLEAN DEFAULT FALSE,
   meditation BOOLEAN DEFAULT FALSE,
@@ -73,33 +67,26 @@ CREATE TABLE public.daily_habits (
   light_work BOOLEAN DEFAULT FALSE,
   deep_work BOOLEAN DEFAULT FALSE,
   after_work BOOLEAN DEFAULT FALSE,
-  -- Champs numériques (business & apprentissage)
   prospects_contacted INTEGER DEFAULT 0,
   calls_made INTEGER DEFAULT 0,
   content_published INTEGER DEFAULT 0,
   client_projects INTEGER DEFAULT 0,
   learning_minutes INTEGER DEFAULT 0,
-  -- Champs texte
   comments TEXT DEFAULT '',
   progression TEXT DEFAULT '',
-  -- Scores calculés
   habit_score FLOAT DEFAULT 0,
   work_score FLOAT DEFAULT 0,
   business_score FLOAT DEFAULT 0,
   learning_score FLOAT DEFAULT 0,
   total_score FLOAT DEFAULT 0,
-  -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  -- Contrainte: une seule entrée par jour par utilisateur
-  UNIQUE(user_id, date)
+  CONSTRAINT unique_user_date UNIQUE(user_id, date)
 );
 
--- ============================================
--- TABLE: transactions (My Cash - Trésorerie)
--- ============================================
-CREATE TABLE public.transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 3. TABLE: transactions (My Cash)
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('INCOME', 'EXPENSE')),
   amount DECIMAL(12, 2) NOT NULL CHECK (amount > 0),
@@ -110,11 +97,9 @@ CREATE TABLE public.transactions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- TABLE: tasks (To-Do List)
--- ============================================
-CREATE TABLE public.tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 4. TABLE: tasks (To-Do List)
+CREATE TABLE IF NOT EXISTS public.tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   deadline DATE,
@@ -125,11 +110,9 @@ CREATE TABLE public.tasks (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- TABLE: objectives (Objectifs)
--- ============================================
-CREATE TABLE public.objectives (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 5. TABLE: objectives (Objectifs)
+CREATE TABLE IF NOT EXISTS public.objectives (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   deadline DATE,
@@ -139,64 +122,68 @@ CREATE TABLE public.objectives (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- INDEX pour les performances
--- ============================================
-CREATE INDEX idx_daily_habits_user_date ON public.daily_habits(user_id, date DESC);
-CREATE INDEX idx_transactions_user_date ON public.transactions(user_id, date DESC);
-CREATE INDEX idx_transactions_user_type ON public.transactions(user_id, type);
-CREATE INDEX idx_tasks_user_status ON public.tasks(user_id, status);
-CREATE INDEX idx_objectives_user_status ON public.objectives(user_id, status);
+-- INDEX
+CREATE INDEX IF NOT EXISTS idx_daily_habits_user_date ON public.daily_habits(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON public.transactions(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON public.tasks(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_objectives_user_status ON public.objectives(user_id, status);
 
--- ============================================
--- ROW LEVEL SECURITY (RLS)
--- ============================================
-
--- Profiles
+-- ROW LEVEL SECURITY (RLS) & POLICIES (Idempotent)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- Daily Habits
 ALTER TABLE public.daily_habits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own habits" ON public.daily_habits;
 CREATE POLICY "Users can view own habits" ON public.daily_habits FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own habits" ON public.daily_habits;
 CREATE POLICY "Users can insert own habits" ON public.daily_habits FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own habits" ON public.daily_habits;
 CREATE POLICY "Users can update own habits" ON public.daily_habits FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own habits" ON public.daily_habits;
 CREATE POLICY "Users can delete own habits" ON public.daily_habits FOR DELETE USING (auth.uid() = user_id);
 
--- Transactions
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own transactions" ON public.transactions;
 CREATE POLICY "Users can view own transactions" ON public.transactions FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own transactions" ON public.transactions;
 CREATE POLICY "Users can insert own transactions" ON public.transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own transactions" ON public.transactions;
 CREATE POLICY "Users can update own transactions" ON public.transactions FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own transactions" ON public.transactions;
 CREATE POLICY "Users can delete own transactions" ON public.transactions FOR DELETE USING (auth.uid() = user_id);
 
--- Tasks
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own tasks" ON public.tasks;
 CREATE POLICY "Users can view own tasks" ON public.tasks FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own tasks" ON public.tasks;
 CREATE POLICY "Users can insert own tasks" ON public.tasks FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own tasks" ON public.tasks;
 CREATE POLICY "Users can update own tasks" ON public.tasks FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own tasks" ON public.tasks;
 CREATE POLICY "Users can delete own tasks" ON public.tasks FOR DELETE USING (auth.uid() = user_id);
 
--- Objectives
 ALTER TABLE public.objectives ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own objectives" ON public.objectives;
 CREATE POLICY "Users can view own objectives" ON public.objectives FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own objectives" ON public.objectives;
 CREATE POLICY "Users can insert own objectives" ON public.objectives FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own objectives" ON public.objectives;
 CREATE POLICY "Users can update own objectives" ON public.objectives FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own objectives" ON public.objectives;
 CREATE POLICY "Users can delete own objectives" ON public.objectives FOR DELETE USING (auth.uid() = user_id);
-
--- ============================================
--- Trigger pour updated_at automatique
--- ============================================
-CREATE OR REPLACE FUNCTION public.update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
-CREATE TRIGGER update_daily_habits_updated_at BEFORE UPDATE ON public.daily_habits FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
-CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON public.tasks FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
-CREATE TRIGGER update_objectives_updated_at BEFORE UPDATE ON public.objectives FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
