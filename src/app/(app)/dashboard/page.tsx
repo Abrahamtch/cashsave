@@ -61,6 +61,9 @@ export default function DashboardPage() {
 
   async function loadData() {
     const isLive = isLiveSupabaseConfigured();
+    const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -70,11 +73,20 @@ export default function DashboardPage() {
             supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(365),
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
           ]);
+          let hasSupabaseData = false;
           if (profileRes.data) setProfile(profileRes.data);
-          if (habitsRes.data) setHabits(habitsRes.data);
-          if (transactionsRes.data) setTransactions(transactionsRes.data);
-          setLoading(false);
-          return;
+          if (habitsRes.data && habitsRes.data.length > 0) {
+            setHabits(habitsRes.data);
+            hasSupabaseData = true;
+          }
+          if (transactionsRes.data && transactionsRes.data.length > 0) {
+            setTransactions(transactionsRes.data);
+            hasSupabaseData = true;
+          }
+          if (hasSupabaseData) {
+            setLoading(false);
+            return;
+          }
         }
       } catch (e) { /* fallback */ }
     }

@@ -32,6 +32,7 @@ export default function TasksPage() {
 
   async function loadTasks() {
     const isLive = isLiveSupabaseConfigured();
+    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
 
     if (isLive) {
       try {
@@ -42,8 +43,9 @@ export default function TasksPage() {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-          if (data) {
+          if (data && data.length > 0) {
             setTasks(data);
+            localStorage.setItem('cashsave_tasks', JSON.stringify(data));
             setLoading(false);
             return;
           }
@@ -53,7 +55,6 @@ export default function TasksPage() {
       }
     }
 
-    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     setTasks(localTasks);
     setLoading(false);
   }

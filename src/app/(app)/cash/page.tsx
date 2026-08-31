@@ -33,16 +33,23 @@ export default function CashPage() {
 
   async function loadTransactions() {
     const isLive = isLiveSupabaseConfigured();
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false });
-          if (data) { setTransactions(data); setLoading(false); return; }
+          if (data && data.length > 0) {
+            setTransactions(data);
+            localStorage.setItem('cashsave_transactions', JSON.stringify(data));
+            setLoading(false);
+            return;
+          }
         }
       } catch (e) { /* fallback */ }
     }
-    setTransactions(JSON.parse(localStorage.getItem('cashsave_transactions') || '[]'));
+    setTransactions(localTx);
     setLoading(false);
   }
 

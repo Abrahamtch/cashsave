@@ -37,6 +37,8 @@ export default function ObjectivesPage() {
   async function loadData() {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
+    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
 
     if (isLive) {
       try {
@@ -46,18 +48,27 @@ export default function ObjectivesPage() {
             supabase.from('objectives').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
           ]);
-          if (objRes.data) setObjectives(objRes.data);
-          if (txRes.data) setTransactions(txRes.data);
-          setLoading(false);
-          return;
+          let hasSupabaseData = false;
+          if (objRes.data && objRes.data.length > 0) {
+            setObjectives(objRes.data);
+            localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
+            hasSupabaseData = true;
+          }
+          if (txRes.data && txRes.data.length > 0) {
+            setTransactions(txRes.data);
+            localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
+            hasSupabaseData = true;
+          }
+          if (hasSupabaseData) {
+            setLoading(false);
+            return;
+          }
         }
       } catch (e) {
         // Fallback
       }
     }
 
-    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
-    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
     setObjectives(localObj);
     setTransactions(localTx);
     setLoading(false);
