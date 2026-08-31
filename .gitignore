@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+Cahier_des_Charges_Cash_Save.pdf
+*.pdf
