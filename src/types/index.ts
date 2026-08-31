@@ -118,6 +118,8 @@ export interface Objective {
   user_id: string;
   title: string;
   deadline: string | null;
+  target_amount?: number;
+  allocated_budget?: number;
   progress: number;
   status: ObjectiveStatus;
   created_at: string;

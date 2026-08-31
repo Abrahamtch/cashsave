@@ -47,34 +47,53 @@ export default function CashPage() {
 
   const openModal = (type: 'INCOME' | 'EXPENSE') => {
     setModalType(type);
-    setAmount(''); setCategory('');
+    const defaultCats = type === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    setAmount('');
+    setCategory(defaultCats[0] || 'Autre');
     setDate(format(new Date(), 'yyyy-MM-dd'));
-    setNote(''); setIsSatisfied(null);
+    setNote('');
+    setIsSatisfied(true);
     setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) return;
     setSavingTx(true);
+
+    const defaultCats = modalType === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    const finalCategory = category || defaultCats[0] || 'Autre';
+
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
       user_id: 'demo-user',
       type: modalType,
-      amount: parseFloat(amount),
-      category, date, note,
-      is_satisfied: modalType === 'EXPENSE' ? isSatisfied : null,
+      amount: numAmount,
+      category: finalCategory,
+      date: date || format(new Date(), 'yyyy-MM-dd'),
+      note: note || '',
+      is_satisfied: modalType === 'EXPENSE' ? (isSatisfied ?? true) : null,
       created_at: new Date().toISOString(),
     };
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await supabase.from('transactions').insert({ ...newTx, user_id: user.id });
-    } catch (e) { /* silent */ }
+
+    // 1. Mise à jour locale instantanée (0ms de latence)
+    setTransactions(prev => [newTx, ...prev]);
+
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
     localTx.unshift(newTx);
     localStorage.setItem('cashsave_transactions', JSON.stringify(localTx));
+
     setSavingTx(false);
     setShowModal(false);
-    loadTransactions();
+
+    // 2. Synchro Supabase en arrière-plan
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) await supabase.from('transactions').insert({ ...newTx, user_id: user.id });
+      } catch (e) { /* silent */ }
+    })();
   };
 
   const handleDelete = async (id: string) => {

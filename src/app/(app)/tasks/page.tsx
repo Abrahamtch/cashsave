@@ -75,7 +75,7 @@ export default function TasksPage() {
     setShowModal(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
@@ -91,16 +91,13 @@ export default function TasksPage() {
       updated_at: new Date().toISOString(),
     };
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        if (editingTask) {
-          await supabase.from('tasks').update(newTask).eq('id', editingTask.id);
-        } else {
-          await supabase.from('tasks').insert({ ...newTask, user_id: user.id });
-        }
+    // 1. Mise à jour locale immédiate (0ms de latence)
+    setTasks(prev => {
+      if (editingTask) {
+        return prev.map(t => t.id === editingTask.id ? newTask : t);
       }
-    } catch (e) {}
+      return [newTask, ...prev];
+    });
 
     const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     if (editingTask) {
@@ -113,7 +110,20 @@ export default function TasksPage() {
 
     setSaving(false);
     setShowModal(false);
-    loadTasks();
+
+    // 2. Synchro Supabase en tâche de fond
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (editingTask) {
+            await supabase.from('tasks').update(newTask).eq('id', editingTask.id);
+          } else {
+            await supabase.from('tasks').insert({ ...newTask, user_id: user.id });
+          }
+        }
+      } catch (e) {}
+    })();
   };
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
