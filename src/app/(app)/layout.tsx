@@ -179,8 +179,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Footer — Premium CTA Button */}
         <div className="px-3.5 py-4" style={{ borderTop: '1px solid var(--border)' }}>
           <Link
-            href="/settings"
-            className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group shadow-md"
+            href="/paywall"
+            className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group shadow-md cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
               border: '1px solid rgba(214,179,106,0.35)',
@@ -220,7 +220,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             Cash Save
           </span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/paywall"
+            className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
+            style={{
+              background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
+              borderColor: 'rgba(214,179,106,0.35)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <Crown size={12} className="text-amber-400" /> Premium
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Main Content */}
