@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale';
 import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function ObjectivesPage() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -491,18 +492,11 @@ export default function ObjectivesPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  Échéance
-                </label>
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  onClick={(e) => { try { (e.target as HTMLInputElement).showPicker?.(); } catch {} }}
-                  className="input-field cursor-pointer"
-                />
-              </div>
+              <FuturisticDatePicker
+                label="Échéance"
+                value={deadline}
+                onChange={setDeadline}
+              />
 
               <button
                 type="submit"

@@ -9,6 +9,7 @@ import {
   Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -411,18 +412,11 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                  Date limite
-                </label>
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  onClick={(e) => { try { (e.target as HTMLInputElement).showPicker?.(); } catch {} }}
-                  className="input-field cursor-pointer"
-                />
-              </div>
+              <FuturisticDatePicker
+                label="Date limite"
+                value={deadline}
+                onChange={setDeadline}
+              />
 
               <button
                 type="submit"

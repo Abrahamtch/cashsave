@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
@@ -173,25 +174,29 @@ export default function HabitsPage() {
         </div>
 
         {/* Date Navigator */}
-        <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl shadow-sm">
+        <div className="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl shadow-sm">
           <button
+            type="button"
             onClick={() => navigateDate('prev')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)]"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] cursor-pointer"
             style={{ color: 'var(--text-secondary)' }}
             aria-label="Jour précédent"
           >
             <ChevronLeft size={16} strokeWidth={1.5} />
           </button>
-          <div className="flex items-center gap-1.5 px-2">
-            <Calendar size={13} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
-            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-              {format(new Date(selectedDate), 'dd MMM yyyy', { locale: fr })}
-            </span>
+          
+          <div className="w-[160px]">
+            <FuturisticDatePicker
+              value={selectedDate}
+              onChange={(newDate) => setSelectedDate(newDate)}
+            />
           </div>
+
           <button
+            type="button"
             onClick={() => navigateDate('next')}
             disabled={selectedDate === format(new Date(), 'yyyy-MM-dd')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] disabled:opacity-25"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] disabled:opacity-25 cursor-pointer"
             style={{ color: 'var(--text-secondary)' }}
             aria-label="Jour suivant"
           >

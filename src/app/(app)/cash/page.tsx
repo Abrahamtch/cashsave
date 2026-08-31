@@ -11,6 +11,7 @@ import {
   X, Check, ThumbsUp, ThumbsDown, SlidersHorizontal, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function CashPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -363,18 +364,11 @@ export default function CashPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  onClick={(e) => { try { (e.target as HTMLInputElement).showPicker?.(); } catch {} }}
-                  className="input-field cursor-pointer"
-                />
-              </div>
+              <FuturisticDatePicker
+                label="Date"
+                value={date}
+                onChange={setDate}
+              />
 
               <div>
                 <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>

@@ -317,6 +317,23 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background: var(--bg-card-hover);
 }
 
+/* Style des sélecteurs HTML select & options */
+select {
+  cursor: pointer;
+  color-scheme: dark light;
+}
+:root.dark select {
+  color-scheme: dark;
+}
+:root.light select {
+  color-scheme: light;
+}
+select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  padding: 8px 12px;
+}
+
 .input-field {
   width: 100%;
   padding: 10px 14px;
