@@ -41,11 +41,26 @@ export default function FuturisticDatePicker({
   // Parse date or fallback to today
   const selectedDate = useMemoDate(value);
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Sync current month when value changes
   useEffect(() => {
     setCurrentMonth(selectedDate);
   }, [value]);
+
+  // Smart placement detection (open upwards if near bottom of screen/modal)
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 340) {
+        setPlacement('top');
+      } else {
+        setPlacement('bottom');
+      }
+    }
+  }, [isOpen]);
 
   // Mouse inertia tracking for ambient glow
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -148,6 +163,7 @@ export default function FuturisticDatePicker({
 
       {/* Input Field Button */}
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
@@ -191,13 +207,15 @@ export default function FuturisticDatePicker({
           ref={calendarRef}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          className="absolute z-50 mt-2 left-0 right-0 sm:right-auto sm:w-[330px] rounded-2xl p-4 transition-all duration-300 animate-fade-in-up"
+          className={`absolute z-[9999] left-0 right-0 sm:right-auto sm:w-[330px] rounded-2xl p-4 transition-all duration-300 animate-fade-in-up ${
+            placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
           style={{
-            background: 'color-mix(in srgb, var(--bg-card) 92%, transparent)',
+            background: 'color-mix(in srgb, var(--bg-card) 95%, transparent)',
             backdropFilter: 'blur(24px) saturate(140%)',
             WebkitBackdropFilter: 'blur(24px) saturate(140%)',
             border: '1px solid var(--border-strong)',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(14,159,110,0.15)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.65), 0 0 0 1px rgba(14,159,110,0.25)',
             overflow: 'hidden',
           }}
         >

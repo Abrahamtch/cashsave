@@ -414,6 +414,8 @@ select option {
 
 .modal-content {
   width: 100%; max-width: 480px; max-height: 90dvh; overflow-y: auto;
+  position: relative;
+  scroll-padding-bottom: 4rem;
   background: var(--bg-card);
   color: var(--text-primary);
   border-radius: 18px 18px 0 0;
