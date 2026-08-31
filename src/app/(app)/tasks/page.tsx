@@ -24,6 +24,10 @@ export default function TasksPage() {
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [saving, setSaving] = useState(false);
 
+  // Drag and drop states
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -128,13 +132,15 @@ export default function TasksPage() {
     })();
   };
 
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+  const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks.map((t: any) => t.id === taskId ? { ...t, status: newStatus } : t)));
-    try {
-      await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
-    } catch (e) {}
+    (async () => {
+      try {
+        await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+      } catch (e) {}
+    })();
   };
 
   const handleDelete = async (taskId: string) => {
@@ -200,11 +206,36 @@ export default function TasksPage() {
         {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((statusKey) => {
           const config = STATUS_CONFIG[statusKey];
           const columnTasks = tasksByStatus[statusKey];
+          const isTargetOver = dragOverColumn === statusKey;
 
           return (
             <div
               key={statusKey}
-              className="glass-card p-4 flex flex-col h-full min-h-[320px]"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragOverColumn !== statusKey) setDragOverColumn(statusKey);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setDragOverColumn(null);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const taskId = e.dataTransfer.getData('text/plain') || draggingTaskId;
+                if (taskId) {
+                  handleStatusChange(taskId, statusKey);
+                }
+                setDragOverColumn(null);
+                setDraggingTaskId(null);
+              }}
+              className="glass-card p-4 flex flex-col h-full min-h-[340px] transition-all duration-200"
+              style={{
+                border: isTargetOver ? '2px solid var(--accent)' : '1px solid var(--border)',
+                background: isTargetOver ? 'color-mix(in srgb, var(--accent) 8%, var(--bg-card))' : 'var(--bg-card)',
+                boxShadow: isTargetOver ? '0 0 20px rgba(14, 159, 110, 0.25)' : 'none',
+              }}
             >
               {/* Column Header */}
               <div
@@ -228,26 +259,42 @@ export default function TasksPage() {
               </div>
 
               {/* Tasks List */}
-              <div className="space-y-2.5 flex-1 overflow-y-auto">
+              <div className="space-y-2.5 flex-1 overflow-y-auto min-h-[220px]">
                 {columnTasks.length === 0 ? (
                   <div
-                    className="text-center py-10 text-xs italic"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    className="h-full flex items-center justify-center border-2 border-dashed rounded-xl py-12 text-xs italic transition-colors"
+                    style={{
+                      borderColor: isTargetOver ? 'var(--accent)' : 'var(--border)',
+                      color: isTargetOver ? 'var(--accent)' : 'var(--text-tertiary)',
+                    }}
                   >
-                    Aucune tâche
+                    {isTargetOver ? 'Déposer la tâche ici' : 'Aucune tâche'}
                   </div>
                 ) : (
                   columnTasks.map((task) => {
                     const priorityStyle = getPriorityStyle(task.priority);
                     const priorityCfg = PRIORITY_CONFIG[task.priority];
+                    const isBeingDragged = draggingTaskId === task.id;
 
                     return (
                       <div
                         key={task.id}
-                        className="p-3.5 rounded-xl transition-all duration-150 group"
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', task.id);
+                          setDraggingTaskId(task.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingTaskId(null);
+                          setDragOverColumn(null);
+                        }}
+                        className={`p-3.5 rounded-xl transition-all duration-150 group cursor-grab active:cursor-grabbing select-none ${
+                          isBeingDragged ? 'opacity-30 scale-95' : 'hover:scale-[1.01]'
+                        }`}
                         style={{
                           background: 'var(--bg-card-hover)',
                           border: '1px solid var(--border)',
+                          boxShadow: 'var(--shadow-sm)',
                         }}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -261,8 +308,9 @@ export default function TasksPage() {
                             {task.title}
                           </h4>
                           <button
+                            type="button"
                             onClick={() => openEditModal(task)}
-                            className="opacity-0 group-hover:opacity-100 p-1 transition-opacity rounded-md"
+                            className="opacity-0 group-hover:opacity-100 p-1 transition-opacity rounded-md cursor-pointer"
                             style={{ color: 'var(--text-tertiary)' }}
                             aria-label="Éditer la tâche"
                           >
@@ -297,41 +345,43 @@ export default function TasksPage() {
                           )}
                         </div>
 
-                        {/* Status Switcher Action */}
+                        {/* Status Switcher & Actions */}
                         <div
-                          className="flex items-center justify-between mt-2 pt-2 text-xs"
+                          className="flex items-center justify-between mt-2.5 pt-2.5 text-xs"
                           style={{ borderTop: '1px solid var(--border)' }}
                         >
-                          <div className="flex items-center gap-1.5">
-                            {statusKey !== 'TODO' && (
-                              <button
-                                onClick={() => handleStatusChange(task.id, statusKey === 'DONE' ? 'IN_PROGRESS' : 'TODO')}
-                                className="text-[10px] px-2 py-1 rounded-md flex items-center gap-1 transition-all"
-                                style={{
-                                  background: 'var(--bg-base)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--text-secondary)',
-                                }}
-                              >
-                                <ArrowLeft size={10} strokeWidth={2} /> Reculer
-                              </button>
-                            )}
-                            {statusKey !== 'DONE' && (
-                              <button
-                                onClick={() => handleStatusChange(task.id, statusKey === 'TODO' ? 'IN_PROGRESS' : 'DONE')}
-                                className="text-[10px] px-2 py-1 rounded-md flex items-center gap-1 font-medium transition-all"
-                                style={{
-                                  background: 'var(--accent-subtle)',
-                                  color: 'var(--accent)',
-                                }}
-                              >
-                                Avancer <ArrowRight size={10} strokeWidth={2} />
-                              </button>
-                            )}
+                          {/* Direct Status Buttons */}
+                          <div className="flex items-center gap-1 overflow-x-auto">
+                            {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((s) => {
+                              const isActive = task.status === s;
+                              const statusLabels = {
+                                TODO: 'À faire',
+                                IN_PROGRESS: 'En cours',
+                                DONE: 'Terminé',
+                              };
+
+                              return (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => handleStatusChange(task.id, s)}
+                                  className="text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer whitespace-nowrap"
+                                  style={{
+                                    background: isActive ? 'var(--accent)' : 'var(--bg-base)',
+                                    color: isActive ? '#FFFFFF' : 'var(--text-tertiary)',
+                                    border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                                  }}
+                                >
+                                  {statusLabels[s]}
+                                </button>
+                              );
+                            })}
                           </div>
+
                           <button
+                            type="button"
                             onClick={() => handleDelete(task.id)}
-                            className="p-1 transition-colors rounded-md"
+                            className="p-1.5 transition-colors rounded-md hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger)] cursor-pointer"
                             style={{ color: 'var(--text-tertiary)' }}
                             aria-label="Supprimer la tâche"
                           >
