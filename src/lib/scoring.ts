@@ -1,14 +1,50 @@
 import { DailyHabit, ScoringSettings } from '@/types';
 
 /**
- * Moteur de calcul des scores Cash Save
- * Les coefficients sont personnalisables par l'utilisateur
+ * Calcul du taux de complétion quotidien des habitudes en pourcentage (0% à 100%).
+ * Les 100% sont divisés équitablement entre les habitudes sélectionnées et actives.
  */
+export function calculateRoutineCompletionPercentage(
+  habitData: Partial<DailyHabit>,
+  activeHabitKeys: string[] = []
+): {
+  percentage: number;
+  completedCount: number;
+  totalTracked: number;
+} {
+  const ALL_BOOLEAN = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
+  const ALL_NUMERIC = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
+
+  const activeBooleans = activeHabitKeys.length > 0
+    ? ALL_BOOLEAN.filter(k => activeHabitKeys.includes(k))
+    : ALL_BOOLEAN;
+
+  const activeNumerics = activeHabitKeys.length > 0
+    ? ALL_NUMERIC.filter(k => activeHabitKeys.includes(k))
+    : ALL_NUMERIC;
+
+  let completedCount = 0;
+
+  activeBooleans.forEach(k => {
+    if (habitData[k]) completedCount += 1;
+  });
+
+  activeNumerics.forEach(k => {
+    const val = typeof habitData[k] === 'number' ? habitData[k] : parseFloat(String(habitData[k] || 0));
+    if (val && val > 0) completedCount += 1;
+  });
+
+  const totalTracked = activeBooleans.length + activeNumerics.length;
+  if (totalTracked === 0) return { percentage: 0, completedCount: 0, totalTracked: 0 };
+
+  const percentage = Math.min(100, Math.round((completedCount / totalTracked) * 100));
+  return { percentage, completedCount, totalTracked };
+}
 
 export function calculateHabitScore(habit: Partial<DailyHabit>, settings: ScoringSettings): number {
   let score = 0;
   const booleanHabits = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport'] as const;
-  
+
   for (const key of booleanHabits) {
     if (habit[key]) {
       score += settings[key] || 0;
@@ -67,13 +103,10 @@ export function calculateAllScores(
   };
 }
 
-/**
- * Déterminer le niveau de score pour les animations
- */
 export function getScoreLevel(totalScore: number): 'low' | 'medium' | 'high' | 'excellent' {
-  if (totalScore >= 50) return 'excellent';
-  if (totalScore >= 30) return 'high';
-  if (totalScore >= 15) return 'medium';
+  if (totalScore >= 80) return 'excellent';
+  if (totalScore >= 50) return 'high';
+  if (totalScore >= 25) return 'medium';
   return 'low';
 }
 

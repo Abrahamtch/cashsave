@@ -131,20 +131,10 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-          <button
-            onClick={() => {
-              router.push('/settings?onboarding=true');
-              window.location.reload();
-            }}
-            className="btn-secondary flex-1 py-2 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-            style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
-          >
-            <Sparkles className="w-3.5 h-3.5" /> Configurer mon point de départ
-          </button>
+        <div className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={handleLogout}
-            className="btn-secondary py-2 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            className="btn-secondary w-full py-2 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger-border)' }}
           >
             <LogOut className="w-4 h-4" /> Se déconnecter

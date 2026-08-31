@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS } from '@/types';
-import { calculateAllScores, getScoreLevel } from '@/lib/scoring';
+import { calculateAllScores, getScoreLevel, calculateRoutineCompletionPercentage } from '@/lib/scoring';
 import { format, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -107,6 +107,7 @@ export default function HabitsPage() {
     : { habit_score: 0, work_score: 0, business_score: 0, learning_score: 0, total_score: 0 };
 
   const scoreLevel = getScoreLevel(scores.total_score);
+  const routineStats = calculateRoutineCompletionPercentage(habitData, activeHabits);
 
   const handleToggle = (field: typeof BOOLEAN_FIELDS[number]) => {
     setHabitData(prev => ({ ...prev, [field]: !prev[field] }));
@@ -221,49 +222,41 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* Score Summary */}
-      <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-4">
+      {/* Routine Percentage & Progress Bar */}
+      <div className="glass-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Score du jour</p>
-            <p
-              className="text-3xl font-bold mt-0.5 tracking-tight"
-              style={{ color: 'var(--accent)', letterSpacing: '-0.03em' }}
-            >
-              {scores.total_score} <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>pts</span>
-            </p>
+            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Complétion de la routine</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <p
+                className="text-3xl font-bold tracking-tight"
+                style={{ color: 'var(--accent)', letterSpacing: '-0.03em' }}
+              >
+                {routineStats.percentage}%
+              </p>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                ({routineStats.completedCount}/{routineStats.totalTracked} habitudes faites)
+              </span>
+            </div>
           </div>
           <div
             className="px-3 py-1 rounded-full text-xs font-semibold"
             style={{
-              background: 'var(--accent-subtle)',
-              color: 'var(--accent)',
-              border: '1px solid var(--accent-border)',
+              background: routineStats.percentage >= 80 ? 'rgba(14,159,110,0.12)' : 'var(--accent-subtle)',
+              color: routineStats.percentage >= 80 ? '#0E9F6E' : 'var(--accent)',
+              border: routineStats.percentage >= 80 ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--accent-border)',
             }}
           >
-            {scoreLevel}
+            {routineStats.percentage >= 100 ? '100% Atteint 🎉' : routineStats.percentage >= 50 ? 'En bonne voie' : 'À compléter'}
           </div>
         </div>
 
-        {/* Score segments */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-          {SCORE_SEGMENTS.map(({ key, label }) => (
-            <div
-              key={key}
-              className="flex flex-col items-center py-2.5 px-2 rounded-xl"
-              style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
-            >
-              <p
-                className="text-base font-semibold tracking-tight"
-                style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}
-              >
-                {(scores as any)[key]}
-              </p>
-              <p className="text-[10px] mt-0.5 text-center font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                {label}
-              </p>
-            </div>
-          ))}
+        {/* Dynamic Percentage Progress Bar */}
+        <div className="w-full bg-[var(--bg-base)] h-3 rounded-full overflow-hidden p-0.5 border border-[var(--border)]">
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out gradient-primary"
+            style={{ width: `${routineStats.percentage}%` }}
+          />
         </div>
       </div>
 

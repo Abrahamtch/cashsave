@@ -2,6 +2,16 @@ import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 
 /**
+ * Dispatche un événement personnalisé dans la fenêtre browser
+ * pour informer immédiatement tous les composants réactifs des changements de données.
+ */
+export function broadcastDataUpdate() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cashsave_data_updated'));
+  }
+}
+
+/**
  * Synchronise l'ensemble des données de l'utilisateur depuis Supabase vers le localStorage.
  * Permet une expérience multi-appareils sans faille et garantit que l'espace utilisateur
  * retrouve ses soldes, ses habitudes et ses tâches sur n'importe quel navigateur/appareil.
@@ -60,7 +70,35 @@ export async function syncUserDataFromSupabase(userId: string) {
     if (objRes.data && objRes.data.length > 0) {
       localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
     }
+
+    broadcastDataUpdate();
   } catch (e) {
     /* Repli automatique local en cas de déconnexion */
   }
+}
+
+/**
+ * Souscrit en temps réel aux canaux Supabase Postgres Changes
+ * pour répercuter immédiatement sur cet appareil les modifications
+ * effectuées sur un autre ordinateur / téléphone par le même utilisateur.
+ */
+export function subscribeToUserRealtimeChanges(userId: string, onDataChanged?: () => void) {
+  if (!isLiveSupabaseConfigured()) return () => {};
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`user-sync-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', filter: `user_id=eq.${userId}` },
+      async () => {
+        await syncUserDataFromSupabase(userId);
+        if (onDataChanged) onDataChanged();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

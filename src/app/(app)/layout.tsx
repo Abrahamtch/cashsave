@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { syncUserDataFromSupabase, subscribeToUserRealtimeChanges } from '@/lib/syncUser';
 import OnboardingFlow from '@/components/OnboardingFlow';
 
 const NAV_ITEMS = [
@@ -33,7 +34,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   useEffect(() => {
-    checkOnboardingStatus();
+    let unsubscribe: (() => void) | undefined;
+
+    async function init() {
+      await checkOnboardingStatus();
+      if (isLiveSupabaseConfigured()) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            unsubscribe = subscribeToUserRealtimeChanges(user.id);
+          }
+        } catch (e) {}
+      }
+    }
+
+    init();
+
+    const handleFocus = () => {
+      checkOnboardingStatus();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   async function checkOnboardingStatus() {
@@ -51,7 +76,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase.from('profiles').select('onboarding_status').eq('id', user.id).single();
+          await syncUserDataFromSupabase(user.id);
+          const { data } = await supabase.from('profiles').select('onboarding_status, created_at').eq('id', user.id).single();
+          if (data && data.onboarding_status && data.onboarding_status !== 'not_started') {
+            setShowOnboarding(false);
+            return;
+          }
+          if (data && data.created_at) {
+            setShowOnboarding(false);
+            return;
+          }
           if (data && (!data.onboarding_status || data.onboarding_status === 'not_started')) {
             setShowOnboarding(true);
             return;
@@ -61,6 +95,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    if (localUser.onboarding_status === 'completed' || localUser.onboarding_status === 'skipped') {
+      setShowOnboarding(false);
+      return;
+    }
     if (!localUser.onboarding_status || localUser.onboarding_status === 'not_started') {
       setShowOnboarding(true);
     }
@@ -138,13 +176,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-4 py-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <div className="glass-card p-3 text-center">
-            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-              Cash Save v1.0
-            </p>
-          </div>
+        {/* Footer — Premium CTA Button */}
+        <div className="px-3.5 py-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <Link
+            href="/settings"
+            className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group shadow-md"
+            style={{
+              background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
+              border: '1px solid rgba(214,179,106,0.35)',
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white gradient-primary shrink-0 shadow">
+                <Crown size={14} className="text-amber-300 drop-shadow" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  Passer Premium
+                </span>
+                <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  Débloquez tout Cash Save
+                </span>
+              </div>
+            </div>
+            <Sparkles size={14} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+          </Link>
         </div>
       </aside>
 
