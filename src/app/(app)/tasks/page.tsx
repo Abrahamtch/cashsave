@@ -409,7 +409,8 @@ export default function TasksPage() {
                   type="date"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
-                  className="input-field"
+                  onClick={(e) => { try { (e.target as HTMLInputElement).showPicker?.(); } catch {} }}
+                  className="input-field cursor-pointer"
                 />
               </div>
 

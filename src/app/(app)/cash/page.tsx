@@ -352,7 +352,8 @@ export default function CashPage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="input-field"
+                  onClick={(e) => { try { (e.target as HTMLInputElement).showPicker?.(); } catch {} }}
+                  className="input-field cursor-pointer"
                 />
               </div>
 

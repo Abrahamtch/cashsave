@@ -75,6 +75,12 @@
   --bg-card-hover: #F2F2ED;   /* hover state */
   --bg-input:      #FFFFFF;
 
+  /* Navigation */
+  --nav-bg:        #EFEFEA;
+  --nav-border:    #E4E4DD;
+
+  color-scheme: light;
+
   /* Borders */
   --border:        #E4E4DD;
   --border-strong: #D1D1C5;
@@ -285,6 +291,30 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Style des sélecteurs de date et icône de calendrier */
+input[type="date"] {
+  cursor: pointer;
+  position: relative;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px;
+  opacity: 0.75;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+:root input[type="date"]::-webkit-calendar-picker-indicator,
+:root.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+}
+:root.light input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: var(--bg-card-hover);
 }
 
 .input-field {
