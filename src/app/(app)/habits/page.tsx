@@ -97,7 +97,8 @@ export default function HabitsPage() {
   };
 
   const handleNumericChange = (field: typeof NUMERIC_FIELDS[number], value: number) => {
-    setHabitData(prev => ({ ...prev, [field]: Math.max(0, value) }));
+    const num = Math.max(0, Math.round(Number(value) || 0));
+    setHabitData(prev => ({ ...prev, [field]: num }));
     setSaved(false);
   };
 
@@ -306,7 +307,8 @@ export default function HabitsPage() {
         {/* Spaced Row Items — No harsh divider lines */}
         <div className="space-y-1.5">
           {NUMERIC_FIELDS.map(field => {
-            const val = (habitData[field] as number) || 0;
+            const rawVal = habitData[field];
+            const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
             return (
               <div
                 key={field}
@@ -316,30 +318,32 @@ export default function HabitsPage() {
                 <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                   {NUMERIC_HABIT_LABELS[field]}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
+                    type="button"
                     onClick={() => handleNumericChange(field, val - 1)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[var(--border-strong)]"
-                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                     aria-label="Diminuer"
                   >
-                    <Minus size={12} strokeWidth={2} />
+                    <Minus size={14} strokeWidth={2} />
                   </button>
                   <input
                     type="number"
                     value={val}
-                    onChange={(e) => handleNumericChange(field, parseInt(e.target.value) || 0)}
-                    className="input-field py-1 text-center font-semibold"
-                    style={{ width: '52px', fontSize: '13px' }}
+                    onChange={(e) => handleNumericChange(field, parseInt(e.target.value, 10) || 0)}
+                    className="input-field py-1 px-1 text-center font-semibold"
+                    style={{ width: '48px', fontSize: '14px' }}
                     min={0}
                   />
                   <button
+                    type="button"
                     onClick={() => handleNumericChange(field, val + 1)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[var(--border-strong)]"
-                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                     aria-label="Augmenter"
                   >
-                    <Plus size={12} strokeWidth={2} />
+                    <Plus size={14} strokeWidth={2} />
                   </button>
                 </div>
               </div>
