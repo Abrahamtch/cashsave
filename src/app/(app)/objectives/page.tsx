@@ -30,6 +30,8 @@ export default function ObjectivesPage() {
 
   const supabase = createClient();
 
+  const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -39,15 +41,23 @@ export default function ObjectivesPage() {
     const isLive = isLiveSupabaseConfigured();
     const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    if (localUser.initial_balance_total) {
+      setInitialBalanceTotal(localUser.initial_balance_total);
+    }
 
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const [objRes, txRes] = await Promise.all([
+          const [objRes, txRes, profileRes] = await Promise.all([
             supabase.from('objectives').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+            supabase.from('profiles').select('initial_balance_total').eq('id', user.id).single(),
           ]);
+          if (profileRes.data && profileRes.data.initial_balance_total) {
+            setInitialBalanceTotal(profileRes.data.initial_balance_total);
+          }
           let hasSupabaseData = false;
           if (objRes.data && objRes.data.length > 0) {
             setObjectives(objRes.data);
@@ -74,8 +84,8 @@ export default function ObjectivesPage() {
     setLoading(false);
   }
 
-  // Calcul du solde trésorerie actuel
-  const cashSummary = useMemo(() => calculateFinancialSummary(transactions), [transactions]);
+  // Calcul du solde trésorerie actuel (incluant le solde initial de départ)
+  const cashSummary = useMemo(() => calculateFinancialSummary(transactions, initialBalanceTotal), [transactions, initialBalanceTotal]);
   const cashBalance = Math.max(0, cashSummary.balance);
 
   // Somme des budgets alloués sur les AUTRES objectifs actifs

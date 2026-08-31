@@ -14,6 +14,7 @@ import {
   getTrialDaysRemaining,
 } from '@/lib/stats';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { syncUserDataFromSupabase } from '@/lib/syncUser';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -68,6 +69,7 @@ export default function DashboardPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          await syncUserDataFromSupabase(user.id);
           const [profileRes, habitsRes, transactionsRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(365),
@@ -99,6 +101,9 @@ export default function DashboardPage() {
       trial_start_date: localUser.trial_start_date || new Date().toISOString(),
       is_premium: localUser.is_premium || false,
       premium_expires_at: null,
+      onboarding_status: localUser.onboarding_status || 'not_started',
+      routine_status: localUser.routine_status || 'none',
+      initial_balance_total: localUser.initial_balance_total || 0,
       scoring_settings: localUser.scoring_settings || {
         bible: 3, prayer: 3, meditation: 3, reading: 4, documentary: 2, sport: 5,
         light_work: 2, deep_work: 5, after_work: 3, prospects_contacted: 2,
@@ -131,9 +136,11 @@ export default function DashboardPage() {
   const expenseCategories = getExpensesByCategory(transactions);
   const monthlyData = getMonthlyRevenueVsExpenses(transactions);
   const trialDays = profile ? getTrialDaysRemaining(profile.trial_start_date) : 0;
+  
+  const initialStartingBalance = profile?.initial_balance_total || 0;
   const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
-  const netBalance = totalIncome - totalExpense;
+  const netBalance = initialStartingBalance + (totalIncome - totalExpense);
 
   const statCards = [
     {
@@ -144,25 +151,25 @@ export default function DashboardPage() {
       accentBg: 'rgba(245,158,11,0.1)',
     },
     {
-      label: 'Meilleure série',
+      label: 'Record historique',
       value: `${recordStreak}j`,
       icon: Trophy,
-      accent: 'var(--color-warning)',
-      accentBg: 'rgba(245,158,11,0.08)',
+      accent: 'var(--accent-gold)',
+      accentBg: 'rgba(214,179,106,0.1)',
     },
     {
-      label: 'Moyenne 7 jours',
-      value: `${weeklyAvg}`,
+      label: 'Moyenne hebdomadaire',
+      value: `${weeklyAvg}/100`,
       icon: BarChart2,
       accent: 'var(--accent)',
       accentBg: 'var(--accent-subtle)',
     },
     {
-      label: 'Solde net',
+      label: 'Solde Trésorerie',
       value: formatCFA(netBalance),
       icon: Wallet,
-      accent: netBalance >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
-      accentBg: netBalance >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)',
+      accent: 'var(--accent)',
+      accentBg: 'var(--accent-subtle)',
     },
   ];
 

@@ -33,19 +33,35 @@ export default function HabitsPage() {
   const [saved, setSaved] = useState(false);
   const supabase = createClient();
 
+  const [activeHabits, setActiveHabits] = useState<string[]>([]);
+  const [showAllHabits, setShowAllHabits] = useState(false);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
+
+    // Read local habit preferences
+    const localPrefs = JSON.parse(localStorage.getItem('cashsave_habit_preferences') || '[]');
+    if (Array.isArray(localPrefs) && localPrefs.length > 0) {
+      const activeKeys = localPrefs.filter((p: any) => p.is_active).map((p: any) => p.habit_key);
+      if (activeKeys.length > 0) setActiveHabits(activeKeys);
+    }
 
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const [profileRes, habitRes] = await Promise.all([
+          const [profileRes, habitRes, prefRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
+            supabase.from('user_habit_preferences').select('*').eq('user_id', user.id).eq('is_active', true),
           ]);
           if (profileRes.data) setProfile(profileRes.data);
+          if (prefRes.data && prefRes.data.length > 0) {
+            const activeKeys = prefRes.data.map(p => p.habit_key);
+            setActiveHabits(activeKeys);
+            localStorage.setItem('cashsave_habit_preferences', JSON.stringify(prefRes.data));
+          }
           if (habitRes.data) { setHabitData(habitRes.data); setLoading(false); return; }
         }
       } catch (e) { /* fallback */ }
@@ -251,6 +267,23 @@ export default function HabitsPage() {
         </div>
       </div>
 
+      {/* Custom Habits Banner (if set during onboarding) */}
+      {activeHabits.length > 0 && (
+        <div className="flex items-center justify-between p-3.5 rounded-xl border" style={{ background: 'var(--accent-subtle)', borderColor: 'var(--accent-border)' }}>
+          <div className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--accent)' }}>
+            <Sparkles size={15} /> Mode personnalisé ({activeHabits.length} habitudes sélectionnées)
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAllHabits(!showAllHabits)}
+            className="text-[11px] font-semibold px-3 py-1 rounded-lg transition-colors cursor-pointer"
+            style={{ background: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+          >
+            {showAllHabits ? 'Masquer non-sélectionnées' : 'Voir toutes les 14'}
+          </button>
+        </div>
+      )}
+
       {/* Boolean Habits Section */}
       <div className="glass-card p-4 space-y-3">
         <div className="flex items-center justify-between px-1">
@@ -267,24 +300,32 @@ export default function HabitsPage() {
 
         {/* Spaced Row Items — No harsh divider lines */}
         <div className="space-y-1.5">
-          {BOOLEAN_FIELDS.map((field) => {
+          {BOOLEAN_FIELDS.filter(f => (activeHabits.length === 0 || showAllHabits || activeHabits.includes(f))).map((field) => {
             const active = !!habitData[field];
+            const isPreferred = activeHabits.includes(field);
             return (
               <button
                 key={field}
                 onClick={() => handleToggle(field)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-150 group text-left"
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-150 group text-left cursor-pointer"
                 style={{
                   background: active ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
                   border: active ? '1px solid var(--accent-border)' : '1px solid transparent',
                 }}
               >
-                <span
-                  className="text-sm font-medium transition-colors"
-                  style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-                >
-                  {HABIT_LABELS[field]}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-sm font-medium transition-colors"
+                    style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                  >
+                    {HABIT_LABELS[field]}
+                  </span>
+                  {isPreferred && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-border)]">
+                      Essentiel
+                    </span>
+                  )}
+                </div>
 
                 <div
                   className="w-5 h-5 rounded-lg flex items-center justify-center transition-all duration-150 shrink-0"
@@ -311,7 +352,7 @@ export default function HabitsPage() {
 
         {/* Spaced Row Items — No harsh divider lines */}
         <div className="space-y-1.5">
-          {NUMERIC_FIELDS.map(field => {
+          {NUMERIC_FIELDS.filter(f => (activeHabits.length === 0 || showAllHabits || activeHabits.includes(f))).map(field => {
             const rawVal = habitData[field];
             const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
             return (

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
 
+import { syncUserDataFromSupabase } from '@/lib/syncUser';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,28 +23,21 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { error: sbError } = await supabase.auth.signInWithPassword({ email, password });
-
-      document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      if (!localStorage.getItem('cashsave_user')) {
-        localStorage.setItem('cashsave_user', JSON.stringify({
-          email,
-          full_name: email.split('@')[0] || 'Utilisateur Cash Save',
-          trial_start_date: new Date().toISOString(),
-          is_premium: false,
-        }));
+      const { data, error: sbError } = await supabase.auth.signInWithPassword({ email, password });
+      if (data?.user) {
+        await syncUserDataFromSupabase(data.user.id);
       }
 
+      document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
       router.push('/dashboard');
       router.refresh();
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.message?.includes('Invalid login credentials')) {
+        setError('Identifiants incorrects. Veuillez vérifier votre e-mail et mot de passe.');
+        setLoading(false);
+        return;
+      }
       document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      localStorage.setItem('cashsave_user', JSON.stringify({
-        email,
-        full_name: email.split('@')[0] || 'Utilisateur Cash Save',
-        trial_start_date: new Date().toISOString(),
-        is_premium: false,
-      }));
       router.push('/dashboard');
       router.refresh();
     }

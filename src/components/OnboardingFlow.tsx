@@ -271,6 +271,9 @@ export default function OnboardingFlow({
 
     setIsSubmitting(false);
     onComplete();
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   };
 
   const handleConfirmSkip = async () => {
