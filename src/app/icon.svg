@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0A0A0F"/>
+  <g transform="translate(256,256)">
+    <!-- Stylized "C" letter with upward arrow -->
+    <path d="M 40,-130 A 155,155 0 1,0 40,130" fill="none" stroke="#0E9F6E" stroke-width="48" stroke-linecap="round"/>
+    <!-- Upward arrow at the end -->
+    <path d="M 40,-130 L 90,-130 L 65,-175 Z" fill="#0E9F6E"/>
+    <!-- Small inner accent line -->
+    <line x1="65" y1="-170" x2="65" y2="-115" stroke="#0E9F6E" stroke-width="10" stroke-linecap="round" opacity="0"/>
+  </g>
+</svg>

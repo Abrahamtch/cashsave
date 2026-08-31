@@ -3,16 +3,21 @@ import { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Cash Save — Productivité & Finances',
-    short_name: 'CashSave',
-    description: 'Transformez un tableur de suivi de productivité et de finances en une application web automatisée et gamifiée.',
+    short_name: 'Cash Save',
+    description: 'Transformez vos habitudes, suivez vos finances et atteignez vos objectifs avec Cash Save.',
     start_url: '/',
     display: 'standalone',
     background_color: '#0A0A0F',
-    theme_color: '#6366F1',
+    theme_color: '#0E9F6E',
     icons: [
       {
-        src: '/icon.png',
+        src: '/icons/icon-192.png',
         sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: '/icons/icon-512.png',
+        sizes: '512x512',
         type: 'image/png',
       },
     ],

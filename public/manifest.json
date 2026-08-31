@@ -1,11 +1,11 @@
 {
   "name": "Cash Save",
-  "short_name": "CashSave",
-  "description": "Application Web SaaS Mobile-First de suivi de productivité et finances personnelles.",
+  "short_name": "Cash Save",
+  "description": "Transformez vos habitudes, suivez vos finances et atteignez vos objectifs avec Cash Save.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A0F",
-  "theme_color": "#6366F1",
+  "theme_color": "#0E9F6E",
   "icons": [
     {
       "src": "/icons/icon-192.png",
