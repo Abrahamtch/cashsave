@@ -174,7 +174,7 @@ export function getMonthlyRevenueVsExpenses(transactions: Transaction[], months:
 /**
  * Calcul des totaux financiers
  */
-export function calculateFinancialSummary(transactions: Transaction[]) {
+export function calculateFinancialSummary(transactions: Transaction[], initialBalanceTotal: number = 0) {
   const totalIncome = transactions
     .filter(t => t.type === 'INCOME')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -183,11 +183,15 @@ export function calculateFinancialSummary(transactions: Transaction[]) {
     .filter(t => t.type === 'EXPENSE')
     .reduce((sum, t) => sum + t.amount, 0);
   
+  const netProfit = Math.round(totalIncome - totalExpense);
+  const balance = Math.round((initialBalanceTotal || 0) + netProfit);
+
   return {
     totalIncome: Math.round(totalIncome),
     totalExpense: Math.round(totalExpense),
-    netProfit: Math.round(totalIncome - totalExpense),
-    balance: Math.round(totalIncome - totalExpense),
+    netProfit,
+    balance,
+    initialBalance: Math.round(initialBalanceTotal || 0),
   };
 }
 

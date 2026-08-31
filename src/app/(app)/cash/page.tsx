@@ -28,21 +28,32 @@ export default function CashPage() {
   const [note, setNote] = useState('');
   const [isSatisfied, setIsSatisfied] = useState<boolean | null>(null);
   const [savingTx, setSavingTx] = useState(false);
+  const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
 
   useEffect(() => { loadTransactions(); }, []);
 
   async function loadTransactions() {
     const isLive = isLiveSupabaseConfigured();
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    if (localUser.initial_balance_total) {
+      setInitialBalanceTotal(localUser.initial_balance_total);
+    }
 
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false });
-          if (data && data.length > 0) {
-            setTransactions(data);
-            localStorage.setItem('cashsave_transactions', JSON.stringify(data));
+          const [txRes, profileRes] = await Promise.all([
+            supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+            supabase.from('profiles').select('initial_balance_total').eq('id', user.id).single(),
+          ]);
+          if (profileRes.data && profileRes.data.initial_balance_total) {
+            setInitialBalanceTotal(profileRes.data.initial_balance_total);
+          }
+          if (txRes.data && txRes.data.length > 0) {
+            setTransactions(txRes.data);
+            localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
             setLoading(false);
             return;
           }
@@ -111,7 +122,7 @@ export default function CashPage() {
     try { await supabase.from('transactions').delete().eq('id', id); } catch (e) {}
   };
 
-  const summary = calculateFinancialSummary(transactions);
+  const summary = calculateFinancialSummary(transactions, initialBalanceTotal);
   const categories = modalType === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
   const filtered = transactions.filter(t => {
     if (filterMonth && !t.date.startsWith(filterMonth)) return false;

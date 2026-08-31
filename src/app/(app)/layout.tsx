@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { createClient } from '@/lib/supabase/client';
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import OnboardingFlow from '@/components/OnboardingFlow';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,6 +28,43 @@ const SIDEBAR_ITEMS = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isReconfiguring, setIsReconfiguring] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, []);
+
+  async function checkOnboardingStatus() {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('onboarding') === 'true') {
+        setShowOnboarding(true);
+        setIsReconfiguring(true);
+        return;
+      }
+    }
+
+    const isLive = isLiveSupabaseConfigured();
+    if (isLive) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from('profiles').select('onboarding_status').eq('id', user.id).single();
+          if (data && (!data.onboarding_status || data.onboarding_status === 'not_started')) {
+            setShowOnboarding(true);
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    if (!localUser.onboarding_status || localUser.onboarding_status === 'not_started') {
+      setShowOnboarding(true);
+    }
+  }
 
   return (
     <div
@@ -165,6 +206,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
+
+      {/* Onboarding Flow Overlay */}
+      {showOnboarding && (
+        <OnboardingFlow
+          isReconfiguring={isReconfiguring}
+          onComplete={() => {
+            setShowOnboarding(false);
+            setIsReconfiguring(false);
+          }}
+          onSkip={() => {
+            setShowOnboarding(false);
+            setIsReconfiguring(false);
+          }}
+        />
+      )}
     </div>
   );
 }

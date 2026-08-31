@@ -2,6 +2,9 @@
 // Cash Save — Types TypeScript
 // ============================================
 
+export type OnboardingStatus = 'not_started' | 'skipped' | 'partial' | 'completed';
+export type RoutineStatus = 'regular' | 'irregular' | 'none';
+
 export interface Profile {
   id: string;
   email: string;
@@ -11,8 +14,30 @@ export interface Profile {
   is_premium: boolean;
   premium_expires_at: string | null;
   scoring_settings: ScoringSettings;
+  onboarding_status?: OnboardingStatus;
+  routine_status?: RoutineStatus;
+  initial_balance_total?: number;
   created_at: string;
   updated_at: string;
+}
+
+export type InitialBalanceSource = 'tmoney' | 'flooz' | 'banque' | 'especes' | 'portefeuille_en_ligne' | 'autre';
+
+export interface InitialBalance {
+  id: string;
+  user_id: string;
+  source_type: InitialBalanceSource;
+  source_label?: string;
+  amount: number;
+  created_at: string;
+}
+
+export interface UserHabitPreference {
+  id: string;
+  user_id: string;
+  habit_key: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface ScoringSettings {
