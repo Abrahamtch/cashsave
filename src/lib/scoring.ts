@@ -8,7 +8,8 @@ export function calculateRoutineCompletionPercentage(
   habitData: Partial<DailyHabit>,
   activeHabitKeys: string[] = [],
   customHabits: CustomHabit[] = [],
-  habitTargets: HabitTargets = DEFAULT_HABIT_TARGETS
+  habitTargets: HabitTargets = DEFAULT_HABIT_TARGETS,
+  hasTransactionForDate: boolean = false
 ): {
   percentage: number;
   completedCount: number;
@@ -20,7 +21,7 @@ export function calculateRoutineCompletionPercentage(
   // Active routine / boolean habits (built-in + custom boolean)
   const activeBooleans = ALL_BOOLEAN.filter(k => activeHabitKeys.includes(k));
   const customBooleans = customHabits.filter(h => h.type === 'boolean');
-  const totalRoutineHabitsCount = activeBooleans.length + customBooleans.length;
+  const otherRoutineCount = activeBooleans.length + customBooleans.length;
 
   // Active business / numeric habits (built-in + custom numeric)
   const activeNumerics = ALL_NUMERIC.filter(k => activeHabitKeys.includes(k));
@@ -28,12 +29,18 @@ export function calculateRoutineCompletionPercentage(
   const totalBusinessHabitsCount = activeNumerics.length + customNumerics.length;
 
   let completedCount = 0;
-  let routineScoreContribution = 0; // Out of 50%
+  let routineScoreContribution = 0; // Out of 50% (10% Track My Cash + 40% autres routines)
   let businessScoreContribution = 0; // Out of 50%
 
-  // 1. Calculate Routine / Boolean Habits Contribution (50% max)
-  if (totalRoutineHabitsCount > 0) {
-    const weightPerRoutine = 50 / totalRoutineHabitsCount;
+  // 1. Track My Cash System Habit (10% fixe sur 100%)
+  if (hasTransactionForDate) {
+    completedCount += 1;
+    routineScoreContribution += 10;
+  }
+
+  // 2. Autres habitudes de routine (40% max répartis équitablement)
+  if (otherRoutineCount > 0) {
+    const weightPerRoutine = 40 / otherRoutineCount;
 
     activeBooleans.forEach(k => {
       if (habitData[k]) {
@@ -51,7 +58,7 @@ export function calculateRoutineCompletionPercentage(
     });
   }
 
-  // 2. Calculate Business / Numeric Habits Contribution based on Quotas (50% max)
+  // 3. Compteurs Business & Quotas (50% max)
   if (totalBusinessHabitsCount > 0) {
     const weightPerBusiness = 50 / totalBusinessHabitsCount;
 
@@ -83,17 +90,8 @@ export function calculateRoutineCompletionPercentage(
     });
   }
 
-  // Final percentage scaling
-  let finalPercentage = 0;
-  if (totalRoutineHabitsCount > 0 && totalBusinessHabitsCount > 0) {
-    finalPercentage = routineScoreContribution + businessScoreContribution;
-  } else if (totalRoutineHabitsCount > 0) {
-    finalPercentage = (routineScoreContribution / 50) * 100;
-  } else if (totalBusinessHabitsCount > 0) {
-    finalPercentage = (businessScoreContribution / 50) * 100;
-  }
-
-  const totalTracked = totalRoutineHabitsCount + totalBusinessHabitsCount;
+  const totalTracked = 1 + otherRoutineCount + totalBusinessHabitsCount;
+  const finalPercentage = routineScoreContribution + businessScoreContribution;
   const percentage = Math.min(100, Math.round(finalPercentage));
 
   return { percentage, completedCount, totalTracked };

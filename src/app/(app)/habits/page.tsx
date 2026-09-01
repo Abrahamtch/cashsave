@@ -169,9 +169,18 @@ export default function HabitsPage() {
   const [wizardTargets, setWizardTargets] = useState<HabitTargets>(DEFAULT_HABIT_TARGETS);
   const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
 
+  // System Habit: Track My Cash State
+  const [hasTransactionForDate, setHasTransactionForDate] = useState(false);
+  const [showTrackMyCashTooltip, setShowTrackMyCashTooltip] = useState(false);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
+
+    // Check transactions for selectedDate
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    const txForDate = localTx.filter((t: any) => t.date === selectedDate);
+    let hasTx = txForDate.length > 0;
 
     const localCustom: CustomHabit[] = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
     setCustomHabits(localCustom);
@@ -191,13 +200,17 @@ export default function HabitsPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const [profileRes, habitRes, prefRes, customRes] = await Promise.all([
+          const [profileRes, habitRes, prefRes, customRes, txCountRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
             supabase.from('user_habit_preferences').select('*').eq('user_id', user.id).eq('is_active', true),
             supabase.from('custom_habits').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+            supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('date', selectedDate),
           ]);
           if (profileRes.data) setProfile(profileRes.data);
+          if (typeof txCountRes.count === 'number') {
+            hasTx = txCountRes.count > 0;
+          }
           if (customRes.data && customRes.data.length > 0) {
             setCustomHabits(customRes.data);
             localStorage.setItem('cashsave_custom_habits', JSON.stringify(customRes.data));
@@ -209,6 +222,7 @@ export default function HabitsPage() {
           }
           if (habitRes.data) {
             setHabitData(habitRes.data);
+            setHasTransactionForDate(hasTx);
             setLoading(false);
 
             if (!hasCheckedOnboarding) {
@@ -222,6 +236,8 @@ export default function HabitsPage() {
         }
       } catch (e) { /* fallback */ }
     }
+
+    setHasTransactionForDate(hasTx);
 
     const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
     setProfile({
@@ -270,7 +286,7 @@ export default function HabitsPage() {
     ? calculateAllScores(habitData, profile.scoring_settings)
     : { habit_score: 0, work_score: 0, business_score: 0, learning_score: 0, total_score: 0 };
 
-  const routineStats = calculateRoutineCompletionPercentage(habitData, activeHabits, customHabits, habitTargets);
+  const routineStats = calculateRoutineCompletionPercentage(habitData, activeHabits, customHabits, habitTargets, hasTransactionForDate);
 
   const handleToggle = (field: typeof BOOLEAN_FIELDS[number]) => {
     setHabitData(prev => ({ ...prev, [field]: !prev[field] }));
@@ -656,15 +672,67 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {(activeBooleanFields.length > 0 || customBooleans.length > 0) && (
-        <div className="glass-card p-4 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-              Habitudes à cocher
-            </p>
-          </div>
+      {/* Boolean Habits Section with Permanent System Habit Track My Cash */}
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
+            Habitudes à cocher
+          </p>
+        </div>
 
-          <div className="space-y-1.5">
+        <div className="space-y-1.5">
+          {/* Permanent System Habit: Track My Cash (10% Automatic Weight) */}
+          <div className="relative">
+            {showTrackMyCashTooltip && (
+              <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-[var(--bg-card)] border border-[var(--accent-border)] text-[var(--text-primary)] text-xs py-2.5 px-3.5 rounded-xl shadow-2xl z-30 flex items-center gap-2 max-w-md text-center animate-fade-in backdrop-blur-md">
+                <HelpCircle size={15} className="text-[var(--accent)] shrink-0" />
+                <span>Cette habitude est liée à l&apos;espace <strong>My Cash</strong>. Ajoutez au moins une transaction aujourd&apos;hui pour qu&apos;elle se coche automatiquement !</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowTrackMyCashTooltip(false); }}
+                  className="p-0.5 hover:bg-black/20 rounded ml-1 text-[var(--text-tertiary)]"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            )}
+
+            <div
+              onClick={() => setShowTrackMyCashTooltip(prev => !prev)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-150 group text-left cursor-pointer border shadow-sm select-none"
+              style={{
+                background: hasTransactionForDate ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
+                borderColor: hasTransactionForDate ? 'var(--accent-border)' : 'var(--border)',
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <HabitVectorIcon iconId="coins" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-sm font-semibold transition-colors"
+                      style={{ color: hasTransactionForDate ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                    >
+                      Track My Cash
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-border)]">
+                      10% Automatique
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="w-5 h-5 rounded-lg flex items-center justify-center transition-all duration-150 shrink-0"
+                style={{
+                  background: hasTransactionForDate ? 'var(--accent)' : 'var(--bg-base)',
+                  border: hasTransactionForDate ? 'none' : '1px solid var(--border-strong)',
+                }}
+              >
+                {hasTransactionForDate && <Check size={13} strokeWidth={2.5} color="white" />}
+              </div>
+            </div>
+          </div>
             {activeBooleanFields.map((field) => {
               const active = !!habitData[field];
               return (
@@ -756,7 +824,6 @@ export default function HabitsPage() {
             })}
           </div>
         </div>
-      )}
 
       {(activeNumericFields.length > 0 || customNumerics.length > 0) && (
         <div className="glass-card p-4 space-y-4">
