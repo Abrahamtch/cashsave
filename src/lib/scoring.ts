@@ -176,3 +176,52 @@ export function getScoreColor(level: string): string {
     default: return 'text-gray-400';
   }
 }
+
+/**
+ * Messages motivants, chaleureux et amicals selon le pourcentage de complétion quotidien
+ */
+export function getMotivationalStatusBadge(percentage: number): {
+  text: string;
+  bg: string;
+  color: string;
+  border: string;
+} {
+  if (percentage >= 100) {
+    return {
+      text: 'You are the GOAT ! 👑',
+      bg: 'rgba(14,159,110,0.15)',
+      color: '#0E9F6E',
+      border: '1px solid rgba(14,159,110,0.35)',
+    };
+  }
+  if (percentage >= 80) {
+    return {
+      text: 'Tu es trop fort ! 🔥',
+      bg: 'rgba(214,179,106,0.15)',
+      color: '#D6B36A',
+      border: '1px solid rgba(214,179,106,0.35)',
+    };
+  }
+  if (percentage >= 50) {
+    return {
+      text: 'Tu l\'as fait ! Continue 💪',
+      bg: 'var(--accent-subtle)',
+      color: 'var(--accent)',
+      border: '1px solid var(--accent-border)',
+    };
+  }
+  if (percentage >= 25) {
+    return {
+      text: 'La machine chauffe ! ⚡',
+      bg: 'var(--bg-card-hover)',
+      color: 'var(--text-secondary)',
+      border: '1px solid var(--border)',
+    };
+  }
+  return {
+    text: 'C\'est l\'heure du Beast Mode 🦁',
+    bg: 'var(--bg-card-hover)',
+    color: 'var(--text-tertiary)',
+    border: '1px solid var(--border)',
+  };
+}

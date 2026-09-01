@@ -6,7 +6,7 @@ import {
   DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS, CustomHabit, 
   HabitAxis, HabitType, HabitTargets, DEFAULT_HABIT_TARGETS 
 } from '@/types';
-import { calculateAllScores, getScoreLevel, calculateRoutineCompletionPercentage } from '@/lib/scoring';
+import { calculateAllScores, getScoreLevel, calculateRoutineCompletionPercentage, getMotivationalStatusBadge } from '@/lib/scoring';
 import { format, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -552,16 +552,21 @@ export default function HabitsPage() {
               </span>
             </div>
           </div>
-          <div
-            className="px-3 py-1 rounded-full text-xs font-semibold"
-            style={{
-              background: routineStats.percentage >= 80 ? 'rgba(14,159,110,0.12)' : 'var(--accent-subtle)',
-              color: routineStats.percentage >= 80 ? '#0E9F6E' : 'var(--accent)',
-              border: routineStats.percentage >= 80 ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--accent-border)',
-            }}
-          >
-            {routineStats.percentage >= 100 ? '100% Atteint 🎉' : routineStats.percentage >= 50 ? 'En bonne voie' : 'À compléter'}
-          </div>
+          {(() => {
+            const badge = getMotivationalStatusBadge(routineStats.percentage);
+            return (
+              <div
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0"
+                style={{
+                  background: badge.bg,
+                  color: badge.color,
+                  border: badge.border,
+                }}
+              >
+                {badge.text}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Dynamic Percentage Progress Bar */}
