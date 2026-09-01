@@ -74,6 +74,20 @@ export const DEFAULT_SCORING_SETTINGS: ScoringSettings = {
   learning_minutes: 0.1,
 };
 
+export type HabitType = 'boolean' | 'numeric';
+export type HabitAxis = 'esprit' | 'sante' | 'focus' | 'business';
+
+export interface CustomHabit {
+  id: string;
+  user_id: string;
+  title: string;
+  axis: HabitAxis;
+  type: HabitType;
+  icon?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface DailyHabit {
   id: string;
   user_id: string;
@@ -94,6 +108,8 @@ export interface DailyHabit {
   content_published: number;
   client_projects: number;
   learning_minutes: number;
+  // Logs personnalisés
+  custom_logs?: Record<string, boolean | number>;
   // Texte
   comments: string;
   progression: string;
@@ -118,6 +134,7 @@ export interface Transaction {
   date: string;
   note: string;
   is_satisfied: boolean | null;
+  image_url?: string | null;
   created_at: string;
 }
 

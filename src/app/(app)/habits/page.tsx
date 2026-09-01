@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS } from '@/types';
+import { DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS, CustomHabit, HabitAxis, HabitType } from '@/types';
 import { calculateAllScores, getScoreLevel, calculateRoutineCompletionPercentage } from '@/lib/scoring';
 import { format, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   ChevronLeft, ChevronRight, Calendar, Save,
-  Check, Minus, Plus, Sparkles, CheckCircle2
+  Check, Minus, Plus, Sparkles, CheckCircle2,
+  Pencil, Trash2, Settings2, X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -24,6 +25,8 @@ const SCORE_SEGMENTS = [
   { key: 'learning_score', label: 'Apprentissage' },
 ] as const;
 
+const ICON_OPTIONS = ['✨', '📖', '🙏', '🧘', '📚', '🎬', '💪', '💡', '🔥', '🌙', '📞', '📱', '📝', '💼', '🎓', '💧', '🏃', '🥗', '💰', '🚀'];
+
 export default function HabitsPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [habitData, setHabitData] = useState<Partial<DailyHabit>>({});
@@ -36,11 +39,23 @@ export default function HabitsPage() {
   const [activeHabits, setActiveHabits] = useState<string[]>([]);
   const [showAllHabits, setShowAllHabits] = useState(false);
 
+  // Custom Habits State
+  const [customHabits, setCustomHabits] = useState<CustomHabit[]>([]);
+  const [showCustomHabitModal, setShowCustomHabitModal] = useState(false);
+  const [editingCustomHabit, setEditingCustomHabit] = useState<CustomHabit | null>(null);
+  const [customTitle, setCustomTitle] = useState('');
+  const [customAxis, setCustomAxis] = useState<HabitAxis>('esprit');
+  const [customType, setCustomType] = useState<HabitType>('boolean');
+  const [customIcon, setCustomIcon] = useState('✨');
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
 
-    // Read local habit preferences
+    // Read local custom habits & preferences
+    const localCustom = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
+    setCustomHabits(localCustom);
+
     const localPrefs = JSON.parse(localStorage.getItem('cashsave_habit_preferences') || '[]');
     if (Array.isArray(localPrefs) && localPrefs.length > 0) {
       const activeKeys = localPrefs.filter((p: any) => p.is_active).map((p: any) => p.habit_key);
@@ -51,12 +66,17 @@ export default function HabitsPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const [profileRes, habitRes, prefRes] = await Promise.all([
+          const [profileRes, habitRes, prefRes, customRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
             supabase.from('user_habit_preferences').select('*').eq('user_id', user.id).eq('is_active', true),
+            supabase.from('custom_habits').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
           ]);
           if (profileRes.data) setProfile(profileRes.data);
+          if (customRes.data && customRes.data.length > 0) {
+            setCustomHabits(customRes.data);
+            localStorage.setItem('cashsave_custom_habits', JSON.stringify(customRes.data));
+          }
           if (prefRes.data && prefRes.data.length > 0) {
             const activeKeys = prefRes.data.map(p => p.habit_key);
             setActiveHabits(activeKeys);
@@ -120,6 +140,112 @@ export default function HabitsPage() {
     setSaved(false);
   };
 
+  const openCreateCustomHabitModal = () => {
+    setEditingCustomHabit(null);
+    setCustomTitle('');
+    setCustomAxis('esprit');
+    setCustomType('boolean');
+    setCustomIcon('✨');
+    setShowCustomHabitModal(true);
+  };
+
+  const openEditCustomHabitModal = (habit: CustomHabit) => {
+    setEditingCustomHabit(habit);
+    setCustomTitle(habit.title);
+    setCustomAxis(habit.axis);
+    setCustomType(habit.type);
+    setCustomIcon(habit.icon || '✨');
+    setShowCustomHabitModal(true);
+  };
+
+  const handleSaveCustomHabit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customTitle.trim()) return;
+
+    if (editingCustomHabit) {
+      const updated: CustomHabit = {
+        ...editingCustomHabit,
+        title: customTitle.trim(),
+        axis: customAxis,
+        type: customType,
+        icon: customIcon,
+      };
+
+      setCustomHabits(prev => prev.map(h => h.id === editingCustomHabit.id ? updated : h));
+      const local = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
+      const updatedLocal = local.map((h: any) => h.id === editingCustomHabit.id ? updated : h);
+      localStorage.setItem('cashsave_custom_habits', JSON.stringify(updatedLocal));
+
+      setShowCustomHabitModal(false);
+
+      if (isLiveSupabaseConfigured()) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('custom_habits').update({
+              title: updated.title,
+              axis: updated.axis,
+              type: updated.type,
+              icon: updated.icon,
+            }).eq('id', editingCustomHabit.id);
+          }
+        } catch (e) {}
+      }
+    } else {
+      const newHabit: CustomHabit = {
+        id: `custom-${Date.now()}`,
+        user_id: 'demo-user',
+        title: customTitle.trim(),
+        axis: customAxis,
+        type: customType,
+        icon: customIcon,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+
+      setCustomHabits(prev => [newHabit, ...prev]);
+      const local = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
+      local.unshift(newHabit);
+      localStorage.setItem('cashsave_custom_habits', JSON.stringify(local));
+
+      setShowCustomHabitModal(false);
+
+      if (isLiveSupabaseConfigured()) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('custom_habits').insert({ ...newHabit, user_id: user.id });
+          }
+        } catch (e) {}
+      }
+    }
+  };
+
+  const handleDeleteCustomHabit = async (id: string) => {
+    setCustomHabits(prev => prev.filter(h => h.id !== id));
+    const local = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
+    localStorage.setItem('cashsave_custom_habits', JSON.stringify(local.filter((h: any) => h.id !== id)));
+
+    if (isLiveSupabaseConfigured()) {
+      try {
+        await supabase.from('custom_habits').delete().eq('id', id);
+      } catch (e) {}
+    }
+  };
+
+  const handleToggleCustomHabit = (id: string, isBoolean: boolean, value?: number) => {
+    setHabitData(prev => {
+      const logs = { ...(prev.custom_logs || {}) };
+      if (isBoolean) {
+        logs[id] = !logs[id];
+      } else {
+        logs[id] = Math.max(0, Math.round(Number(value) || 0));
+      }
+      return { ...prev, custom_logs: logs };
+    });
+    setSaved(false);
+  };
+
   const handleTextChange = (field: 'comments' | 'progression', value: string) => {
     setHabitData(prev => ({ ...prev, [field]: value }));
     setSaved(false);
@@ -177,7 +303,7 @@ export default function HabitsPage() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1
             className="text-2xl font-semibold tracking-tight"
@@ -190,35 +316,45 @@ export default function HabitsPage() {
           </p>
         </div>
 
-        {/* Date Navigator */}
-        <div className="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl shadow-sm">
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => navigateDate('prev')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] cursor-pointer"
-            style={{ color: 'var(--text-secondary)' }}
-            aria-label="Jour précédent"
+            onClick={openCreateCustomHabitModal}
+            className="btn-primary text-xs py-2 px-3 flex items-center gap-1.5 cursor-pointer"
           >
-            <ChevronLeft size={16} strokeWidth={1.5} />
+            <Plus size={14} /> Nouvelle habitude
           </button>
-          
-          <div className="w-[160px]">
-            <FuturisticDatePicker
-              value={selectedDate}
-              onChange={(newDate) => setSelectedDate(newDate)}
-            />
-          </div>
 
-          <button
-            type="button"
-            onClick={() => navigateDate('next')}
-            disabled={selectedDate === format(new Date(), 'yyyy-MM-dd')}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] disabled:opacity-25 cursor-pointer"
-            style={{ color: 'var(--text-secondary)' }}
-            aria-label="Jour suivant"
-          >
-            <ChevronRight size={16} strokeWidth={1.5} />
-          </button>
+          {/* Date Navigator */}
+          <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl shadow-sm">
+            <button
+              type="button"
+              onClick={() => navigateDate('prev')}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] cursor-pointer"
+              style={{ color: 'var(--text-secondary)' }}
+              aria-label="Jour précédent"
+            >
+              <ChevronLeft size={16} strokeWidth={1.5} />
+            </button>
+            
+            <div className="w-[150px]">
+              <FuturisticDatePicker
+                value={selectedDate}
+                onChange={(newDate) => setSelectedDate(newDate)}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigateDate('next')}
+              disabled={selectedDate === format(new Date(), 'yyyy-MM-dd')}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-card-hover)] disabled:opacity-25 cursor-pointer"
+              style={{ color: 'var(--text-secondary)' }}
+              aria-label="Jour suivant"
+            >
+              <ChevronRight size={16} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -281,18 +417,18 @@ export default function HabitsPage() {
       <div className="glass-card p-4 space-y-3">
         <div className="flex items-center justify-between px-1">
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-            Habitudes du jour
+            Habitudes du jour (Coche ✓)
           </p>
           <span
             className="text-[11px] font-medium px-2 py-0.5 rounded-full"
             style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}
           >
-            {completedCount} / {BOOLEAN_FIELDS.length} faites
+            {completedCount} faites
           </span>
         </div>
 
-        {/* Spaced Row Items — No harsh divider lines */}
         <div className="space-y-1.5">
+          {/* Habitudes standard */}
           {BOOLEAN_FIELDS.filter(f => (activeHabits.length === 0 || showAllHabits || activeHabits.includes(f))).map((field) => {
             const active = !!habitData[field];
             const isPreferred = activeHabits.includes(field);
@@ -332,6 +468,65 @@ export default function HabitsPage() {
               </button>
             );
           })}
+
+          {/* Habitudes personnalisées booléennes */}
+          {customHabits.filter(h => h.type === 'boolean').map(cHabit => {
+            const logs = habitData.custom_logs || {};
+            const active = !!logs[cHabit.id];
+            return (
+              <div
+                key={cHabit.id}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-150 border"
+                style={{
+                  background: active ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
+                  borderColor: active ? 'var(--accent-border)' : 'transparent',
+                }}
+              >
+                <div
+                  className="flex-1 flex items-center gap-2.5 cursor-pointer"
+                  onClick={() => handleToggleCustomHabit(cHabit.id, true)}
+                >
+                  <span className="text-base">{cHabit.icon || '✨'}</span>
+                  <span className="text-sm font-medium" style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                    {cHabit.title}
+                  </span>
+                  <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/20 text-gray-400">
+                    {cHabit.axis}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openEditCustomHabitModal(cHabit)}
+                    className="p-1 rounded hover:bg-black/10 transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomHabit(cHabit.id)}
+                    className="p-1 rounded hover:bg-rose-500/10 transition-colors"
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+
+                  <div
+                    onClick={() => handleToggleCustomHabit(cHabit.id, true)}
+                    className="w-5 h-5 rounded-lg flex items-center justify-center transition-all duration-150 shrink-0 cursor-pointer ml-1"
+                    style={{
+                      background: active ? 'var(--accent)' : 'var(--bg-base)',
+                      border: active ? 'none' : '1px solid var(--border-strong)',
+                    }}
+                  >
+                    {active && <Check size={13} strokeWidth={2.5} color="white" />}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -339,12 +534,12 @@ export default function HabitsPage() {
       <div className="glass-card p-4 space-y-3">
         <div className="px-1">
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-            Activités &amp; Business
+            Activités &amp; Business (Compteurs 🔢)
           </p>
         </div>
 
-        {/* Spaced Row Items — No harsh divider lines */}
         <div className="space-y-1.5">
+          {/* Habitudes standard numériques */}
           {NUMERIC_FIELDS.filter(f => (activeHabits.length === 0 || showAllHabits || activeHabits.includes(f))).map(field => {
             const rawVal = habitData[field];
             const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
@@ -388,6 +583,76 @@ export default function HabitsPage() {
               </div>
             );
           })}
+
+          {/* Habitudes personnalisées numériques */}
+          {customHabits.filter(h => h.type === 'numeric').map(cHabit => {
+            const logs = habitData.custom_logs || {};
+            const rawVal = logs[cHabit.id];
+            const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
+            return (
+              <div
+                key={cHabit.id}
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl transition-all border"
+                style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{cHabit.icon || '✨'}</span>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    {cHabit.title}
+                  </span>
+                  <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/20 text-gray-400">
+                    {cHabit.axis}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEditCustomHabitModal(cHabit)}
+                    className="p-1 rounded hover:bg-black/10 transition-colors"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomHabit(cHabit.id)}
+                    className="p-1 rounded hover:bg-rose-500/10 transition-colors"
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCustomHabit(cHabit.id, false, val - 1)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none cursor-pointer shrink-0"
+                      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <input
+                      type="number"
+                      value={val}
+                      onChange={(e) => handleToggleCustomHabit(cHabit.id, false, parseInt(e.target.value, 10) || 0)}
+                      className="input-field py-1 px-1 text-center font-semibold"
+                      style={{ width: '48px', fontSize: '14px' }}
+                      min={0}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCustomHabit(cHabit.id, false, val + 1)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none cursor-pointer shrink-0"
+                      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -425,11 +690,11 @@ export default function HabitsPage() {
         onClick={handleSave}
         disabled={saving}
         id="save-habits"
-        className="btn-primary w-full py-3.5 shadow-lg"
+        className="btn-primary w-full py-3.5 shadow-lg cursor-pointer"
         style={saved ? { background: '#0E9F6E', boxShadow: '0 4px 16px rgba(14,159,110,0.35)' } : undefined}
       >
         {saving ? (
-          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
         ) : saved ? (
           <>
             <Check size={16} strokeWidth={2} />
@@ -442,6 +707,131 @@ export default function HabitsPage() {
           </>
         )}
       </button>
+
+      {/* Modal Création / Édition d'une Habitude Personnalisée */}
+      {showCustomHabitModal && (
+        <div
+          className="modal-overlay z-50 backdrop-blur-xl"
+          onClick={() => setShowCustomHabitModal(false)}
+        >
+          <div
+            className="modal-content max-w-md p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5 border-b pb-3" style={{ borderColor: 'var(--border)' }}>
+              <div>
+                <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+                  {editingCustomHabit ? 'Modifier l\'habitude' : 'Nouvelle habitude sur-mesure'}
+                </h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                  Définissez vos propres objectifs quotidiens
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCustomHabitModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-card-hover)] cursor-pointer"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomHabit} className="space-y-4">
+              <div>
+                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Titre de l&apos;habitude
+                </label>
+                <input
+                  type="text"
+                  value={customTitle}
+                  onChange={e => setCustomTitle(e.target.value)}
+                  placeholder="Ex: Boire 2L d'eau, Méditer 10min..."
+                  required
+                  className="input-field text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Axe d&apos;épanouissement
+                </label>
+                <select
+                  value={customAxis}
+                  onChange={e => setCustomAxis(e.target.value as HabitAxis)}
+                  className="input-field text-xs"
+                >
+                  <option value="esprit">📖 Esprit &amp; Foi</option>
+                  <option value="sante">💪 Santé &amp; Énergie</option>
+                  <option value="focus">🔥 Focus &amp; Travail</option>
+                  <option value="business">💼 Business &amp; Growth</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Type de suivi
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCustomType('boolean')}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer border"
+                    style={{
+                      background: customType === 'boolean' ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
+                      borderColor: customType === 'boolean' ? 'var(--accent-border)' : 'var(--border)',
+                      color: customType === 'boolean' ? 'var(--accent)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <Check size={14} /> Case à cocher (✓)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomType('numeric')}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer border"
+                    style={{
+                      background: customType === 'numeric' ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
+                      borderColor: customType === 'numeric' ? 'var(--accent-border)' : 'var(--border)',
+                      color: customType === 'numeric' ? 'var(--accent)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <Plus size={14} /> Compteur numérique (🔢)
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Choisir une icône
+                </label>
+                <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto p-2 rounded-xl border bg-black/20" style={{ borderColor: 'var(--border)' }}>
+                  {ICON_OPTIONS.map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setCustomIcon(icon)}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-transform hover:scale-110 cursor-pointer border"
+                      style={{
+                        background: customIcon === icon ? 'var(--accent-subtle)' : 'var(--bg-base)',
+                        borderColor: customIcon === icon ? 'var(--accent-border)' : 'transparent',
+                      }}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary w-full py-3 text-xs font-semibold cursor-pointer mt-2"
+              >
+                {editingCustomHabit ? 'Mettre à jour' : 'Créer cette habitude'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

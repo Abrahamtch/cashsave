@@ -29,6 +29,7 @@ export async function syncUserDataFromSupabase(userId: string) {
       habitRes,
       taskRes,
       objRes,
+      customHabitsRes,
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).single(),
       supabase.from('initial_balances').select('*').eq('user_id', userId),
@@ -37,6 +38,7 @@ export async function syncUserDataFromSupabase(userId: string) {
       supabase.from('daily_habits').select('*').eq('user_id', userId).order('date', { ascending: false }),
       supabase.from('tasks').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabase.from('objectives').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('custom_habits').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     ]);
 
     if (profileRes.data) {
@@ -69,6 +71,10 @@ export async function syncUserDataFromSupabase(userId: string) {
 
     if (objRes.data && objRes.data.length > 0) {
       localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
+    }
+
+    if (customHabitsRes.data && customHabitsRes.data.length > 0) {
+      localStorage.setItem('cashsave_custom_habits', JSON.stringify(customHabitsRes.data));
     }
 
     broadcastDataUpdate();
