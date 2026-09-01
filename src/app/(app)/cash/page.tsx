@@ -12,6 +12,7 @@ import {
   Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { broadcastDataUpdate } from '@/lib/syncUser';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function CashPage() {
@@ -39,32 +40,30 @@ export default function CashPage() {
   async function loadTransactions() {
     const isLive = isLiveSupabaseConfigured();
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-    if (localUser.initial_balance_total) {
-      setInitialBalanceTotal(localUser.initial_balance_total);
-    }
+    setTransactions(localTx);
 
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const [txRes, profileRes] = await Promise.all([
+          const [txRes, profileRes, initBalRes] = await Promise.all([
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
             supabase.from('profiles').select('initial_balance_total').eq('id', user.id).single(),
+            supabase.from('initial_balances').select('amount').eq('user_id', user.id),
           ]);
-          if (profileRes.data && profileRes.data.initial_balance_total) {
-            setInitialBalanceTotal(profileRes.data.initial_balance_total);
-          }
           if (txRes.data && txRes.data.length > 0) {
             setTransactions(txRes.data);
             localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
-            setLoading(false);
-            return;
           }
+          let totalBal = profileRes.data?.initial_balance_total || 0;
+          if (initBalRes.data && initBalRes.data.length > 0) {
+            const sum = initBalRes.data.reduce((acc, b) => acc + (b.amount || 0), 0);
+            if (sum > 0) totalBal = sum;
+          }
+          setInitialBalanceTotal(totalBal);
         }
       } catch (e) { /* fallback */ }
     }
-    setTransactions(localTx);
     setLoading(false);
   }
 
@@ -134,6 +133,7 @@ export default function CashPage() {
 
       setSavingTx(false);
       setShowModal(false);
+      broadcastDataUpdate();
 
       if (isLiveSupabaseConfigured()) {
         try {
@@ -173,6 +173,7 @@ export default function CashPage() {
 
       setSavingTx(false);
       setShowModal(false);
+      broadcastDataUpdate();
 
       if (isLiveSupabaseConfigured()) {
         try {
@@ -187,6 +188,7 @@ export default function CashPage() {
     setTransactions(prev => prev.filter(t => t.id !== id));
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
     localStorage.setItem('cashsave_transactions', JSON.stringify(localTx.filter((t: any) => t.id !== id)));
+    broadcastDataUpdate();
     try { await supabase.from('transactions').delete().eq('id', id); } catch (e) {}
   };
 

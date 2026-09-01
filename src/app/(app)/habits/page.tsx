@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { broadcastDataUpdate } from '@/lib/syncUser';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
@@ -176,11 +177,15 @@ export default function HabitsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
+    const targetDay = selectedDate.substring(0, 10);
 
-    // Check transactions for selectedDate
+    // 1. Check local transactions
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-    const txForDate = localTx.filter((t: any) => t.date === selectedDate);
-    let hasTx = txForDate.length > 0;
+    const hasLocalTx = Array.isArray(localTx) && localTx.some((t: any) => 
+      t && t.date && String(t.date).substring(0, 10) === targetDay
+    );
+
+    let hasSupabaseTx = false;
 
     const localCustom: CustomHabit[] = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
     setCustomHabits(localCustom);
@@ -200,47 +205,43 @@ export default function HabitsPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const [profileRes, habitRes, prefRes, customRes, txCountRes] = await Promise.all([
+          const [profileRes, habitRes, prefRes, customRes, txListRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('daily_habits').select('*').eq('user_id', user.id).eq('date', selectedDate).single(),
             supabase.from('user_habit_preferences').select('*').eq('user_id', user.id).eq('is_active', true),
             supabase.from('custom_habits').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-            supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('date', selectedDate),
+            supabase.from('transactions').select('id, date').eq('user_id', user.id),
           ]);
+
           if (profileRes.data) setProfile(profileRes.data);
-          if (typeof txCountRes.count === 'number') {
-            hasTx = txCountRes.count > 0;
+
+          if (txListRes.data && txListRes.data.length > 0) {
+            hasSupabaseTx = txListRes.data.some((t: any) => t && t.date && String(t.date).substring(0, 10) === targetDay);
           }
+
           if (customRes.data && customRes.data.length > 0) {
             setCustomHabits(customRes.data);
             localStorage.setItem('cashsave_custom_habits', JSON.stringify(customRes.data));
           }
+
           if (prefRes.data && prefRes.data.length > 0) {
             loadedActiveKeys = prefRes.data.map(p => p.habit_key);
             setActiveHabits(loadedActiveKeys);
             localStorage.setItem('cashsave_habit_preferences', JSON.stringify(prefRes.data));
           }
+
           if (habitRes.data) {
             setHabitData(habitRes.data);
-            setHasTransactionForDate(hasTx);
-            setLoading(false);
-
-            if (!hasCheckedOnboarding) {
-              setHasCheckedOnboarding(true);
-              if (loadedActiveKeys.length === 0 && (customRes.data?.length || localCustom.length) === 0) {
-                setShowInitialPromptModal(true);
-              }
-            }
-            return;
           }
         }
       } catch (e) { /* fallback */ }
     }
 
-    setHasTransactionForDate(hasTx);
+    const finalHasTx = hasLocalTx || hasSupabaseTx;
+    setHasTransactionForDate(finalHasTx);
 
     const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-    setProfile({
+    setProfile(prev => prev || {
       id: 'demo-user',
       email: localUser.email || 'demo@cashsave.app',
       full_name: localUser.full_name || 'Utilisateur Cash Save',
@@ -280,7 +281,18 @@ export default function HabitsPage() {
     setLoading(false);
   }, [selectedDate, hasCheckedOnboarding]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    const handleUpdate = () => { loadData(); };
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('cashsave_data_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('cashsave_data_updated', handleUpdate);
+    };
+  }, [loadData]);
 
   const scores = profile
     ? calculateAllScores(habitData, profile.scoring_settings)
