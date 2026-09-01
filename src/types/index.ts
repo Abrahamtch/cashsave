@@ -13,7 +13,7 @@ export interface Profile {
   trial_start_date: string;
   is_premium: boolean;
   premium_expires_at: string | null;
-  scoring_settings: ScoringSettings;
+  scoring_settings?: ScoringSettings;
   onboarding_status?: OnboardingStatus;
   routine_status?: RoutineStatus;
   initial_balance_total?: number;
