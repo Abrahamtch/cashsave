@@ -2,14 +2,17 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS, CustomHabit, HabitAxis, HabitType } from '@/types';
+import { 
+  DailyHabit, Profile, HABIT_LABELS, NUMERIC_HABIT_LABELS, CustomHabit, 
+  HabitAxis, HabitType, HabitTargets, DEFAULT_HABIT_TARGETS 
+} from '@/types';
 import { calculateAllScores, getScoreLevel, calculateRoutineCompletionPercentage } from '@/lib/scoring';
 import { format, subDays, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   ChevronLeft, ChevronRight, Calendar, Save,
   Check, Minus, Plus, Sparkles, CheckCircle2,
-  Pencil, Trash2, Settings2, X, Sliders, Layers, ArrowRight, HelpCircle
+  Pencil, Trash2, Settings2, X, Sliders, Target, HelpCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -17,13 +20,6 @@ import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
-
-const SCORE_SEGMENTS = [
-  { key: 'habit_score', label: 'Habitudes' },
-  { key: 'work_score', label: 'Travail' },
-  { key: 'business_score', label: 'Business' },
-  { key: 'learning_score', label: 'Apprentissage' },
-] as const;
 
 const ICON_OPTIONS = ['✨', '📖', '🙏', '🧘', '📚', '🎬', '💪', '💡', '🔥', '🌙', '📞', '📱', '📝', '💼', '🎓', '💧', '🏃', '🥗', '💰', '🚀'];
 
@@ -53,17 +49,17 @@ const WIZARD_CATEGORIES = [
     habits: [
       { key: 'deep_work', label: 'Session Deep Work', icon: '🔥' },
       { key: 'light_work', label: 'Light Work & Organisation', icon: '💡' },
-      { key: 'learning_minutes', label: 'Temps d\'apprentissage (min)', icon: '🎓' },
+      { key: 'learning_minutes', label: 'Temps d\'apprentissage (min)', icon: '🎓', defaultTarget: 30 },
     ],
   },
   {
     title: '💼 Business & Performance',
     axis: 'business',
     habits: [
-      { key: 'prospects_contacted', label: 'Prospects contactés', icon: '📞' },
-      { key: 'calls_made', label: 'Appels de vente / Réseautage', icon: '📱' },
-      { key: 'content_published', label: 'Contenu produit / publié', icon: '📝' },
-      { key: 'client_projects', label: 'Projets clients délivrés', icon: '💼' },
+      { key: 'prospects_contacted', label: 'Prospects contactés', icon: '📞', defaultTarget: 10 },
+      { key: 'calls_made', label: 'Appels de vente / Réseautage', icon: '📱', defaultTarget: 5 },
+      { key: 'content_published', label: 'Contenu produit / publié', icon: '📝', defaultTarget: 2 },
+      { key: 'client_projects', label: 'Projets clients délivrés', icon: '💼', defaultTarget: 3 },
     ],
   },
 ];
@@ -79,28 +75,40 @@ export default function HabitsPage() {
 
   const [activeHabits, setActiveHabits] = useState<string[]>([]);
   
-  // Custom Habits State
+  // Custom Habits & Habit Targets Quotas
   const [customHabits, setCustomHabits] = useState<CustomHabit[]>([]);
+  const [habitTargets, setHabitTargets] = useState<HabitTargets>(DEFAULT_HABIT_TARGETS);
+  
   const [showCustomHabitModal, setShowCustomHabitModal] = useState(false);
   const [editingCustomHabit, setEditingCustomHabit] = useState<CustomHabit | null>(null);
   const [customTitle, setCustomTitle] = useState('');
   const [customAxis, setCustomAxis] = useState<HabitAxis>('esprit');
   const [customType, setCustomType] = useState<HabitType>('boolean');
   const [customIcon, setCustomIcon] = useState('✨');
+  const [customTarget, setCustomTarget] = useState<number>(1);
+
+  // Target Quota Modal State
+  const [editingTargetModal, setEditingTargetModal] = useState<{ key: string; label: string; currentTarget: number } | null>(null);
+  const [targetInputValue, setTargetInputValue] = useState<string>('10');
 
   // Onboarding Wizard Pop-ups State
   const [showInitialPromptModal, setShowInitialPromptModal] = useState(false);
   const [showWizardModal, setShowWizardModal] = useState(false);
   const [wizardSelectedKeys, setWizardSelectedKeys] = useState<string[]>([]);
+  const [wizardTargets, setWizardTargets] = useState<HabitTargets>(DEFAULT_HABIT_TARGETS);
   const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
 
-    // Read local custom habits & preferences
+    // Read local custom habits, targets & preferences
     const localCustom: CustomHabit[] = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
     setCustomHabits(localCustom);
+
+    const localTargets: HabitTargets = JSON.parse(localStorage.getItem('cashsave_habit_targets') || 'null') || DEFAULT_HABIT_TARGETS;
+    setHabitTargets(localTargets);
+    setWizardTargets(localTargets);
 
     let loadedActiveKeys: string[] = [];
     const localPrefs = JSON.parse(localStorage.getItem('cashsave_habit_preferences') || '[]');
@@ -133,7 +141,6 @@ export default function HabitsPage() {
             setHabitData(habitRes.data);
             setLoading(false);
 
-            // Pop-up check for new / unconfigured users
             if (!hasCheckedOnboarding) {
               setHasCheckedOnboarding(true);
               if (loadedActiveKeys.length === 0 && (customRes.data?.length || localCustom.length) === 0) {
@@ -177,7 +184,6 @@ export default function HabitsPage() {
       setHabitData(emptyData);
     }
 
-    // Pop-up check for new / unconfigured users in local mode
     if (!hasCheckedOnboarding) {
       setHasCheckedOnboarding(true);
       if (loadedActiveKeys.length === 0 && localCustom.length === 0) {
@@ -194,7 +200,8 @@ export default function HabitsPage() {
     ? calculateAllScores(habitData, profile.scoring_settings)
     : { habit_score: 0, work_score: 0, business_score: 0, learning_score: 0, total_score: 0 };
 
-  const routineStats = calculateRoutineCompletionPercentage(habitData, activeHabits);
+  // Routine percentage computed with 50/50 weighted routine + business formula
+  const routineStats = calculateRoutineCompletionPercentage(habitData, activeHabits, customHabits, habitTargets);
 
   const handleToggle = (field: typeof BOOLEAN_FIELDS[number]) => {
     setHabitData(prev => ({ ...prev, [field]: !prev[field] }));
@@ -213,6 +220,7 @@ export default function HabitsPage() {
     setCustomAxis('esprit');
     setCustomType('boolean');
     setCustomIcon('✨');
+    setCustomTarget(1);
     setShowCustomHabitModal(true);
   };
 
@@ -222,11 +230,13 @@ export default function HabitsPage() {
     setCustomAxis(habit.axis);
     setCustomType(habit.type);
     setCustomIcon(habit.icon || '✨');
+    setCustomTarget(habit.target_quantity || habitTargets[habit.id] || 1);
     setShowCustomHabitModal(true);
   };
 
   const openWizardModal = () => {
     setWizardSelectedKeys(activeHabits);
+    setWizardTargets(habitTargets);
     setShowWizardModal(true);
   };
 
@@ -238,13 +248,16 @@ export default function HabitsPage() {
 
   const handleSaveWizardRoutine = async () => {
     setActiveHabits(wizardSelectedKeys);
-    setShowWizardModal(false);
+    setHabitTargets(wizardTargets);
+    localStorage.setItem('cashsave_habit_targets', JSON.stringify(wizardTargets));
 
     const prefObjects = wizardSelectedKeys.map(key => ({
       habit_key: key,
       is_active: true,
     }));
     localStorage.setItem('cashsave_habit_preferences', JSON.stringify(prefObjects));
+
+    setShowWizardModal(false);
 
     if (isLiveSupabaseConfigured()) {
       try {
@@ -266,6 +279,31 @@ export default function HabitsPage() {
     confetti({ particleCount: 90, spread: 60, origin: { y: 0.6 }, colors: ['#0E9F6E', '#087A56', '#D6B36A'] });
   };
 
+  const handleSaveTargetQuota = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTargetModal) return;
+    const newTarget = Math.max(1, parseInt(targetInputValue, 10) || 1);
+
+    const updated = { ...habitTargets, [editingTargetModal.key]: newTarget };
+    setHabitTargets(updated);
+    localStorage.setItem('cashsave_habit_targets', JSON.stringify(updated));
+
+    if (editingTargetModal.key.startsWith('custom-')) {
+      setCustomHabits(prev => prev.map(h => h.id === editingTargetModal.key ? { ...h, target_quantity: newTarget } : h));
+      const localCustom = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
+      const updatedLocal = localCustom.map((h: any) => h.id === editingTargetModal.key ? { ...h, target_quantity: newTarget } : h);
+      localStorage.setItem('cashsave_custom_habits', JSON.stringify(updatedLocal));
+
+      if (isLiveSupabaseConfigured()) {
+        try {
+          await supabase.from('custom_habits').update({ target_quantity: newTarget }).eq('id', editingTargetModal.key);
+        } catch (e) {}
+      }
+    }
+
+    setEditingTargetModal(null);
+  };
+
   const handleSaveCustomHabit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customTitle.trim()) return;
@@ -277,12 +315,19 @@ export default function HabitsPage() {
         axis: customAxis,
         type: customType,
         icon: customIcon,
+        target_quantity: customType === 'numeric' ? Math.max(1, customTarget) : undefined,
       };
 
       setCustomHabits(prev => prev.map(h => h.id === editingCustomHabit.id ? updated : h));
       const local = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
       const updatedLocal = local.map((h: any) => h.id === editingCustomHabit.id ? updated : h);
       localStorage.setItem('cashsave_custom_habits', JSON.stringify(updatedLocal));
+
+      if (customType === 'numeric') {
+        const updatedTargets = { ...habitTargets, [editingCustomHabit.id]: Math.max(1, customTarget) };
+        setHabitTargets(updatedTargets);
+        localStorage.setItem('cashsave_habit_targets', JSON.stringify(updatedTargets));
+      }
 
       setShowCustomHabitModal(false);
 
@@ -295,18 +340,21 @@ export default function HabitsPage() {
               axis: updated.axis,
               type: updated.type,
               icon: updated.icon,
+              target_quantity: updated.target_quantity,
             }).eq('id', editingCustomHabit.id);
           }
         } catch (e) {}
       }
     } else {
+      const customId = `custom-${Date.now()}`;
       const newHabit: CustomHabit = {
-        id: `custom-${Date.now()}`,
+        id: customId,
         user_id: 'demo-user',
         title: customTitle.trim(),
         axis: customAxis,
         type: customType,
         icon: customIcon,
+        target_quantity: customType === 'numeric' ? Math.max(1, customTarget) : undefined,
         is_active: true,
         created_at: new Date().toISOString(),
       };
@@ -315,6 +363,12 @@ export default function HabitsPage() {
       const local = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
       local.unshift(newHabit);
       localStorage.setItem('cashsave_custom_habits', JSON.stringify(local));
+
+      if (customType === 'numeric') {
+        const updatedTargets = { ...habitTargets, [customId]: Math.max(1, customTarget) };
+        setHabitTargets(updatedTargets);
+        localStorage.setItem('cashsave_habit_targets', JSON.stringify(updatedTargets));
+      }
 
       setShowCustomHabitModal(false);
 
@@ -406,7 +460,6 @@ export default function HabitsPage() {
     );
   }
 
-  // Active standard boolean & numeric habits
   const activeBooleanFields = BOOLEAN_FIELDS.filter(f => activeHabits.includes(f));
   const activeNumericFields = NUMERIC_FIELDS.filter(f => activeHabits.includes(f));
   const customBooleans = customHabits.filter(h => h.type === 'boolean');
@@ -482,11 +535,11 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* Routine Percentage & Progress Bar */}
+      {/* Routine Percentage & Overall Progress Bar */}
       <div className="glass-card p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Complétion de la routine</p>
+            <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Complétion de la routine globale</p>
             <div className="flex items-baseline gap-2 mt-0.5">
               <p
                 className="text-3xl font-bold tracking-tight"
@@ -495,7 +548,7 @@ export default function HabitsPage() {
                 {routineStats.percentage}%
               </p>
               <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                ({routineStats.completedCount}/{routineStats.totalTracked} faites aujourd&apos;hui)
+                ({routineStats.completedCount}/{routineStats.totalTracked} objectifs complétés aujourd&apos;hui)
               </span>
             </div>
           </div>
@@ -554,7 +607,6 @@ export default function HabitsPage() {
           </div>
 
           <div className="space-y-1.5">
-            {/* Standard Boolean Habits */}
             {activeBooleanFields.map((field) => {
               const active = !!habitData[field];
               return (
@@ -587,7 +639,6 @@ export default function HabitsPage() {
               );
             })}
 
-            {/* Custom Boolean Habits */}
             {customBooleans.map(cHabit => {
               const logs = habitData.custom_logs || {};
               const active = !!logs[cHabit.id];
@@ -649,125 +700,219 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* Numeric Inputs Section */}
+      {/* Numeric Inputs & Business Quotas Section with Individual Mini Progress Bars */}
       {(activeNumericFields.length > 0 || customNumerics.length > 0) && (
-        <div className="glass-card p-4 space-y-3">
-          <div className="px-1">
+        <div className="glass-card p-4 space-y-4">
+          <div className="px-1 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-              Compteurs d&apos;Activités &amp; Business (🔢)
+              Objectifs &amp; Compteurs Business (🔢)
             </p>
+            <span className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+              Barres de progression individuelles
+            </span>
           </div>
 
-          <div className="space-y-1.5">
-            {/* Standard Numeric Habits */}
+          <div className="space-y-3">
+            {/* Standard Numeric Business Habits */}
             {activeNumericFields.map(field => {
               const rawVal = habitData[field];
               const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
+              const target = habitTargets[field] || DEFAULT_HABIT_TARGETS[field] || 1;
+              const ratioPct = Math.min(100, Math.round((val / target) * 100));
+              const isQuotaAchieved = val >= target;
+
               return (
                 <div
                   key={field}
-                  className="flex items-center justify-between px-4 py-2.5 rounded-xl transition-all"
-                  style={{ background: 'var(--bg-card-hover)', border: '1px solid transparent' }}
+                  className="p-4 rounded-xl space-y-2.5 transition-all border"
+                  style={{
+                    background: isQuotaAchieved ? 'rgba(14,159,110,0.06)' : 'var(--bg-card-hover)',
+                    borderColor: isQuotaAchieved ? 'rgba(14,159,110,0.25)' : 'var(--border)',
+                  }}
                 >
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    {NUMERIC_HABIT_LABELS[field]}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleNumericChange(field, val - 1)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
-                      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                      aria-label="Diminuer"
-                    >
-                      <Minus size={14} strokeWidth={2} />
-                    </button>
-                    <input
-                      type="number"
-                      value={val}
-                      onChange={(e) => handleNumericChange(field, parseInt(e.target.value, 10) || 0)}
-                      className="input-field py-1 px-1 text-center font-semibold"
-                      style={{ width: '48px', fontSize: '14px' }}
-                      min={0}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleNumericChange(field, val + 1)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
-                      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                      aria-label="Augmenter"
-                    >
-                      <Plus size={14} strokeWidth={2} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Custom Numeric Habits */}
-            {customNumerics.map(cHabit => {
-              const logs = habitData.custom_logs || {};
-              const rawVal = logs[cHabit.id];
-              const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
-              return (
-                <div
-                  key={cHabit.id}
-                  className="flex items-center justify-between px-4 py-2.5 rounded-xl transition-all border"
-                  style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{cHabit.icon || '✨'}</span>
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {cHabit.title}
-                    </span>
-                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/20 text-gray-400">
-                      {cHabit.axis}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openEditCustomHabitModal(cHabit)}
-                      className="p-1 rounded hover:bg-black/10 transition-colors"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCustomHabit(cHabit.id)}
-                      className="p-1 rounded hover:bg-rose-500/10 transition-colors"
-                      style={{ color: 'var(--color-danger)' }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-
-                    <div className="flex items-center gap-1.5 ml-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {NUMERIC_HABIT_LABELS[field]}
+                      </span>
+                      
                       <button
                         type="button"
-                        onClick={() => handleToggleCustomHabit(cHabit.id, false, val - 1)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none cursor-pointer shrink-0"
-                        style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        onClick={() => {
+                          setEditingTargetModal({ key: field, label: NUMERIC_HABIT_LABELS[field], currentTarget: target });
+                          setTargetInputValue(String(target));
+                        }}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer border hover:opacity-80 shrink-0"
+                        style={{
+                          background: 'var(--bg-base)',
+                          color: 'var(--accent)',
+                          borderColor: 'var(--accent-border)',
+                        }}
+                        title="Définir le quota quotidien"
                       >
-                        <Minus size={14} />
+                        <Target size={11} /> Quota: {target}/jour ✏️
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleNumericChange(field, val - 1)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
+                        style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        aria-label="Diminuer"
+                      >
+                        <Minus size={14} strokeWidth={2} />
                       </button>
                       <input
                         type="number"
                         value={val}
-                        onChange={(e) => handleToggleCustomHabit(cHabit.id, false, parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => handleNumericChange(field, parseInt(e.target.value, 10) || 0)}
                         className="input-field py-1 px-1 text-center font-semibold"
                         style={{ width: '48px', fontSize: '14px' }}
                         min={0}
                       />
                       <button
                         type="button"
-                        onClick={() => handleToggleCustomHabit(cHabit.id, false, val + 1)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none cursor-pointer shrink-0"
+                        onClick={() => handleNumericChange(field, val + 1)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
                         style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        aria-label="Augmenter"
                       >
-                        <Plus size={14} />
+                        <Plus size={14} strokeWidth={2} />
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Individual Business Progress Bar */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                      <span>Accompli : <strong style={{ color: isQuotaAchieved ? '#0E9F6E' : 'var(--text-secondary)' }}>{val} / {target}</strong></span>
+                      <span className="flex items-center gap-1">
+                        {isQuotaAchieved && <CheckCircle2 size={12} style={{ color: '#0E9F6E' }} />}
+                        <span style={{ color: isQuotaAchieved ? '#0E9F6E' : 'var(--accent)' }}>{ratioPct}%</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden p-0.5 border border-[var(--border)]">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${ratioPct}%`,
+                          background: isQuotaAchieved ? 'linear-gradient(135deg, #0E9F6E, #087A56)' : 'var(--accent)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Custom Numeric Business Habits */}
+            {customNumerics.map(cHabit => {
+              const logs = habitData.custom_logs || {};
+              const rawVal = logs[cHabit.id];
+              const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
+              const target = cHabit.target_quantity || habitTargets[cHabit.id] || 1;
+              const ratioPct = Math.min(100, Math.round((val / target) * 100));
+              const isQuotaAchieved = val >= target;
+
+              return (
+                <div
+                  key={cHabit.id}
+                  className="p-4 rounded-xl space-y-2.5 transition-all border"
+                  style={{
+                    background: isQuotaAchieved ? 'rgba(14,159,110,0.06)' : 'var(--bg-card-hover)',
+                    borderColor: isQuotaAchieved ? 'rgba(14,159,110,0.25)' : 'var(--border)',
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="text-base">{cHabit.icon || '✨'}</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {cHabit.title}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingTargetModal({ key: cHabit.id, label: cHabit.title, currentTarget: target });
+                          setTargetInputValue(String(target));
+                        }}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer border hover:opacity-80 shrink-0"
+                        style={{
+                          background: 'var(--bg-base)',
+                          color: 'var(--accent)',
+                          borderColor: 'var(--accent-border)',
+                        }}
+                        title="Définir le quota quotidien"
+                      >
+                        <Target size={11} /> Quota: {target}/jour ✏️
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => openEditCustomHabitModal(cHabit)}
+                        className="p-1 rounded hover:bg-black/10 transition-colors"
+                        style={{ color: 'var(--text-tertiary)' }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomHabit(cHabit.id)}
+                        className="p-1 rounded hover:bg-rose-500/10 transition-colors"
+                        style={{ color: 'var(--color-danger)' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCustomHabit(cHabit.id, false, val - 1)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none cursor-pointer shrink-0"
+                          style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <input
+                          type="number"
+                          value={val}
+                          onChange={(e) => handleToggleCustomHabit(cHabit.id, false, parseInt(e.target.value, 10) || 0)}
+                          className="input-field py-1 px-1 text-center font-semibold"
+                          style={{ width: '48px', fontSize: '14px' }}
+                          min={0}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCustomHabit(cHabit.id, false, val + 1)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none cursor-pointer shrink-0"
+                          style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Individual Business Progress Bar */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                      <span>Accompli : <strong style={{ color: isQuotaAchieved ? '#0E9F6E' : 'var(--text-secondary)' }}>{val} / {target}</strong></span>
+                      <span className="flex items-center gap-1">
+                        {isQuotaAchieved && <CheckCircle2 size={12} style={{ color: '#0E9F6E' }} />}
+                        <span style={{ color: isQuotaAchieved ? '#0E9F6E' : 'var(--accent)' }}>{ratioPct}%</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden p-0.5 border border-[var(--border)]">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${ratioPct}%`,
+                          background: isQuotaAchieved ? 'linear-gradient(135deg, #0E9F6E, #087A56)' : 'var(--accent)',
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -829,7 +974,7 @@ export default function HabitsPage() {
         )}
       </button>
 
-      {/* POP-UP 1: Prompt initial d'onboarding pour nouvel utilisateur sans habitudes */}
+      {/* MODAL 1: Prompt initial d'onboarding pour nouvel utilisateur sans habitudes */}
       {showInitialPromptModal && (
         <div className="modal-overlay z-50 backdrop-blur-xl animate-fade-in">
           <div className="modal-content max-w-md p-6 text-center space-y-5">
@@ -870,7 +1015,7 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* POP-UP 2: Questionnaire Interactif de Configuration des Habitudes */}
+      {/* MODAL 2: Questionnaire Interactif de Configuration des Habitudes & Quotas */}
       {showWizardModal && (
         <div
           className="modal-overlay z-50 backdrop-blur-xl"
@@ -883,10 +1028,10 @@ export default function HabitsPage() {
             <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: 'var(--border)' }}>
               <div>
                 <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
-                  Configurer votre routine d&apos;habitudes
+                  Configurer votre routine d&apos;habitudes &amp; Quotas
                 </h3>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                  Cochez les habitudes quotidiennes que vous désirez mesurer
+                  Cochez vos habitudes quotidiennes et définissez vos objectifs de performance
                 </p>
               </div>
               <button
@@ -900,43 +1045,67 @@ export default function HabitsPage() {
             </div>
 
             {/* Category Wizard List */}
-            <div className="space-y-5">
+            <div className="space-y-6">
               {WIZARD_CATEGORIES.map(cat => (
-                <div key={cat.axis} className="space-y-2.5">
+                <div key={cat.axis} className="space-y-3">
                   <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
                     {cat.title}
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {cat.habits.map(h => {
                       const isSelected = wizardSelectedKeys.includes(h.key);
+                      const targetVal = wizardTargets[h.key] || h.defaultTarget || 1;
                       return (
-                        <button
+                        <div
                           key={h.key}
-                          type="button"
-                          onClick={() => handleToggleWizardKey(h.key)}
-                          className="flex items-center justify-between p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer"
+                          className="p-3 rounded-xl border space-y-2 transition-all duration-150"
                           style={{
                             background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
                             borderColor: isSelected ? 'var(--accent-border)' : 'var(--border)',
                           }}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-lg">{h.icon}</span>
-                            <span className="text-xs font-semibold" style={{ color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                              {h.label}
-                            </span>
+                          <div
+                            className="flex items-center justify-between cursor-pointer"
+                            onClick={() => handleToggleWizardKey(h.key)}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-lg">{h.icon}</span>
+                              <span className="text-xs font-semibold truncate" style={{ color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                                {h.label}
+                              </span>
+                            </div>
+
+                            <div
+                              className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 transition-all ml-1"
+                              style={{
+                                background: isSelected ? 'var(--accent)' : 'var(--bg-base)',
+                                border: isSelected ? 'none' : '1px solid var(--border-strong)',
+                              }}
+                            >
+                              {isSelected && <Check size={13} strokeWidth={2.5} color="white" />}
+                            </div>
                           </div>
 
-                          <div
-                            className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 transition-all"
-                            style={{
-                              background: isSelected ? 'var(--accent)' : 'var(--bg-base)',
-                              border: isSelected ? 'none' : '1px solid var(--border-strong)',
-                            }}
-                          >
-                            {isSelected && <Check size={13} strokeWidth={2.5} color="white" />}
-                          </div>
-                        </button>
+                          {/* Quota Input for Numeric Habits */}
+                          {h.defaultTarget && isSelected && (
+                            <div className="flex items-center justify-between pt-1 border-t text-[11px]" style={{ borderColor: 'var(--accent-border)' }}>
+                              <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Objectif / jour :</span>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={targetVal}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                                    setWizardTargets(prev => ({ ...prev, [h.key]: val }));
+                                  }}
+                                  className="input-field py-0.5 px-1.5 text-center text-xs font-bold w-14"
+                                />
+                                <span style={{ color: 'var(--text-tertiary)' }}>{h.key === 'learning_minutes' ? 'min' : 'unités'}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -965,7 +1134,64 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* Modal Création / Édition d'une Habitude Personnalisée */}
+      {/* MODAL 3: Définir Quota Quotidien d'une Habitude Business */}
+      {editingTargetModal && (
+        <div
+          className="modal-overlay z-50 backdrop-blur-xl animate-fade-in"
+          onClick={() => setEditingTargetModal(null)}
+        >
+          <div
+            className="modal-content max-w-sm p-6 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-2">
+                <Target size={18} style={{ color: 'var(--accent)' }} />
+                <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  Objectif quotidien
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTargetModal(null)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-card-hover)] cursor-pointer"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTargetQuota} className="space-y-4">
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Définissez la quantité minimale quotidienne à accomplir pour <strong>{editingTargetModal.label}</strong> :
+              </p>
+
+              <div>
+                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Quota / Objectif par jour
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  required
+                  value={targetInputValue}
+                  onChange={(e) => setTargetInputValue(e.target.value)}
+                  className="input-field text-xl font-bold text-center py-2.5"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary w-full py-3 text-xs font-bold cursor-pointer"
+              >
+                Enregistrer l&apos;objectif
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: Création / Édition d'une Habitude Personnalisée */}
       {showCustomHabitModal && (
         <div
           className="modal-overlay z-50 backdrop-blur-xl"
@@ -1056,6 +1282,22 @@ export default function HabitsPage() {
                   </button>
                 </div>
               </div>
+
+              {customType === 'numeric' && (
+                <div>
+                  <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    Quota / Objectif quotidien
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={customTarget}
+                    onChange={e => setCustomTarget(parseInt(e.target.value, 10) || 1)}
+                    className="input-field text-sm font-semibold"
+                    placeholder="1"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>

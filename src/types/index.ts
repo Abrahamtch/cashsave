@@ -74,6 +74,23 @@ export const DEFAULT_SCORING_SETTINGS: ScoringSettings = {
   learning_minutes: 0.1,
 };
 
+export interface HabitTargets {
+  prospects_contacted?: number;
+  calls_made?: number;
+  content_published?: number;
+  client_projects?: number;
+  learning_minutes?: number;
+  [key: string]: number | undefined;
+}
+
+export const DEFAULT_HABIT_TARGETS: HabitTargets = {
+  prospects_contacted: 10,
+  calls_made: 5,
+  content_published: 2,
+  client_projects: 3,
+  learning_minutes: 30,
+};
+
 export type HabitType = 'boolean' | 'numeric';
 export type HabitAxis = 'esprit' | 'sante' | 'focus' | 'business';
 
@@ -84,6 +101,7 @@ export interface CustomHabit {
   axis: HabitAxis;
   type: HabitType;
   icon?: string;
+  target_quantity?: number;
   is_active: boolean;
   created_at: string;
 }

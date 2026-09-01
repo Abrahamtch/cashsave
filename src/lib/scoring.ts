@@ -1,12 +1,14 @@
-import { DailyHabit, ScoringSettings } from '@/types';
+import { DailyHabit, ScoringSettings, CustomHabit, HabitTargets, DEFAULT_HABIT_TARGETS } from '@/types';
 
 /**
  * Calcul du taux de complétion quotidien des habitudes en pourcentage (0% à 100%).
- * Les 100% sont divisés équitablement entre les habitudes sélectionnées et actives.
+ * 50% attribués aux habitudes de routine et 50% attribués aux habitudes business (basés sur leurs quotas).
  */
 export function calculateRoutineCompletionPercentage(
   habitData: Partial<DailyHabit>,
-  activeHabitKeys: string[] = []
+  activeHabitKeys: string[] = [],
+  customHabits: CustomHabit[] = [],
+  habitTargets: HabitTargets = DEFAULT_HABIT_TARGETS
 ): {
   percentage: number;
   completedCount: number;
@@ -15,36 +17,85 @@ export function calculateRoutineCompletionPercentage(
   const ALL_BOOLEAN = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
   const ALL_NUMERIC = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
 
+  // Active routine / boolean habits (built-in + custom boolean)
   const activeBooleans = ALL_BOOLEAN.filter(k => activeHabitKeys.includes(k));
+  const customBooleans = customHabits.filter(h => h.type === 'boolean');
+  const totalRoutineHabitsCount = activeBooleans.length + customBooleans.length;
+
+  // Active business / numeric habits (built-in + custom numeric)
   const activeNumerics = ALL_NUMERIC.filter(k => activeHabitKeys.includes(k));
+  const customNumerics = customHabits.filter(h => h.type === 'numeric');
+  const totalBusinessHabitsCount = activeNumerics.length + customNumerics.length;
 
   let completedCount = 0;
+  let routineScoreContribution = 0; // Out of 50%
+  let businessScoreContribution = 0; // Out of 50%
 
-  activeBooleans.forEach(k => {
-    if (habitData[k]) completedCount += 1;
-  });
+  // 1. Calculate Routine / Boolean Habits Contribution (50% max)
+  if (totalRoutineHabitsCount > 0) {
+    const weightPerRoutine = 50 / totalRoutineHabitsCount;
 
-  activeNumerics.forEach(k => {
-    const val = typeof habitData[k] === 'number' ? habitData[k] : parseFloat(String(habitData[k] || 0));
-    if (val && val > 0) completedCount += 1;
-  });
+    activeBooleans.forEach(k => {
+      if (habitData[k]) {
+        completedCount += 1;
+        routineScoreContribution += weightPerRoutine;
+      }
+    });
 
-  // Prise en compte des habitudes personnalisées
-  const customLogs = habitData.custom_logs || {};
-  const customLogKeys = Object.keys(customLogs);
-  let customCompleted = 0;
-  customLogKeys.forEach(k => {
-    const val = customLogs[k];
-    if (typeof val === 'boolean' && val) customCompleted += 1;
-    if (typeof val === 'number' && val > 0) customCompleted += 1;
-  });
+    const customLogs = habitData.custom_logs || {};
+    customBooleans.forEach(h => {
+      if (customLogs[h.id]) {
+        completedCount += 1;
+        routineScoreContribution += weightPerRoutine;
+      }
+    });
+  }
 
-  completedCount += customCompleted;
-  const totalTracked = activeBooleans.length + activeNumerics.length + customLogKeys.length;
+  // 2. Calculate Business / Numeric Habits Contribution based on Quotas (50% max)
+  if (totalBusinessHabitsCount > 0) {
+    const weightPerBusiness = 50 / totalBusinessHabitsCount;
 
-  if (totalTracked === 0) return { percentage: 0, completedCount: 0, totalTracked: 0 };
+    activeNumerics.forEach(k => {
+      const rawVal = habitData[k];
+      const val = typeof rawVal === 'number' ? rawVal : (parseFloat(String(rawVal || 0)) || 0);
+      const target = habitTargets[k] || DEFAULT_HABIT_TARGETS[k] || 1;
+      
+      const ratio = Math.min(1.0, val / target);
+      businessScoreContribution += ratio * weightPerBusiness;
 
-  const percentage = Math.min(100, Math.round((completedCount / totalTracked) * 100));
+      if (val >= target) {
+        completedCount += 1;
+      }
+    });
+
+    const customLogs = habitData.custom_logs || {};
+    customNumerics.forEach(h => {
+      const rawVal = customLogs[h.id];
+      const val = typeof rawVal === 'number' ? rawVal : (parseFloat(String(rawVal || 0)) || 0);
+      const target = h.target_quantity || habitTargets[h.id] || 1;
+
+      const ratio = Math.min(1.0, val / target);
+      businessScoreContribution += ratio * weightPerBusiness;
+
+      if (val >= target) {
+        completedCount += 1;
+      }
+    });
+  }
+
+  // Final percentage scaling
+  let finalPercentage = 0;
+  if (totalRoutineHabitsCount > 0 && totalBusinessHabitsCount > 0) {
+    finalPercentage = routineScoreContribution + businessScoreContribution;
+  } else if (totalRoutineHabitsCount > 0) {
+    finalPercentage = (routineScoreContribution / 50) * 100;
+  } else if (totalBusinessHabitsCount > 0) {
+    finalPercentage = (businessScoreContribution / 50) * 100;
+  }
+
+  const totalTracked = totalRoutineHabitsCount + totalBusinessHabitsCount;
+  const percentage = Math.min(100, Math.round(finalPercentage));
+
   return { percentage, completedCount, totalTracked };
 }
 
