@@ -17,9 +17,10 @@ import {
   FileText, Briefcase, GraduationCap, Droplet, Rocket, Coins, TrendingUp, Award,
   Sun, Coffee, Star, Feather, Globe, UserCheck
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate } from '@/lib/syncUser';
-import { generateUUID, ensureUUID } from '@/lib/uuid';
+import { generateUUID, ensureUUID, isValidUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
@@ -328,6 +329,8 @@ export default function HabitsPage() {
     setCustomTarget(habit.target_quantity || habitTargets[habit.id] || 1);
     setShowCustomHabitModal(true);
   };
+
+  const openEditCustomHabitModal = openEditModal;
 
   const openWizardModal = () => {
     setWizardSelectedKeys(activeHabits);
