@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { syncUserDataFromSupabase } from '@/lib/syncUser';
 
 export default function LoginPage() {
@@ -23,44 +24,64 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { data, error: sbError } = await supabase.auth.signInWithPassword({ email, password });
-      if (data?.user) {
-        await syncUserDataFromSupabase(data.user.id);
+      const isLive = isLiveSupabaseConfigured();
+      if (isLive) {
+        const { data, error: sbError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (sbError) {
+          setError(
+            sbError.message.includes('Invalid login credentials')
+              ? 'Adresse e-mail ou mot de passe incorrect. Veuillez vérifier vos identifiants.'
+              : sbError.message
+          );
+          setLoading(false);
+          return;
+        }
+
+        if (data?.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+
+          await syncUserDataFromSupabase(data.user.id);
+        }
+      } else {
+        localStorage.setItem('cashsave_user', JSON.stringify({
+          id: 'demo-user',
+          email: email.trim(),
+          full_name: email.split('@')[0],
+          trial_start_date: new Date().toISOString(),
+          is_premium: false,
+        }));
       }
 
       document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
       router.push('/dashboard');
       router.refresh();
     } catch (err: any) {
-      if (err?.message?.includes('Invalid login credentials')) {
-        setError('Identifiants incorrects. Veuillez vérifier votre e-mail et mot de passe.');
-        setLoading(false);
-        return;
-      }
-      document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      router.push('/dashboard');
-      router.refresh();
+      setError(err?.message || 'Une erreur est survenue lors de la connexion.');
+      setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setError('');
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
-    } catch (err) {
-      document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      localStorage.setItem('cashsave_user', JSON.stringify({
-        email: 'user.google@gmail.com',
-        full_name: 'Utilisateur Google',
-        trial_start_date: new Date().toISOString(),
-        is_premium: false,
-      }));
-      router.push('/dashboard');
-      router.refresh();
+    } catch (err: any) {
+      setError(err?.message || 'Erreur lors de la connexion avec Google.');
+      setLoading(false);
     }
   };
 

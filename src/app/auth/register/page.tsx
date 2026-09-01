@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, User, Sparkles, CheckCircle2 } from 'lucide-react';
 
+import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { syncUserDataFromSupabase } from '@/lib/syncUser';
+
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,62 +32,76 @@ export default function RegisterPage() {
     }
 
     try {
-      const { error: sbError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const isLive = isLiveSupabaseConfigured();
+      if (isLive) {
+        const { data, error: sbError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: { full_name: fullName.trim() },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+
+        if (sbError) {
+          setError(
+            sbError.message.includes('User already registered') || sbError.message.includes('already exists')
+              ? 'Un compte existe déjà avec cette adresse email. Veuillez vous connecter.'
+              : sbError.message
+          );
+          setLoading(false);
+          return;
+        }
+
+        if (data?.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: fullName.trim(),
+            trial_start_date: new Date().toISOString(),
+            is_premium: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+
+          if (data.session) {
+            await syncUserDataFromSupabase(data.user.id);
+          }
+        }
+      } else {
+        localStorage.setItem('cashsave_user', JSON.stringify({
+          id: 'demo-user',
+          email: email.trim(),
+          full_name: fullName.trim() || 'Utilisateur Cash Save',
+          trial_start_date: new Date().toISOString(),
+          is_premium: false,
+        }));
+      }
 
       document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      localStorage.setItem('cashsave_user', JSON.stringify({
-        email,
-        full_name: fullName || 'Utilisateur Cash Save',
-        trial_start_date: new Date().toISOString(),
-        is_premium: false,
-      }));
-
       setSuccess(true);
       setTimeout(() => {
         router.push('/onboarding');
         router.refresh();
       }, 1200);
     } catch (err: any) {
-      document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      localStorage.setItem('cashsave_user', JSON.stringify({
-        email,
-        full_name: fullName || 'Utilisateur Cash Save',
-        trial_start_date: new Date().toISOString(),
-        is_premium: false,
-      }));
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/onboarding');
-        router.refresh();
-      }, 1200);
+      setError(err?.message || 'Une erreur est survenue lors de l\'inscription.');
+      setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setError('');
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
-    } catch (err) {
-      document.cookie = 'cashsave_demo_session=true; path=/; max-age=2592000';
-      localStorage.setItem('cashsave_user', JSON.stringify({
-        email: 'user.google@gmail.com',
-        full_name: 'Utilisateur Google',
-        trial_start_date: new Date().toISOString(),
-        is_premium: false,
-      }));
-      router.push('/onboarding');
-      router.refresh();
+    } catch (err: any) {
+      setError(err?.message || 'Erreur lors de l\'inscription avec Google.');
+      setLoading(false);
     }
   };
 
