@@ -10,6 +10,7 @@ import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, A
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate } from '@/lib/syncUser';
+import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function ObjectivesPage() {
@@ -146,8 +147,9 @@ export default function ObjectivesPage() {
     setSaving(true);
 
     const isCompleted = computedProgress === 100 ? 'COMPLETED' : status;
+    const validId = editingObjective ? ensureUUID(editingObjective.id) : generateUUID();
     const newObj: Objective = {
-      id: editingObjective ? editingObjective.id : `obj-${Date.now()}`,
+      id: validId,
       user_id: 'demo-user',
       title,
       deadline: deadline || null,
@@ -187,12 +189,11 @@ export default function ObjectivesPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const payload = { ...newObj, user_id: user.id };
-          if (editingObjective) {
-            await supabase.from('objectives').update(payload).eq('id', editingObjective.id);
-          } else {
-            await supabase.from('objectives').insert(payload);
-          }
+          const payload = { ...newObj, id: validId, user_id: user.id };
+          const { error } = editingObjective
+            ? await supabase.from('objectives').update(payload).eq('id', validId)
+            : await supabase.from('objectives').insert(payload);
+          if (error) console.error('Supabase objective save error:', error);
         }
       } catch (err) { /* silent background sync */ }
     })();

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate } from '@/lib/syncUser';
+import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function CashPage() {
@@ -114,9 +115,10 @@ export default function CashPage() {
     const finalCategory = category || defaultCats[0] || 'Autre';
 
     if (editingTx) {
-      // Édition d'une transaction existante
+      const validId = ensureUUID(editingTx.id);
       const updatedTx: Transaction = {
         ...editingTx,
+        id: validId,
         type: modalType,
         amount: numAmount,
         category: finalCategory,
@@ -139,7 +141,7 @@ export default function CashPage() {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.from('transactions').update({
+            const { error } = await supabase.from('transactions').update({
               type: updatedTx.type,
               amount: updatedTx.amount,
               category: updatedTx.category,
@@ -147,14 +149,16 @@ export default function CashPage() {
               note: updatedTx.note,
               is_satisfied: updatedTx.is_satisfied,
               image_url: updatedTx.image_url,
-            }).eq('id', editingTx.id);
+              user_id: user.id,
+            }).eq('id', validId);
+            if (error) console.error('Supabase transaction update error:', error);
           }
         } catch (e) {}
       }
     } else {
-      // Création d'une nouvelle transaction
+      const newId = generateUUID();
       const newTx: Transaction = {
-        id: `tx-${Date.now()}`,
+        id: newId,
         user_id: 'demo-user',
         type: modalType,
         amount: numAmount,
@@ -178,7 +182,10 @@ export default function CashPage() {
       if (isLiveSupabaseConfigured()) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
-          if (user) await supabase.from('transactions').insert({ ...newTx, user_id: user.id });
+          if (user) {
+            const { error } = await supabase.from('transactions').insert({ ...newTx, id: newId, user_id: user.id });
+            if (error) console.error('Supabase transaction insert error:', error);
+          }
         } catch (e) {}
       }
     }

@@ -17,9 +17,9 @@ import {
   FileText, Briefcase, GraduationCap, Droplet, Rocket, Coins, TrendingUp, Award,
   Sun, Coffee, Star, Feather, Globe, UserCheck
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate } from '@/lib/syncUser';
+import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
@@ -320,7 +320,7 @@ export default function HabitsPage() {
     setShowCustomHabitModal(true);
   };
 
-  const openEditCustomHabitModal = (habit: CustomHabit) => {
+  const openEditModal = (habit: CustomHabit) => {
     setEditingCustomHabit(habit);
     setCustomTitle(habit.title);
     setCustomType(habit.type);
@@ -383,7 +383,7 @@ export default function HabitsPage() {
     setHabitTargets(updated);
     localStorage.setItem('cashsave_habit_targets', JSON.stringify(updated));
 
-    if (editingTargetModal.key.startsWith('custom-')) {
+    if (editingTargetModal.key.startsWith('custom-') || isValidUUID(editingTargetModal.key)) {
       setCustomHabits(prev => prev.map(h => h.id === editingTargetModal.key ? { ...h, target_quantity: newTarget } : h));
       const localCustom = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
       const updatedLocal = localCustom.map((h: any) => h.id === editingTargetModal.key ? { ...h, target_quantity: newTarget } : h);
@@ -404,8 +404,10 @@ export default function HabitsPage() {
     if (!customTitle.trim()) return;
 
     if (editingCustomHabit) {
+      const validId = ensureUUID(editingCustomHabit.id);
       const updated: CustomHabit = {
         ...editingCustomHabit,
+        id: validId,
         title: customTitle.trim(),
         axis: 'business',
         type: customType,
@@ -419,7 +421,7 @@ export default function HabitsPage() {
       localStorage.setItem('cashsave_custom_habits', JSON.stringify(updatedLocal));
 
       if (customType === 'numeric') {
-        const updatedTargets = { ...habitTargets, [editingCustomHabit.id]: Math.max(1, customTarget) };
+        const updatedTargets = { ...habitTargets, [validId]: Math.max(1, customTarget) };
         setHabitTargets(updatedTargets);
         localStorage.setItem('cashsave_habit_targets', JSON.stringify(updatedTargets));
       }
@@ -435,12 +437,13 @@ export default function HabitsPage() {
               type: updated.type,
               icon: updated.icon,
               target_quantity: updated.target_quantity,
-            }).eq('id', editingCustomHabit.id);
+              user_id: user.id,
+            }).eq('id', validId);
           }
         } catch (e) {}
       }
     } else {
-      const customId = `custom-${Date.now()}`;
+      const customId = generateUUID();
       const newHabit: CustomHabit = {
         id: customId,
         user_id: 'demo-user',
@@ -470,7 +473,8 @@ export default function HabitsPage() {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.from('custom_habits').insert({ ...newHabit, user_id: user.id });
+            const { error } = await supabase.from('custom_habits').insert({ ...newHabit, id: customId, user_id: user.id });
+            if (error) console.error('Supabase custom habit insert error:', error);
           }
         } catch (e) {}
       }

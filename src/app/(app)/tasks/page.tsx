@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate } from '@/lib/syncUser';
+import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function TasksPage() {
@@ -93,8 +94,9 @@ export default function TasksPage() {
     e.preventDefault();
     setSaving(true);
 
+    const validId = editingTask ? ensureUUID(editingTask.id) : generateUUID();
     const newTask: Task = {
-      id: editingTask ? editingTask.id : `task-${Date.now()}`,
+      id: validId,
       user_id: 'demo-user',
       title,
       deadline: deadline || null,
@@ -131,12 +133,11 @@ export default function TasksPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const payload = { ...newTask, user_id: user.id };
-          if (editingTask) {
-            await supabase.from('tasks').update(payload).eq('id', editingTask.id);
-          } else {
-            await supabase.from('tasks').insert(payload);
-          }
+          const payload = { ...newTask, id: validId, user_id: user.id };
+          const { error } = editingTask
+            ? await supabase.from('tasks').update(payload).eq('id', validId)
+            : await supabase.from('tasks').insert(payload);
+          if (error) console.error('Supabase task save error:', error);
         }
       } catch (e) {}
     })();

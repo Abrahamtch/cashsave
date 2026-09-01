@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { ensureUUID } from '@/lib/uuid';
 
 /**
  * Dispatche un événement personnalisé dans la fenêtre browser
@@ -34,17 +35,19 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
   // 1. Préserver toutes les données locales existantes
   for (const item of localData) {
     if (!item) continue;
-    const key = conflictField === 'date' && item.date ? String(item.date) : (item.id || String(Math.random()));
-    map.set(key, { ...item, user_id: userId });
+    const validId = ensureUUID(item.id);
+    const key = conflictField === 'date' && item.date ? String(item.date) : validId;
+    map.set(key, { ...item, id: validId, user_id: userId });
   }
 
   // 2. Fusionner les données de Supabase (les données distantes mettent à jour les champs existants)
   if (Array.isArray(remoteData)) {
     for (const item of remoteData) {
       if (!item) continue;
-      const key = conflictField === 'date' && item.date ? String(item.date) : (item.id || String(Math.random()));
+      const validId = ensureUUID(item.id);
+      const key = conflictField === 'date' && item.date ? String(item.date) : validId;
       const existing = map.get(key);
-      map.set(key, { ...existing, ...item, user_id: userId });
+      map.set(key, { ...existing, ...item, id: validId, user_id: userId });
     }
   }
 
@@ -89,7 +92,7 @@ export async function syncUserDataFromSupabase(userId: string) {
       localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, ...profileRes.data }));
     }
 
-    // Fusion sécurisée des 5 collections principales (Empêche toute perte de données)
+    // Fusion sécurisée des 5 collections principales avec UUIDs valides
     const mergedTx = safeMergeAndPersist('cashsave_transactions', txRes.data, userId, 'id');
     const mergedHabits = safeMergeAndPersist('cashsave_habits', habitRes.data, userId, 'date');
     const mergedTasks = safeMergeAndPersist('cashsave_tasks', taskRes.data, userId, 'id');
@@ -114,7 +117,7 @@ export async function syncUserDataFromSupabase(userId: string) {
 
     broadcastDataUpdate();
   } catch (e) {
-    /* Silent catch en cas de hors-ligne */
+    console.error('Error syncing user data from Supabase:', e);
   }
 }
 
@@ -127,26 +130,57 @@ async function pushMergedDataToSupabase(supabase: any, userId: string, data: {
 }) {
   try {
     if (data.transactions.length > 0) {
-      const payload = data.transactions.map(t => ({ ...t, user_id: userId }));
-      await supabase.from('transactions').upsert(payload, { onConflict: 'id' });
+      const payload = data.transactions.map(t => ({
+        ...t,
+        id: ensureUUID(t.id),
+        user_id: userId,
+      }));
+      const { error } = await supabase.from('transactions').upsert(payload, { onConflict: 'id' });
+      if (error) console.error('Supabase transactions upsert error:', error);
     }
+
     if (data.tasks.length > 0) {
-      const payload = data.tasks.map(t => ({ ...t, user_id: userId }));
-      await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
+      const payload = data.tasks.map(t => ({
+        ...t,
+        id: ensureUUID(t.id),
+        user_id: userId,
+      }));
+      const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
+      if (error) console.error('Supabase tasks upsert error:', error);
     }
+
     if (data.objectives.length > 0) {
-      const payload = data.objectives.map(o => ({ ...o, user_id: userId }));
-      await supabase.from('objectives').upsert(payload, { onConflict: 'id' });
+      const payload = data.objectives.map(o => ({
+        ...o,
+        id: ensureUUID(o.id),
+        user_id: userId,
+      }));
+      const { error } = await supabase.from('objectives').upsert(payload, { onConflict: 'id' });
+      if (error) console.error('Supabase objectives upsert error:', error);
     }
+
     if (data.custom_habits.length > 0) {
-      const payload = data.custom_habits.map(h => ({ ...h, user_id: userId }));
-      await supabase.from('custom_habits').upsert(payload, { onConflict: 'id' });
+      const payload = data.custom_habits.map(h => ({
+        ...h,
+        id: ensureUUID(h.id),
+        user_id: userId,
+      }));
+      const { error } = await supabase.from('custom_habits').upsert(payload, { onConflict: 'id' });
+      if (error) console.error('Supabase custom_habits upsert error:', error);
     }
+
     if (data.daily_habits.length > 0) {
-      const payload = data.daily_habits.map(h => ({ ...h, user_id: userId }));
-      await supabase.from('daily_habits').upsert(payload, { onConflict: 'user_id,date' });
+      const payload = data.daily_habits.map(h => ({
+        ...h,
+        id: ensureUUID(h.id),
+        user_id: userId,
+      }));
+      const { error } = await supabase.from('daily_habits').upsert(payload, { onConflict: 'user_id,date' });
+      if (error) console.error('Supabase daily_habits upsert error:', error);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('pushMergedDataToSupabase error:', e);
+  }
 }
 
 /**
