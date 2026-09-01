@@ -2,18 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Profile, ScoringSettings, DEFAULT_SCORING_SETTINGS, HABIT_LABELS, NUMERIC_HABIT_LABELS } from '@/types';
+import { Profile } from '@/types';
 import { getTrialDaysRemaining } from '@/lib/stats';
 import { useRouter } from 'next/navigation';
-import { User, Crown, Sliders, LogOut, Check, Save, Sparkles, RefreshCw } from 'lucide-react';
+import { Crown, LogOut, Check } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(DEFAULT_SCORING_SETTINGS);
   const [loading, setLoading] = useState(true);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [savedSuccess, setSavedSuccess] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -31,9 +28,6 @@ export default function SettingsPage() {
           const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
           if (data) {
             setProfile(data);
-            if (data.scoring_settings) {
-              setScoringSettings({ ...DEFAULT_SCORING_SETTINGS, ...data.scoring_settings });
-            }
             setLoading(false);
             return;
           }
@@ -52,42 +46,11 @@ export default function SettingsPage() {
       trial_start_date: localUser.trial_start_date || new Date().toISOString(),
       is_premium: localUser.is_premium || false,
       premium_expires_at: null,
-      scoring_settings: localUser.scoring_settings || DEFAULT_SCORING_SETTINGS,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
-    if (localUser.scoring_settings) {
-      setScoringSettings({ ...DEFAULT_SCORING_SETTINGS, ...localUser.scoring_settings });
-    }
     setLoading(false);
   }
-
-  const handleScoreChange = (key: keyof ScoringSettings, val: number) => {
-    setScoringSettings(prev => ({ ...prev, [key]: val }));
-    setSavedSuccess(false);
-  };
-
-  const saveAlgorithmSettings = async () => {
-    setSavingSettings(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('profiles').update({ scoring_settings: scoringSettings }).eq('id', user.id);
-      }
-    } catch (e) {}
-
-    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-    localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, scoring_settings: scoringSettings }));
-
-    setSavingSettings(false);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2000);
-  };
-
-  const resetToDefaultScores = () => {
-    setScoringSettings(DEFAULT_SCORING_SETTINGS);
-    setSavedSuccess(false);
-  };
 
   const handleLogout = async () => {
     try {
@@ -104,7 +67,7 @@ export default function SettingsPage() {
       <div className="space-y-4">
         <div className="h-8 w-48 skeleton" />
         <div className="h-32 skeleton" />
-        <div className="h-64 skeleton" />
+        <div className="h-32 skeleton" />
       </div>
     );
   }
@@ -112,7 +75,7 @@ export default function SettingsPage() {
   const trialDays = profile ? getTrialDaysRemaining(profile.trial_start_date) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Paramètres</h1>
@@ -134,7 +97,7 @@ export default function SettingsPage() {
         <div className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={handleLogout}
-            className="btn-secondary w-full py-2 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            className="btn-secondary w-full py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer font-medium"
             style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger-border)' }}
           >
             <LogOut className="w-4 h-4" /> Se déconnecter
@@ -180,118 +143,12 @@ export default function SettingsPage() {
           {!profile?.is_premium && (
             <button
               onClick={() => router.push('/paywall')}
-              className="btn-primary text-xs py-2 px-3 shrink-0"
+              className="btn-primary text-xs py-2 px-3 shrink-0 cursor-pointer"
               id="upgrade-btn"
             >
               Passer Premium
             </button>
           )}
-        </div>
-      </div>
-
-      {/* Scoring Algorithm Settings */}
-      <div className="glass-card p-5 space-y-4">
-        <div
-          className="flex items-center justify-between pb-4"
-          style={{ borderBottom: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <div>
-              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Algorithme de score</h3>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>Points attribués à chaque action</p>
-            </div>
-          </div>
-
-          <button
-            onClick={resetToDefaultScores}
-            className="text-xs flex items-center gap-1.5 transition-colors duration-150"
-            style={{ color: 'var(--text-tertiary)' }}
-            title="Réinitialiser les valeurs par défaut"
-          >
-            <RefreshCw className="w-3 h-3" /> Défaut
-          </button>
-        </div>
-
-        {/* Boolean Habits Coefficients */}
-        <div className="space-y-3">
-          <h4
-            className="text-[10px] font-semibold uppercase"
-            style={{ color: 'var(--text-tertiary)', letterSpacing: '0.09em' }}
-          >
-            Habitudes (Oui / Non)
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {(Object.keys(HABIT_LABELS) as Array<keyof typeof HABIT_LABELS>).map((key) => (
-              <div
-                key={key}
-                className="flex items-center justify-between p-2.5 rounded-xl"
-                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
-              >
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  {HABIT_LABELS[key]}
-                </span>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={scoringSettings[key] ?? 3}
-                  onChange={(e) => handleScoreChange(key as keyof ScoringSettings, parseFloat(e.target.value) || 0)}
-                  className="input-field text-right py-1"
-                  style={{ width: '60px', fontSize: '12px' }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Numeric Habits Coefficients */}
-        <div className="space-y-3">
-          <h4
-            className="text-[10px] font-semibold uppercase"
-            style={{ color: 'var(--text-tertiary)', letterSpacing: '0.09em' }}
-          >
-            Business &amp; Apprentissage (pts / unité)
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {(Object.keys(NUMERIC_HABIT_LABELS) as Array<keyof typeof NUMERIC_HABIT_LABELS>).map((key) => (
-              <div
-                key={key}
-                className="flex items-center justify-between p-2.5 rounded-xl"
-                style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
-              >
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  {NUMERIC_HABIT_LABELS[key]}
-                </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={scoringSettings[key] ?? 1}
-                  onChange={(e) => handleScoreChange(key as keyof ScoringSettings, parseFloat(e.target.value) || 0)}
-                  className="input-field text-right py-1"
-                  style={{ width: '60px', fontSize: '12px' }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="pt-2">
-          <button
-            onClick={saveAlgorithmSettings}
-            disabled={savingSettings}
-            className="btn-primary w-full py-2.5 text-xs flex items-center justify-center gap-2"
-          >
-            {savedSuccess ? (
-              <>
-                <Check className="w-4 h-4 text-emerald-300" /> Paramètres enregistrés !
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" /> {savingSettings ? 'Enregistrement...' : 'Sauvegarder l\'algorithme'}
-              </>
-            )}
-          </button>
         </div>
       </div>
     </div>
