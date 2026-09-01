@@ -188,17 +188,6 @@ export default function FuturisticDatePicker({
             {formattedDisplay || placeholder}
           </span>
         </div>
-
-        <span
-          className="text-[11px] font-semibold px-2 py-0.5 rounded-md transition-opacity duration-150"
-          style={{
-            background: 'var(--bg-card-hover)',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          {isOpen ? 'Fermer' : 'Choisir'}
-        </span>
       </button>
 
       {/* Popover Calendar */}

@@ -15,13 +15,8 @@ export function calculateRoutineCompletionPercentage(
   const ALL_BOOLEAN = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
   const ALL_NUMERIC = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
 
-  const activeBooleans = activeHabitKeys.length > 0
-    ? ALL_BOOLEAN.filter(k => activeHabitKeys.includes(k))
-    : ALL_BOOLEAN;
-
-  const activeNumerics = activeHabitKeys.length > 0
-    ? ALL_NUMERIC.filter(k => activeHabitKeys.includes(k))
-    : ALL_NUMERIC;
+  const activeBooleans = ALL_BOOLEAN.filter(k => activeHabitKeys.includes(k));
+  const activeNumerics = ALL_NUMERIC.filter(k => activeHabitKeys.includes(k));
 
   let completedCount = 0;
 
@@ -34,7 +29,19 @@ export function calculateRoutineCompletionPercentage(
     if (val && val > 0) completedCount += 1;
   });
 
-  const totalTracked = activeBooleans.length + activeNumerics.length;
+  // Prise en compte des habitudes personnalisées
+  const customLogs = habitData.custom_logs || {};
+  const customLogKeys = Object.keys(customLogs);
+  let customCompleted = 0;
+  customLogKeys.forEach(k => {
+    const val = customLogs[k];
+    if (typeof val === 'boolean' && val) customCompleted += 1;
+    if (typeof val === 'number' && val > 0) customCompleted += 1;
+  });
+
+  completedCount += customCompleted;
+  const totalTracked = activeBooleans.length + activeNumerics.length + customLogKeys.length;
+
   if (totalTracked === 0) return { percentage: 0, completedCount: 0, totalTracked: 0 };
 
   const percentage = Math.min(100, Math.round((completedCount / totalTracked) * 100));
