@@ -24,6 +24,23 @@ import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
 
+export const STANDARD_HABIT_ICONS: Record<string, string> = {
+  bible: 'book',
+  prayer: 'heart',
+  meditation: 'sparkles',
+  reading: 'book',
+  documentary: 'lightbulb',
+  sport: 'dumbbell',
+  light_work: 'lightbulb',
+  deep_work: 'flame',
+  after_work: 'moon',
+  prospects_contacted: 'phone',
+  calls_made: 'smartphone',
+  content_published: 'file',
+  client_projects: 'briefcase',
+  learning_minutes: 'graduation',
+};
+
 export const VECTOR_ICON_MAP: Record<string, any> = {
   sparkles: Sparkles,
   book: BookOpen,
@@ -643,7 +660,7 @@ export default function HabitsPage() {
         <div className="glass-card p-4 space-y-3">
           <div className="flex items-center justify-between px-1">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-              Habitudes à cocher (✓)
+              Habitudes à cocher
             </p>
           </div>
 
@@ -660,12 +677,15 @@ export default function HabitsPage() {
                     border: active ? '1px solid var(--accent-border)' : '1px solid transparent',
                   }}
                 >
-                  <span
-                    className="text-sm font-medium transition-colors"
-                    style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-                  >
-                    {HABIT_LABELS[field]}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <HabitVectorIcon iconId={STANDARD_HABIT_ICONS[field]} />
+                    <span
+                      className="text-sm font-medium transition-colors"
+                      style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                    >
+                      {HABIT_LABELS[field]}
+                    </span>
+                  </div>
 
                   <div
                     className="w-5 h-5 rounded-lg flex items-center justify-center transition-all duration-150 shrink-0"
@@ -742,7 +762,7 @@ export default function HabitsPage() {
         <div className="glass-card p-4 space-y-4">
           <div className="px-1 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
-              Objectifs &amp; Compteurs Business (🔢)
+              Objectifs &amp; Compteurs Business
             </p>
           </div>
 
@@ -764,7 +784,8 @@ export default function HabitsPage() {
                   }}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                      <HabitVectorIcon iconId={STANDARD_HABIT_ICONS[field]} />
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                         {NUMERIC_HABIT_LABELS[field]}
                       </span>
@@ -783,7 +804,7 @@ export default function HabitsPage() {
                         }}
                         title="Définir le quota quotidien"
                       >
-                        <Target size={11} /> Quota: {target}/jour ✏️
+                        <Target size={11} /> Quota: {target}/jour
                       </button>
                     </div>
 
@@ -874,7 +895,7 @@ export default function HabitsPage() {
                         }}
                         title="Définir le quota quotidien"
                       >
-                        <Target size={11} /> Quota: {target}/jour ✏️
+                        <Target size={11} /> Quota: {target}/jour
                       </button>
                     </div>
 
@@ -1267,7 +1288,7 @@ export default function HabitsPage() {
                       color: customType === 'boolean' ? 'var(--accent)' : 'var(--text-secondary)',
                     }}
                   >
-                    <Check size={14} /> Case à cocher (✓)
+                    <Check size={14} /> Case à cocher
                   </button>
                   <button
                     type="button"
@@ -1279,7 +1300,7 @@ export default function HabitsPage() {
                       color: customType === 'numeric' ? 'var(--accent)' : 'var(--text-secondary)',
                     }}
                   >
-                    <Plus size={14} /> Compteur numérique (🔢)
+                    <Plus size={14} /> Compteur numérique
                   </button>
                 </div>
               </div>

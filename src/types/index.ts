@@ -211,23 +211,23 @@ export const EXPENSE_CATEGORIES = [
 
 // Labels pour l'interface
 export const HABIT_LABELS: Record<string, string> = {
-  bible: '📖 Bible',
-  prayer: '🙏 Prière',
-  meditation: '🧘 Méditation',
-  reading: '📚 Lecture',
-  documentary: '🎬 Documentaire',
-  sport: '💪 Sport',
-  light_work: '💡 Light Work',
-  deep_work: '🔥 Deep Work',
-  after_work: '🌙 After Work',
+  bible: 'Bible',
+  prayer: 'Prière',
+  meditation: 'Méditation',
+  reading: 'Lecture',
+  documentary: 'Documentaire',
+  sport: 'Sport',
+  light_work: 'Light Work',
+  deep_work: 'Deep Work',
+  after_work: 'After Work',
 };
 
 export const NUMERIC_HABIT_LABELS: Record<string, string> = {
-  prospects_contacted: '📞 Prospects contactés',
-  calls_made: '📱 Appels réalisés',
-  content_published: '📝 Contenu publié',
-  client_projects: '💼 Projets client',
-  learning_minutes: '🎓 Minutes d\'apprentissage',
+  prospects_contacted: 'Prospects contactés',
+  calls_made: 'Appels réalisés',
+  content_published: 'Contenu publié',
+  client_projects: 'Projets client',
+  learning_minutes: 'Minutes d\'apprentissage',
 };
 
 export const PRIORITY_CONFIG = {

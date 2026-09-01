@@ -188,7 +188,7 @@ export function getMotivationalStatusBadge(percentage: number): {
 } {
   if (percentage >= 100) {
     return {
-      text: 'You are the Master ! 👑',
+      text: 'You are the Master !',
       bg: 'rgba(14,159,110,0.15)',
       color: '#0E9F6E',
       border: '1px solid rgba(14,159,110,0.35)',
@@ -196,7 +196,7 @@ export function getMotivationalStatusBadge(percentage: number): {
   }
   if (percentage >= 80) {
     return {
-      text: 'Termine la course... 🏁',
+      text: 'Termine la course...',
       bg: 'rgba(214,179,106,0.15)',
       color: '#D6B36A',
       border: '1px solid rgba(214,179,106,0.35)',
@@ -204,7 +204,7 @@ export function getMotivationalStatusBadge(percentage: number): {
   }
   if (percentage >= 50) {
     return {
-      text: 'Tu peux le faire 💪',
+      text: 'Tu peux le faire',
       bg: 'var(--accent-subtle)',
       color: 'var(--accent)',
       border: '1px solid var(--accent-border)',
@@ -212,14 +212,14 @@ export function getMotivationalStatusBadge(percentage: number): {
   }
   if (percentage >= 25) {
     return {
-      text: 'Ahaa, Te revoilà ! 👋',
+      text: 'Ahaa, Te revoilà !',
       bg: 'var(--bg-card-hover)',
       color: 'var(--text-secondary)',
       border: '1px solid var(--border)',
     };
   }
   return {
-    text: 'À vos marques 🚀',
+    text: 'À vos marques',
     bg: 'var(--bg-card-hover)',
     color: 'var(--text-tertiary)',
     border: '1px solid var(--border)',

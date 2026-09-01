@@ -548,7 +548,7 @@ export default function CashPage() {
                       className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
                     >
-                      <Camera size={15} /> Prendre photo 📸
+                      <Camera size={15} /> Prendre photo
                     </label>
                     <input
                       type="file"
