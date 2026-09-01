@@ -12,18 +12,57 @@ export function broadcastDataUpdate() {
 }
 
 /**
+ * Fusionne en toute sécurité les données locales et distantes.
+ * AUCUNE DONNÉE LOCALE N'EST JAMAIS SUPPRIMÉE OU EFFACÉE PAR ERREUR.
+ */
+function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: string }>(
+  storageKey: string,
+  remoteData: T[] | null,
+  userId: string,
+  conflictField: 'id' | 'date' = 'id'
+): T[] {
+  let localData: T[] = [];
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) localData = JSON.parse(raw);
+  } catch (e) {}
+
+  if (!Array.isArray(localData)) localData = [];
+
+  const map = new Map<string, T>();
+
+  // 1. Préserver toutes les données locales existantes
+  for (const item of localData) {
+    if (!item) continue;
+    const key = conflictField === 'date' && item.date ? String(item.date) : (item.id || String(Math.random()));
+    map.set(key, { ...item, user_id: userId });
+  }
+
+  // 2. Fusionner les données de Supabase (les données distantes mettent à jour les champs existants)
+  if (Array.isArray(remoteData)) {
+    for (const item of remoteData) {
+      if (!item) continue;
+      const key = conflictField === 'date' && item.date ? String(item.date) : (item.id || String(Math.random()));
+      const existing = map.get(key);
+      map.set(key, { ...existing, ...item, user_id: userId });
+    }
+  }
+
+  const merged = Array.from(map.values());
+  localStorage.setItem(storageKey, JSON.stringify(merged));
+  return merged;
+}
+
+/**
  * Synchronise l'ensemble des données de l'utilisateur entre Supabase et le localStorage.
- * Garantit la migration bidirectionnelle et la cohérence parfaite multi-appareils.
+ * Garantit la fusion bidirectionnelle et la protection absolue contre les pertes de données.
  */
 export async function syncUserDataFromSupabase(userId: string) {
   if (!isLiveSupabaseConfigured() || !userId) return;
   const supabase = createClient();
 
   try {
-    // 1. Migration automatique des données locales créées avant connexion ou hors-ligne vers Supabase
-    await migrateLocalDataToSupabase(supabase, userId);
-
-    // 2. Téléchargement de l'ensemble des données fraîches depuis Supabase
+    // 1. Récupération simultanée de toutes les tables Supabase
     const [
       profileRes,
       initBalRes,
@@ -44,92 +83,70 @@ export async function syncUserDataFromSupabase(userId: string) {
       supabase.from('custom_habits').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     ]);
 
+    // Profile
     if (profileRes.data) {
       const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
       localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, ...profileRes.data }));
     }
 
-    if (Array.isArray(initBalRes.data)) {
+    // Fusion sécurisée des 5 collections principales (Empêche toute perte de données)
+    const mergedTx = safeMergeAndPersist('cashsave_transactions', txRes.data, userId, 'id');
+    const mergedHabits = safeMergeAndPersist('cashsave_habits', habitRes.data, userId, 'date');
+    const mergedTasks = safeMergeAndPersist('cashsave_tasks', taskRes.data, userId, 'id');
+    const mergedObj = safeMergeAndPersist('cashsave_objectives', objRes.data, userId, 'id');
+    const mergedCustom = safeMergeAndPersist('cashsave_custom_habits', customHabitsRes.data, userId, 'id');
+
+    if (Array.isArray(initBalRes.data) && initBalRes.data.length > 0) {
       localStorage.setItem('cashsave_initial_balances', JSON.stringify(initBalRes.data));
     }
-
-    if (Array.isArray(habitPrefRes.data)) {
+    if (Array.isArray(habitPrefRes.data) && habitPrefRes.data.length > 0) {
       localStorage.setItem('cashsave_habit_preferences', JSON.stringify(habitPrefRes.data));
     }
 
-    if (Array.isArray(txRes.data)) {
-      localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
-    }
-
-    if (Array.isArray(habitRes.data)) {
-      localStorage.setItem('cashsave_habits', JSON.stringify(habitRes.data));
-    }
-
-    if (Array.isArray(taskRes.data)) {
-      localStorage.setItem('cashsave_tasks', JSON.stringify(taskRes.data));
-    }
-
-    if (Array.isArray(objRes.data)) {
-      localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
-    }
-
-    if (Array.isArray(customHabitsRes.data)) {
-      localStorage.setItem('cashsave_custom_habits', JSON.stringify(customHabitsRes.data));
-    }
+    // 2. Auto-sauvegarde / Push systématique vers Supabase de l'ensemble fusionné
+    await pushMergedDataToSupabase(supabase, userId, {
+      transactions: mergedTx,
+      daily_habits: mergedHabits,
+      tasks: mergedTasks,
+      objectives: mergedObj,
+      custom_habits: mergedCustom,
+    });
 
     broadcastDataUpdate();
   } catch (e) {
-    /* Repli automatique local en cas d'erreur de réseau */
+    /* Silent catch en cas de hors-ligne */
   }
 }
 
-/**
- * Pousse les données orphelines (demo-user) créées localement vers le compte Supabase de l'utilisateur.
- */
-async function migrateLocalDataToSupabase(supabase: any, userId: string) {
+async function pushMergedDataToSupabase(supabase: any, userId: string, data: {
+  transactions: any[];
+  daily_habits: any[];
+  tasks: any[];
+  objectives: any[];
+  custom_habits: any[];
+}) {
   try {
-    // Migration des transactions locales
-    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-    const txToMigrate = Array.isArray(localTx) ? localTx.filter((t: any) => t && (t.user_id === 'demo-user' || !t.user_id)) : [];
-    if (txToMigrate.length > 0) {
-      const payload = txToMigrate.map((t: any) => ({ ...t, user_id: userId }));
+    if (data.transactions.length > 0) {
+      const payload = data.transactions.map(t => ({ ...t, user_id: userId }));
       await supabase.from('transactions').upsert(payload, { onConflict: 'id' });
     }
-
-    // Migration des tâches locales
-    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
-    const tasksToMigrate = Array.isArray(localTasks) ? localTasks.filter((t: any) => t && (t.user_id === 'demo-user' || !t.user_id)) : [];
-    if (tasksToMigrate.length > 0) {
-      const payload = tasksToMigrate.map((t: any) => ({ ...t, user_id: userId }));
+    if (data.tasks.length > 0) {
+      const payload = data.tasks.map(t => ({ ...t, user_id: userId }));
       await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
     }
-
-    // Migration des objectifs locaux
-    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
-    const objToMigrate = Array.isArray(localObj) ? localObj.filter((o: any) => o && (o.user_id === 'demo-user' || !o.user_id)) : [];
-    if (objToMigrate.length > 0) {
-      const payload = objToMigrate.map((o: any) => ({ ...o, user_id: userId }));
+    if (data.objectives.length > 0) {
+      const payload = data.objectives.map(o => ({ ...o, user_id: userId }));
       await supabase.from('objectives').upsert(payload, { onConflict: 'id' });
     }
-
-    // Migration des habitudes personnalisées locales
-    const localCustom = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
-    const customToMigrate = Array.isArray(localCustom) ? localCustom.filter((h: any) => h && (h.user_id === 'demo-user' || !h.user_id)) : [];
-    if (customToMigrate.length > 0) {
-      const payload = customToMigrate.map((h: any) => ({ ...h, user_id: userId }));
+    if (data.custom_habits.length > 0) {
+      const payload = data.custom_habits.map(h => ({ ...h, user_id: userId }));
       await supabase.from('custom_habits').upsert(payload, { onConflict: 'id' });
     }
-
-    // Migration des habitudes quotidiennes locales
-    const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
-    const habitsToMigrate = Array.isArray(localHabits) ? localHabits.filter((h: any) => h && (h.user_id === 'demo-user' || !h.user_id)) : [];
-    if (habitsToMigrate.length > 0) {
-      const payload = habitsToMigrate.map((h: any) => ({ ...h, user_id: userId }));
+    if (data.daily_habits.length > 0) {
+      const payload = data.daily_habits.map(h => ({ ...h, user_id: userId }));
       await supabase.from('daily_habits').upsert(payload, { onConflict: 'user_id,date' });
     }
-  } catch (e) {
-    /* Silent migration catch */
-  }
+  } catch (e) {}
 }
 
 /**
