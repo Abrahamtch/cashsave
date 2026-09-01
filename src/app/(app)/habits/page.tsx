@@ -12,7 +12,10 @@ import { fr } from 'date-fns/locale';
 import {
   ChevronLeft, ChevronRight, Calendar, Save,
   Check, Minus, Plus, Sparkles, CheckCircle2,
-  Pencil, Trash2, Settings2, X, Sliders, Target, HelpCircle
+  Pencil, Trash2, Settings2, X, Sliders, Target, HelpCircle,
+  BookOpen, Heart, Flame, Dumbbell, Lightbulb, Moon, PhoneCall, Smartphone,
+  FileText, Briefcase, GraduationCap, Droplet, Rocket, Coins, TrendingUp, Award,
+  Sun, Coffee, Star, Feather, Globe, UserCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -21,45 +24,100 @@ import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
 
-const ICON_OPTIONS = ['✨', '📖', '🙏', '🧘', '📚', '🎬', '💪', '💡', '🔥', '🌙', '📞', '📱', '📝', '💼', '🎓', '💧', '🏃', '🥗', '💰', '🚀'];
+export const VECTOR_ICON_MAP: Record<string, any> = {
+  sparkles: Sparkles,
+  book: BookOpen,
+  heart: Heart,
+  flame: Flame,
+  dumbbell: Dumbbell,
+  lightbulb: Lightbulb,
+  moon: Moon,
+  phone: PhoneCall,
+  smartphone: Smartphone,
+  file: FileText,
+  briefcase: Briefcase,
+  graduation: GraduationCap,
+  droplet: Droplet,
+  rocket: Rocket,
+  coins: Coins,
+  target: Target,
+  trending: TrendingUp,
+  award: Award,
+  sun: Sun,
+  coffee: Coffee,
+  star: Star,
+  feather: Feather,
+  globe: Globe,
+  user: UserCheck,
+};
+
+export const VECTOR_ICON_OPTIONS = [
+  { id: 'sparkles', label: 'Énergie', icon: Sparkles },
+  { id: 'book', label: 'Lecture', icon: BookOpen },
+  { id: 'heart', label: 'Santé & Foi', icon: Heart },
+  { id: 'flame', label: 'Deep Work', icon: Flame },
+  { id: 'dumbbell', label: 'Sport', icon: Dumbbell },
+  { id: 'lightbulb', label: 'Idées', icon: Lightbulb },
+  { id: 'moon', label: 'Repos', icon: Moon },
+  { id: 'phone', label: 'Appels', icon: PhoneCall },
+  { id: 'smartphone', label: 'Mobile', icon: Smartphone },
+  { id: 'file', label: 'Contenu', icon: FileText },
+  { id: 'briefcase', label: 'Projet', icon: Briefcase },
+  { id: 'graduation', label: 'Études', icon: GraduationCap },
+  { id: 'droplet', label: 'Hydratation', icon: Droplet },
+  { id: 'rocket', label: 'Croissance', icon: Rocket },
+  { id: 'coins', label: 'Finance', icon: Coins },
+  { id: 'target', label: 'Objectif', icon: Target },
+  { id: 'trending', label: 'Ventes', icon: TrendingUp },
+  { id: 'award', label: 'Victoire', icon: Award },
+  { id: 'sun', label: 'Routine', icon: Sun },
+  { id: 'coffee', label: 'Focus', icon: Coffee },
+];
+
+export function HabitVectorIcon({ iconId, size = 15, className = '' }: { iconId?: string; size?: number; className?: string }) {
+  const key = iconId && VECTOR_ICON_MAP[iconId] ? iconId : 'sparkles';
+  const IconComp = VECTOR_ICON_MAP[key] || Sparkles;
+
+  return (
+    <div className={`w-7 h-7 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent-border)] flex items-center justify-center text-[var(--accent)] shrink-0 shadow-sm ${className}`}>
+      <IconComp size={size} strokeWidth={2} />
+    </div>
+  );
+}
 
 const WIZARD_CATEGORIES = [
   {
-    title: '📖 Esprit & Foi',
-    axis: 'esprit',
+    title: 'Esprit & Foi',
     habits: [
-      { key: 'prayer', label: 'Prière quotidienne', icon: '🙏' },
-      { key: 'meditation', label: 'Méditation & Silence', icon: '🧘' },
-      { key: 'bible', label: 'Lecture sainte / Bible', icon: '📖' },
-      { key: 'reading', label: 'Lecture inspirante', icon: '📚' },
+      { key: 'prayer', label: 'Prière quotidienne', iconId: 'heart' },
+      { key: 'meditation', label: 'Méditation & Silence', iconId: 'sparkles' },
+      { key: 'bible', label: 'Lecture sainte / Bible', iconId: 'book' },
+      { key: 'reading', label: 'Lecture inspirante', iconId: 'book' },
     ],
   },
   {
-    title: '💪 Santé & Énergie',
-    axis: 'sante',
+    title: 'Santé & Énergie',
     habits: [
-      { key: 'sport', label: 'Sport / Exercice physique', icon: '💪' },
-      { key: 'documentary', label: 'Documentaire enrichissant', icon: '🎬' },
-      { key: 'after_work', label: 'Relaxation & Repos du soir', icon: '🌙' },
+      { key: 'sport', label: 'Sport / Exercice physique', iconId: 'dumbbell' },
+      { key: 'documentary', label: 'Documentaire enrichissant', iconId: 'lightbulb' },
+      { key: 'after_work', label: 'Relaxation & Repos du soir', iconId: 'moon' },
     ],
   },
   {
-    title: '🔥 Focus & Discipline',
-    axis: 'focus',
+    title: 'Focus & Discipline',
     habits: [
-      { key: 'deep_work', label: 'Session Deep Work', icon: '🔥' },
-      { key: 'light_work', label: 'Light Work & Organisation', icon: '💡' },
-      { key: 'learning_minutes', label: 'Temps d\'apprentissage (min)', icon: '🎓', defaultTarget: 30 },
+      { key: 'deep_work', label: 'Session Deep Work', iconId: 'flame' },
+      { key: 'light_work', label: 'Light Work & Organisation', iconId: 'lightbulb' },
+      { key: 'learning_minutes', label: 'Temps d\'apprentissage (min)', iconId: 'graduation', defaultTarget: 30 },
     ],
   },
   {
-    title: '💼 Business & Performance',
-    axis: 'business',
+    title: 'Business & Performance',
     habits: [
-      { key: 'prospects_contacted', label: 'Prospects contactés', icon: '📞', defaultTarget: 10 },
-      { key: 'calls_made', label: 'Appels de vente / Réseautage', icon: '📱', defaultTarget: 5 },
-      { key: 'content_published', label: 'Contenu produit / publié', icon: '📝', defaultTarget: 2 },
-      { key: 'client_projects', label: 'Projets clients délivrés', icon: '💼', defaultTarget: 3 },
+      { key: 'prospects_contacted', label: 'Prospects contactés', iconId: 'phone', defaultTarget: 10 },
+      { key: 'calls_made', label: 'Appels de vente / Réseautage', iconId: 'smartphone', defaultTarget: 5 },
+      { key: 'content_published', label: 'Contenu produit / publié', iconId: 'file', defaultTarget: 2 },
+      { key: 'client_projects', label: 'Projets clients délivrés', iconId: 'briefcase', defaultTarget: 3 },
     ],
   },
 ];
@@ -75,23 +133,19 @@ export default function HabitsPage() {
 
   const [activeHabits, setActiveHabits] = useState<string[]>([]);
   
-  // Custom Habits & Habit Targets Quotas
   const [customHabits, setCustomHabits] = useState<CustomHabit[]>([]);
   const [habitTargets, setHabitTargets] = useState<HabitTargets>(DEFAULT_HABIT_TARGETS);
   
   const [showCustomHabitModal, setShowCustomHabitModal] = useState(false);
   const [editingCustomHabit, setEditingCustomHabit] = useState<CustomHabit | null>(null);
   const [customTitle, setCustomTitle] = useState('');
-  const [customAxis, setCustomAxis] = useState<HabitAxis>('esprit');
   const [customType, setCustomType] = useState<HabitType>('boolean');
-  const [customIcon, setCustomIcon] = useState('✨');
+  const [customIcon, setCustomIcon] = useState('sparkles');
   const [customTarget, setCustomTarget] = useState<number>(1);
 
-  // Target Quota Modal State
   const [editingTargetModal, setEditingTargetModal] = useState<{ key: string; label: string; currentTarget: number } | null>(null);
   const [targetInputValue, setTargetInputValue] = useState<string>('10');
 
-  // Onboarding Wizard Pop-ups State
   const [showInitialPromptModal, setShowInitialPromptModal] = useState(false);
   const [showWizardModal, setShowWizardModal] = useState(false);
   const [wizardSelectedKeys, setWizardSelectedKeys] = useState<string[]>([]);
@@ -102,7 +156,6 @@ export default function HabitsPage() {
     setLoading(true);
     const isLive = isLiveSupabaseConfigured();
 
-    // Read local custom habits, targets & preferences
     const localCustom: CustomHabit[] = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
     setCustomHabits(localCustom);
 
@@ -200,7 +253,6 @@ export default function HabitsPage() {
     ? calculateAllScores(habitData, profile.scoring_settings)
     : { habit_score: 0, work_score: 0, business_score: 0, learning_score: 0, total_score: 0 };
 
-  // Routine percentage computed with 50/50 weighted routine + business formula
   const routineStats = calculateRoutineCompletionPercentage(habitData, activeHabits, customHabits, habitTargets);
 
   const handleToggle = (field: typeof BOOLEAN_FIELDS[number]) => {
@@ -217,9 +269,8 @@ export default function HabitsPage() {
   const openCreateCustomHabitModal = () => {
     setEditingCustomHabit(null);
     setCustomTitle('');
-    setCustomAxis('esprit');
     setCustomType('boolean');
-    setCustomIcon('✨');
+    setCustomIcon('sparkles');
     setCustomTarget(1);
     setShowCustomHabitModal(true);
   };
@@ -227,9 +278,8 @@ export default function HabitsPage() {
   const openEditCustomHabitModal = (habit: CustomHabit) => {
     setEditingCustomHabit(habit);
     setCustomTitle(habit.title);
-    setCustomAxis(habit.axis);
     setCustomType(habit.type);
-    setCustomIcon(habit.icon || '✨');
+    setCustomIcon(habit.icon || 'sparkles');
     setCustomTarget(habit.target_quantity || habitTargets[habit.id] || 1);
     setShowCustomHabitModal(true);
   };
@@ -312,7 +362,7 @@ export default function HabitsPage() {
       const updated: CustomHabit = {
         ...editingCustomHabit,
         title: customTitle.trim(),
-        axis: customAxis,
+        axis: 'business',
         type: customType,
         icon: customIcon,
         target_quantity: customType === 'numeric' ? Math.max(1, customTarget) : undefined,
@@ -337,7 +387,6 @@ export default function HabitsPage() {
           if (user) {
             await supabase.from('custom_habits').update({
               title: updated.title,
-              axis: updated.axis,
               type: updated.type,
               icon: updated.icon,
               target_quantity: updated.target_quantity,
@@ -351,7 +400,7 @@ export default function HabitsPage() {
         id: customId,
         user_id: 'demo-user',
         title: customTitle.trim(),
-        axis: customAxis,
+        axis: 'business',
         type: customType,
         icon: customIcon,
         target_quantity: customType === 'numeric' ? Math.max(1, customTarget) : undefined,
@@ -469,14 +518,9 @@ export default function HabitsPage() {
 
   return (
     <div className="space-y-6">
-
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl font-semibold tracking-tight"
-            style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
-          >
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             Habitudes
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
@@ -502,7 +546,6 @@ export default function HabitsPage() {
             <Plus size={14} /> Nouvelle habitude
           </button>
 
-          {/* Date Navigator */}
           <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl shadow-sm">
             <button
               type="button"
@@ -535,16 +578,12 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* Routine Percentage & Overall Progress Bar */}
       <div className="glass-card p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Complétion de la routine globale</p>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <p
-                className="text-3xl font-bold tracking-tight"
-                style={{ color: 'var(--accent)', letterSpacing: '-0.03em' }}
-              >
+              <p className="text-3xl font-bold tracking-tight" style={{ color: 'var(--accent)', letterSpacing: '-0.03em' }}>
                 {routineStats.percentage}%
               </p>
               <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
@@ -569,7 +608,6 @@ export default function HabitsPage() {
           })()}
         </div>
 
-        {/* Dynamic Percentage Progress Bar */}
         <div className="w-full bg-[var(--bg-base)] h-3 rounded-full overflow-hidden p-0.5 border border-[var(--border)]">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out gradient-primary"
@@ -578,11 +616,10 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* If No Habits Configured Empty State Banner */}
       {totalActiveHabitsCount === 0 && (
         <div className="glass-card p-8 text-center space-y-4 border-dashed" style={{ borderColor: 'var(--accent-border)' }}>
           <div className="w-14 h-14 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--accent-border)] flex items-center justify-center mx-auto text-2xl" style={{ color: 'var(--accent)' }}>
-            ✨
+            <Sparkles size={24} />
           </div>
           <div className="space-y-1 max-w-md mx-auto">
             <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -602,7 +639,6 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* Boolean Habits Section */}
       {(activeBooleanFields.length > 0 || customBooleans.length > 0) && (
         <div className="glass-card p-4 space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -660,12 +696,9 @@ export default function HabitsPage() {
                     className="flex-1 flex items-center gap-2.5 cursor-pointer"
                     onClick={() => handleToggleCustomHabit(cHabit.id, true)}
                   >
-                    <span className="text-base">{cHabit.icon || '✨'}</span>
+                    <HabitVectorIcon iconId={cHabit.icon} />
                     <span className="text-sm font-medium" style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                       {cHabit.title}
-                    </span>
-                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/20 text-gray-400">
-                      {cHabit.axis}
                     </span>
                   </div>
 
@@ -705,20 +738,15 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* Numeric Inputs & Business Quotas Section with Individual Mini Progress Bars */}
       {(activeNumericFields.length > 0 || customNumerics.length > 0) && (
         <div className="glass-card p-4 space-y-4">
           <div className="px-1 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
               Objectifs &amp; Compteurs Business (🔢)
             </p>
-            <span className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-              Barres de progression individuelles
-            </span>
           </div>
 
           <div className="space-y-3">
-            {/* Standard Numeric Business Habits */}
             {activeNumericFields.map(field => {
               const rawVal = habitData[field];
               const val = typeof rawVal === 'number' ? rawVal : (parseInt(String(rawVal ?? 0), 10) || 0);
@@ -765,7 +793,6 @@ export default function HabitsPage() {
                         onClick={() => handleNumericChange(field, val - 1)}
                         className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
                         style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                        aria-label="Diminuer"
                       >
                         <Minus size={14} strokeWidth={2} />
                       </button>
@@ -782,14 +809,12 @@ export default function HabitsPage() {
                         onClick={() => handleNumericChange(field, val + 1)}
                         className="w-8 h-8 rounded-lg flex items-center justify-center transition-all select-none hover:border-[var(--border-strong)] active:scale-95 cursor-pointer shrink-0"
                         style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                        aria-label="Augmenter"
                       >
                         <Plus size={14} strokeWidth={2} />
                       </button>
                     </div>
                   </div>
 
-                  {/* Individual Business Progress Bar */}
                   <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
                       <span>Accompli : <strong style={{ color: isQuotaAchieved ? '#0E9F6E' : 'var(--text-secondary)' }}>{val} / {target}</strong></span>
@@ -812,7 +837,6 @@ export default function HabitsPage() {
               );
             })}
 
-            {/* Custom Numeric Business Habits */}
             {customNumerics.map(cHabit => {
               const logs = habitData.custom_logs || {};
               const rawVal = logs[cHabit.id];
@@ -831,8 +855,8 @@ export default function HabitsPage() {
                   }}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-wrap min-w-0">
-                      <span className="text-base">{cHabit.icon || '✨'}</span>
+                    <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                      <HabitVectorIcon iconId={cHabit.icon} />
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                         {cHabit.title}
                       </span>
@@ -901,7 +925,6 @@ export default function HabitsPage() {
                     </div>
                   </div>
 
-                  {/* Individual Business Progress Bar */}
                   <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
                       <span>Accompli : <strong style={{ color: isQuotaAchieved ? '#0E9F6E' : 'var(--text-secondary)' }}>{val} / {target}</strong></span>
@@ -927,7 +950,6 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* Notes Section */}
       <div className="glass-card p-5 space-y-4">
         <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', letterSpacing: '0.08em' }}>
           Journal &amp; Notes
@@ -956,7 +978,6 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {/* Save Button */}
       <button
         onClick={handleSave}
         disabled={saving}
@@ -979,12 +1000,11 @@ export default function HabitsPage() {
         )}
       </button>
 
-      {/* MODAL 1: Prompt initial d'onboarding pour nouvel utilisateur sans habitudes */}
       {showInitialPromptModal && (
         <div className="modal-overlay z-50 backdrop-blur-xl animate-fade-in">
           <div className="modal-content max-w-md p-6 text-center space-y-5">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--accent-border)] flex items-center justify-center mx-auto text-3xl shadow-lg">
-              ✨
+            <div className="w-16 h-16 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--accent-border)] flex items-center justify-center mx-auto text-3xl shadow-lg text-[var(--accent)]">
+              <Sparkles size={28} />
             </div>
             
             <div className="space-y-2">
@@ -1020,7 +1040,6 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* MODAL 2: Questionnaire Interactif de Configuration des Habitudes & Quotas */}
       {showWizardModal && (
         <div
           className="modal-overlay z-50 backdrop-blur-xl"
@@ -1049,10 +1068,9 @@ export default function HabitsPage() {
               </button>
             </div>
 
-            {/* Category Wizard List */}
             <div className="space-y-6">
               {WIZARD_CATEGORIES.map(cat => (
-                <div key={cat.axis} className="space-y-3">
+                <div key={cat.title} className="space-y-3">
                   <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
                     {cat.title}
                   </p>
@@ -1074,7 +1092,7 @@ export default function HabitsPage() {
                             onClick={() => handleToggleWizardKey(h.key)}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="text-lg">{h.icon}</span>
+                              <HabitVectorIcon iconId={h.iconId} />
                               <span className="text-xs font-semibold truncate" style={{ color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                                 {h.label}
                               </span>
@@ -1091,7 +1109,6 @@ export default function HabitsPage() {
                             </div>
                           </div>
 
-                          {/* Quota Input for Numeric Habits */}
                           {h.defaultTarget && isSelected && (
                             <div className="flex items-center justify-between pt-1 border-t text-[11px]" style={{ borderColor: 'var(--accent-border)' }}>
                               <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Objectif / jour :</span>
@@ -1139,7 +1156,6 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* MODAL 3: Définir Quota Quotidien d'une Habitude Business */}
       {editingTargetModal && (
         <div
           className="modal-overlay z-50 backdrop-blur-xl animate-fade-in"
@@ -1196,7 +1212,6 @@ export default function HabitsPage() {
         </div>
       )}
 
-      {/* MODAL 4: Création / Édition d'une Habitude Personnalisée */}
       {showCustomHabitModal && (
         <div
           className="modal-overlay z-50 backdrop-blur-xl"
@@ -1211,9 +1226,6 @@ export default function HabitsPage() {
                 <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
                   {editingCustomHabit ? 'Modifier l\'habitude' : 'Nouvelle habitude sur-mesure'}
                 </h3>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                  Définissez vos propres objectifs quotidiens
-                </p>
               </div>
               <button
                 type="button"
@@ -1238,22 +1250,6 @@ export default function HabitsPage() {
                   required
                   className="input-field text-sm"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  Axe d&apos;épanouissement
-                </label>
-                <select
-                  value={customAxis}
-                  onChange={e => setCustomAxis(e.target.value as HabitAxis)}
-                  className="input-field text-xs"
-                >
-                  <option value="esprit">📖 Esprit &amp; Foi</option>
-                  <option value="sante">💪 Santé &amp; Énergie</option>
-                  <option value="focus">🔥 Focus &amp; Travail</option>
-                  <option value="business">💼 Business &amp; Growth</option>
-                </select>
               </div>
 
               <div>
@@ -1306,23 +1302,29 @@ export default function HabitsPage() {
 
               <div>
                 <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  Choisir une icône
+                  Choisir une icône futuriste
                 </label>
-                <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto p-2 rounded-xl border bg-black/20" style={{ borderColor: 'var(--border)' }}>
-                  {ICON_OPTIONS.map(icon => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setCustomIcon(icon)}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-transform hover:scale-110 cursor-pointer border"
-                      style={{
-                        background: customIcon === icon ? 'var(--accent-subtle)' : 'var(--bg-base)',
-                        borderColor: customIcon === icon ? 'var(--accent-border)' : 'transparent',
-                      }}
-                    >
-                      {icon}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-36 overflow-y-auto p-2 rounded-xl border bg-black/20" style={{ borderColor: 'var(--border)' }}>
+                  {VECTOR_ICON_OPTIONS.map(({ id, label, icon: IconComp }) => {
+                    const isSelected = customIcon === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setCustomIcon(id)}
+                        className="flex flex-col items-center justify-center p-2 rounded-lg text-xs transition-all cursor-pointer border gap-1"
+                        style={{
+                          background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-base)',
+                          borderColor: isSelected ? 'var(--accent-border)' : 'transparent',
+                          color: isSelected ? 'var(--accent)' : 'var(--text-secondary)',
+                        }}
+                        title={label}
+                      >
+                        <IconComp size={18} strokeWidth={2} />
+                        <span className="text-[9px] font-medium truncate w-full text-center">{label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
