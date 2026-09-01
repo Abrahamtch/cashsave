@@ -260,7 +260,7 @@ _Envoyé depuis l'application Cash Save_`;
             }}
           >
             <Send size={15} />
-            Envoyer au support via WhatsApp (+228 92 63 98 67)
+            Envoyer au support
           </button>
         </form>
       </div>
