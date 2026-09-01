@@ -38,6 +38,15 @@ export default function DashboardPage() {
   useEffect(() => {
     handlePaymentSuccessCheck();
     loadData();
+    const handleUpdate = () => { loadData(); };
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('cashsave_data_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('cashsave_data_updated', handleUpdate);
+    };
   }, []);
 
   async function handlePaymentSuccessCheck() {
@@ -65,6 +74,9 @@ export default function DashboardPage() {
     const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
 
+    setHabits(localHabits);
+    setTransactions(localTx);
+
     if (isLive) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -75,19 +87,14 @@ export default function DashboardPage() {
             supabase.from('daily_habits').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(365),
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
           ]);
-          let hasSupabaseData = false;
           if (profileRes.data) setProfile(profileRes.data);
-          if (habitsRes.data && habitsRes.data.length > 0) {
+          if (Array.isArray(habitsRes.data)) {
             setHabits(habitsRes.data);
-            hasSupabaseData = true;
+            localStorage.setItem('cashsave_habits', JSON.stringify(habitsRes.data));
           }
-          if (transactionsRes.data && transactionsRes.data.length > 0) {
+          if (Array.isArray(transactionsRes.data)) {
             setTransactions(transactionsRes.data);
-            hasSupabaseData = true;
-          }
-          if (hasSupabaseData) {
-            setLoading(false);
-            return;
+            localStorage.setItem('cashsave_transactions', JSON.stringify(transactionsRes.data));
           }
         }
       } catch (e) { /* fallback */ }

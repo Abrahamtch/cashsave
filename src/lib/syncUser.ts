@@ -12,15 +12,18 @@ export function broadcastDataUpdate() {
 }
 
 /**
- * Synchronise l'ensemble des données de l'utilisateur depuis Supabase vers le localStorage.
- * Permet une expérience multi-appareils sans faille et garantit que l'espace utilisateur
- * retrouve ses soldes, ses habitudes et ses tâches sur n'importe quel navigateur/appareil.
+ * Synchronise l'ensemble des données de l'utilisateur entre Supabase et le localStorage.
+ * Garantit la migration bidirectionnelle et la cohérence parfaite multi-appareils.
  */
 export async function syncUserDataFromSupabase(userId: string) {
-  if (!isLiveSupabaseConfigured()) return;
+  if (!isLiveSupabaseConfigured() || !userId) return;
   const supabase = createClient();
 
   try {
+    // 1. Migration automatique des données locales créées avant connexion ou hors-ligne vers Supabase
+    await migrateLocalDataToSupabase(supabase, userId);
+
+    // 2. Téléchargement de l'ensemble des données fraîches depuis Supabase
     const [
       profileRes,
       initBalRes,
@@ -43,43 +46,89 @@ export async function syncUserDataFromSupabase(userId: string) {
 
     if (profileRes.data) {
       const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-      localStorage.setItem(
-        'cashsave_user',
-        JSON.stringify({ ...localUser, ...profileRes.data })
-      );
+      localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, ...profileRes.data }));
     }
 
-    if (initBalRes.data && initBalRes.data.length > 0) {
+    if (Array.isArray(initBalRes.data)) {
       localStorage.setItem('cashsave_initial_balances', JSON.stringify(initBalRes.data));
     }
 
-    if (habitPrefRes.data && habitPrefRes.data.length > 0) {
+    if (Array.isArray(habitPrefRes.data)) {
       localStorage.setItem('cashsave_habit_preferences', JSON.stringify(habitPrefRes.data));
     }
 
-    if (txRes.data && txRes.data.length > 0) {
+    if (Array.isArray(txRes.data)) {
       localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
     }
 
-    if (habitRes.data && habitRes.data.length > 0) {
+    if (Array.isArray(habitRes.data)) {
       localStorage.setItem('cashsave_habits', JSON.stringify(habitRes.data));
     }
 
-    if (taskRes.data && taskRes.data.length > 0) {
+    if (Array.isArray(taskRes.data)) {
       localStorage.setItem('cashsave_tasks', JSON.stringify(taskRes.data));
     }
 
-    if (objRes.data && objRes.data.length > 0) {
+    if (Array.isArray(objRes.data)) {
       localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
     }
 
-    if (customHabitsRes.data && customHabitsRes.data.length > 0) {
+    if (Array.isArray(customHabitsRes.data)) {
       localStorage.setItem('cashsave_custom_habits', JSON.stringify(customHabitsRes.data));
     }
 
     broadcastDataUpdate();
   } catch (e) {
-    /* Repli automatique local en cas de déconnexion */
+    /* Repli automatique local en cas d'erreur de réseau */
+  }
+}
+
+/**
+ * Pousse les données orphelines (demo-user) créées localement vers le compte Supabase de l'utilisateur.
+ */
+async function migrateLocalDataToSupabase(supabase: any, userId: string) {
+  try {
+    // Migration des transactions locales
+    const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
+    const txToMigrate = Array.isArray(localTx) ? localTx.filter((t: any) => t && (t.user_id === 'demo-user' || !t.user_id)) : [];
+    if (txToMigrate.length > 0) {
+      const payload = txToMigrate.map((t: any) => ({ ...t, user_id: userId }));
+      await supabase.from('transactions').upsert(payload, { onConflict: 'id' });
+    }
+
+    // Migration des tâches locales
+    const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
+    const tasksToMigrate = Array.isArray(localTasks) ? localTasks.filter((t: any) => t && (t.user_id === 'demo-user' || !t.user_id)) : [];
+    if (tasksToMigrate.length > 0) {
+      const payload = tasksToMigrate.map((t: any) => ({ ...t, user_id: userId }));
+      await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
+    }
+
+    // Migration des objectifs locaux
+    const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
+    const objToMigrate = Array.isArray(localObj) ? localObj.filter((o: any) => o && (o.user_id === 'demo-user' || !o.user_id)) : [];
+    if (objToMigrate.length > 0) {
+      const payload = objToMigrate.map((o: any) => ({ ...o, user_id: userId }));
+      await supabase.from('objectives').upsert(payload, { onConflict: 'id' });
+    }
+
+    // Migration des habitudes personnalisées locales
+    const localCustom = JSON.parse(localStorage.getItem('cashsave_custom_habits') || '[]');
+    const customToMigrate = Array.isArray(localCustom) ? localCustom.filter((h: any) => h && (h.user_id === 'demo-user' || !h.user_id)) : [];
+    if (customToMigrate.length > 0) {
+      const payload = customToMigrate.map((h: any) => ({ ...h, user_id: userId }));
+      await supabase.from('custom_habits').upsert(payload, { onConflict: 'id' });
+    }
+
+    // Migration des habitudes quotidiennes locales
+    const localHabits = JSON.parse(localStorage.getItem('cashsave_habits') || '[]');
+    const habitsToMigrate = Array.isArray(localHabits) ? localHabits.filter((h: any) => h && (h.user_id === 'demo-user' || !h.user_id)) : [];
+    if (habitsToMigrate.length > 0) {
+      const payload = habitsToMigrate.map((h: any) => ({ ...h, user_id: userId }));
+      await supabase.from('daily_habits').upsert(payload, { onConflict: 'user_id,date' });
+    }
+  } catch (e) {
+    /* Silent migration catch */
   }
 }
 
@@ -89,7 +138,7 @@ export async function syncUserDataFromSupabase(userId: string) {
  * effectuées sur un autre ordinateur / téléphone par le même utilisateur.
  */
 export function subscribeToUserRealtimeChanges(userId: string, onDataChanged?: () => void) {
-  if (!isLiveSupabaseConfigured()) return () => {};
+  if (!isLiveSupabaseConfigured() || !userId) return () => {};
   const supabase = createClient();
 
   const channel = supabase

@@ -9,6 +9,7 @@ import {
   Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { broadcastDataUpdate } from '@/lib/syncUser';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function TasksPage() {
@@ -32,11 +33,21 @@ export default function TasksPage() {
 
   useEffect(() => {
     loadTasks();
+    const handleUpdate = () => { loadTasks(); };
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('cashsave_data_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('cashsave_data_updated', handleUpdate);
+    };
   }, []);
 
   async function loadTasks() {
     const isLive = isLiveSupabaseConfigured();
     const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
+    setTasks(localTasks);
 
     if (isLive) {
       try {
@@ -47,11 +58,9 @@ export default function TasksPage() {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-          if (data && data.length > 0) {
+          if (Array.isArray(data)) {
             setTasks(data);
             localStorage.setItem('cashsave_tasks', JSON.stringify(data));
-            setLoading(false);
-            return;
           }
         }
       } catch (e) {
@@ -59,7 +68,6 @@ export default function TasksPage() {
       }
     }
 
-    setTasks(localTasks);
     setLoading(false);
   }
 
@@ -116,16 +124,18 @@ export default function TasksPage() {
 
     setSaving(false);
     setShowModal(false);
+    broadcastDataUpdate();
 
     // 2. Synchro Supabase en tâche de fond
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          const payload = { ...newTask, user_id: user.id };
           if (editingTask) {
-            await supabase.from('tasks').update(newTask).eq('id', editingTask.id);
+            await supabase.from('tasks').update(payload).eq('id', editingTask.id);
           } else {
-            await supabase.from('tasks').insert({ ...newTask, user_id: user.id });
+            await supabase.from('tasks').insert(payload);
           }
         }
       } catch (e) {}
@@ -136,9 +146,13 @@ export default function TasksPage() {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks.map((t: any) => t.id === taskId ? { ...t, status: newStatus } : t)));
+    broadcastDataUpdate();
     (async () => {
       try {
-        await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+        }
       } catch (e) {}
     })();
   };
@@ -147,6 +161,7 @@ export default function TasksPage() {
     setTasks(prev => prev.filter(t => t.id !== taskId));
     const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks.filter((t: any) => t.id !== taskId)));
+    broadcastDataUpdate();
     try {
       await supabase.from('tasks').delete().eq('id', taskId);
     } catch (e) {}

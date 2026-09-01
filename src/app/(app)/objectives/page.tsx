@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale';
 import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { broadcastDataUpdate } from '@/lib/syncUser';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function ObjectivesPage() {
@@ -34,6 +35,15 @@ export default function ObjectivesPage() {
 
   useEffect(() => {
     loadData();
+    const handleUpdate = () => { loadData(); };
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('cashsave_data_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('cashsave_data_updated', handleUpdate);
+    };
   }, []);
 
   async function loadData() {
@@ -45,6 +55,8 @@ export default function ObjectivesPage() {
     if (localUser.initial_balance_total) {
       setInitialBalanceTotal(localUser.initial_balance_total);
     }
+    setObjectives(localObj);
+    setTransactions(localTx);
 
     if (isLive) {
       try {
@@ -58,20 +70,13 @@ export default function ObjectivesPage() {
           if (profileRes.data && profileRes.data.initial_balance_total) {
             setInitialBalanceTotal(profileRes.data.initial_balance_total);
           }
-          let hasSupabaseData = false;
-          if (objRes.data && objRes.data.length > 0) {
+          if (Array.isArray(objRes.data)) {
             setObjectives(objRes.data);
             localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
-            hasSupabaseData = true;
           }
-          if (txRes.data && txRes.data.length > 0) {
+          if (Array.isArray(txRes.data)) {
             setTransactions(txRes.data);
             localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
-            hasSupabaseData = true;
-          }
-          if (hasSupabaseData) {
-            setLoading(false);
-            return;
           }
         }
       } catch (e) {
@@ -79,8 +84,6 @@ export default function ObjectivesPage() {
       }
     }
 
-    setObjectives(localObj);
-    setTransactions(localTx);
     setLoading(false);
   }
 
@@ -177,16 +180,18 @@ export default function ObjectivesPage() {
 
     setSaving(false);
     setShowModal(false);
+    broadcastDataUpdate();
 
     // 2. Synchronisation Supabase en arrière-plan
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          const payload = { ...newObj, user_id: user.id };
           if (editingObjective) {
-            await supabase.from('objectives').update(newObj).eq('id', editingObjective.id);
+            await supabase.from('objectives').update(payload).eq('id', editingObjective.id);
           } else {
-            await supabase.from('objectives').insert({ ...newObj, user_id: user.id });
+            await supabase.from('objectives').insert(payload);
           }
         }
       } catch (err) { /* silent background sync */ }
@@ -197,6 +202,7 @@ export default function ObjectivesPage() {
     setObjectives(prev => prev.filter(o => o.id !== id));
     const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
     localStorage.setItem('cashsave_objectives', JSON.stringify(localObj.filter((o: any) => o.id !== id)));
+    broadcastDataUpdate();
     (async () => {
       try {
         await supabase.from('objectives').delete().eq('id', id);
