@@ -35,7 +35,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
-    let pollInterval: NodeJS.Timeout | undefined;
 
     async function init() {
       await checkOnboardingStatus();
@@ -45,13 +44,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           if (user) {
             await syncUserDataFromSupabase(user.id);
             unsubscribe = subscribeToUserRealtimeChanges(user.id);
-
-            // Polling automatique toutes les 8s si la page est active (Double sécurité multi-appareils)
-            pollInterval = setInterval(() => {
-              if (document.visibilityState === 'visible') {
-                syncUserDataFromSupabase(user.id);
-              }
-            }, 8000);
           }
         } catch (e) {}
       }
@@ -70,13 +62,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener('focus', handleFocusOrVisible);
-    window.addEventListener('visibilitychange', handleFocusOrVisible);
 
     return () => {
       if (unsubscribe) unsubscribe();
-      if (pollInterval) clearInterval(pollInterval);
       window.removeEventListener('focus', handleFocusOrVisible);
-      window.removeEventListener('visibilitychange', handleFocusOrVisible);
     };
   }, []);
 

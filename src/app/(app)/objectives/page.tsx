@@ -9,7 +9,7 @@ import { fr } from 'date-fns/locale';
 import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
@@ -182,6 +182,7 @@ export default function ObjectivesPage() {
 
     setSaving(false);
     setShowModal(false);
+    markLocalSelfMutation();
     broadcastDataUpdate();
 
     // 2. Synchronisation Supabase en arrière-plan

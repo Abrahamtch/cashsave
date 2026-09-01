@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID, isValidUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 

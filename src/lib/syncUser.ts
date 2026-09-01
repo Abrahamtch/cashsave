@@ -2,6 +2,22 @@ import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { ensureUUID } from '@/lib/uuid';
 
+let isSyncingInFlight = false;
+let isLocalSelfMutation = false;
+let selfMutationTimeout: NodeJS.Timeout | null = null;
+
+/**
+ * Marque qu'une action de modification a été effectuée localement par cet appareil,
+ * afin de ne pas déclencher de boucle de ré-actualisation lors de l'écho Realtime Supabase.
+ */
+export function markLocalSelfMutation() {
+  isLocalSelfMutation = true;
+  if (selfMutationTimeout) clearTimeout(selfMutationTimeout);
+  selfMutationTimeout = setTimeout(() => {
+    isLocalSelfMutation = false;
+  }, 3000);
+}
+
 /**
  * Dispatche un événement personnalisé dans la fenêtre browser
  * pour informer immédiatement tous les composants réactifs des changements de données.
@@ -15,17 +31,18 @@ export function broadcastDataUpdate() {
 /**
  * Fusionne en toute sécurité les données locales et distantes.
  * AUCUNE DONNÉE LOCALE N'EST JAMAIS SUPPRIMÉE OU EFFACÉE PAR ERREUR.
+ * Retourne si les données ont réellement changé.
  */
 function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: string }>(
   storageKey: string,
   remoteData: T[] | null,
   userId: string,
   conflictField: 'id' | 'date' = 'id'
-): T[] {
+): { merged: T[]; hasChanged: boolean } {
   let localData: T[] = [];
+  const rawBefore = localStorage.getItem(storageKey) || '[]';
   try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) localData = JSON.parse(raw);
+    if (rawBefore) localData = JSON.parse(rawBefore);
   } catch (e) {}
 
   if (!Array.isArray(localData)) localData = [];
@@ -52,8 +69,14 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
   }
 
   const merged = Array.from(map.values());
-  localStorage.setItem(storageKey, JSON.stringify(merged));
-  return merged;
+  const rawAfter = JSON.stringify(merged);
+  const hasChanged = rawBefore !== rawAfter;
+
+  if (hasChanged) {
+    localStorage.setItem(storageKey, rawAfter);
+  }
+
+  return { merged, hasChanged };
 }
 
 /**
@@ -61,7 +84,9 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
  * Garantit la fusion bidirectionnelle et la protection absolue contre les pertes de données.
  */
 export async function syncUserDataFromSupabase(userId: string) {
-  if (!isLiveSupabaseConfigured() || !userId) return;
+  if (!isLiveSupabaseConfigured() || !userId || isSyncingInFlight) return;
+  isSyncingInFlight = true;
+
   const supabase = createClient();
 
   try {
@@ -93,11 +118,11 @@ export async function syncUserDataFromSupabase(userId: string) {
     }
 
     // Fusion sécurisée des 5 collections principales avec UUIDs valides
-    const mergedTx = safeMergeAndPersist('cashsave_transactions', txRes.data, userId, 'id');
-    const mergedHabits = safeMergeAndPersist('cashsave_habits', habitRes.data, userId, 'date');
-    const mergedTasks = safeMergeAndPersist('cashsave_tasks', taskRes.data, userId, 'id');
-    const mergedObj = safeMergeAndPersist('cashsave_objectives', objRes.data, userId, 'id');
-    const mergedCustom = safeMergeAndPersist('cashsave_custom_habits', customHabitsRes.data, userId, 'id');
+    const resTx = safeMergeAndPersist('cashsave_transactions', txRes.data, userId, 'id');
+    const resHabits = safeMergeAndPersist('cashsave_habits', habitRes.data, userId, 'date');
+    const resTasks = safeMergeAndPersist('cashsave_tasks', taskRes.data, userId, 'id');
+    const resObj = safeMergeAndPersist('cashsave_objectives', objRes.data, userId, 'id');
+    const resCustom = safeMergeAndPersist('cashsave_custom_habits', customHabitsRes.data, userId, 'id');
 
     if (Array.isArray(initBalRes.data) && initBalRes.data.length > 0) {
       localStorage.setItem('cashsave_initial_balances', JSON.stringify(initBalRes.data));
@@ -108,16 +133,23 @@ export async function syncUserDataFromSupabase(userId: string) {
 
     // 2. Auto-sauvegarde / Push systématique vers Supabase de l'ensemble fusionné
     await pushMergedDataToSupabase(supabase, userId, {
-      transactions: mergedTx,
-      daily_habits: mergedHabits,
-      tasks: mergedTasks,
-      objectives: mergedObj,
-      custom_habits: mergedCustom,
+      transactions: resTx.merged,
+      daily_habits: resHabits.merged,
+      tasks: resTasks.merged,
+      objectives: resObj.merged,
+      custom_habits: resCustom.merged,
     });
 
-    broadcastDataUpdate();
+    const anyChanged = resTx.hasChanged || resHabits.hasChanged || resTasks.hasChanged || resObj.hasChanged || resCustom.hasChanged;
+
+    // Seulement si des données ont VRAIMENT changé par rapport au stockage local
+    if (anyChanged) {
+      broadcastDataUpdate();
+    }
   } catch (e) {
     console.error('Error syncing user data from Supabase:', e);
+  } finally {
+    isSyncingInFlight = false;
   }
 }
 
@@ -198,6 +230,9 @@ export function subscribeToUserRealtimeChanges(userId: string, onDataChanged?: (
       'postgres_changes',
       { event: '*', schema: 'public', filter: `user_id=eq.${userId}` },
       async () => {
+        // Si la modification vient de cet appareil lui-même, on n'invalide pas l'IHM
+        if (isLocalSelfMutation) return;
+
         await syncUserDataFromSupabase(userId);
         if (onDataChanged) onDataChanged();
       }

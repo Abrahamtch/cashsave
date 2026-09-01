@@ -9,7 +9,7 @@ import {
   Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
@@ -126,6 +126,7 @@ export default function TasksPage() {
 
     setSaving(false);
     setShowModal(false);
+    markLocalSelfMutation();
     broadcastDataUpdate();
 
     // 2. Synchro Supabase en tâche de fond

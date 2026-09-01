@@ -12,7 +12,7 @@ import {
   Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
@@ -135,6 +135,7 @@ export default function CashPage() {
 
       setSavingTx(false);
       setShowModal(false);
+      markLocalSelfMutation();
       broadcastDataUpdate();
 
       if (isLiveSupabaseConfigured()) {
@@ -177,6 +178,7 @@ export default function CashPage() {
 
       setSavingTx(false);
       setShowModal(false);
+      markLocalSelfMutation();
       broadcastDataUpdate();
 
       if (isLiveSupabaseConfigured()) {
