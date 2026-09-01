@@ -6,6 +6,28 @@ let isSyncingInFlight = false;
 let isLocalSelfMutation = false;
 let selfMutationTimeout: NodeJS.Timeout | null = null;
 
+const ALLOWED_TX_FIELDS = ['id', 'user_id', 'type', 'amount', 'category', 'date', 'note', 'is_satisfied', 'image_url', 'created_at'];
+const ALLOWED_TASK_FIELDS = ['id', 'user_id', 'title', 'deadline', 'priority', 'status', 'position', 'created_at', 'updated_at'];
+const ALLOWED_OBJ_FIELDS = ['id', 'user_id', 'title', 'deadline', 'target_amount', 'allocated_budget', 'progress', 'status', 'created_at', 'updated_at'];
+const ALLOWED_CUSTOM_HABIT_FIELDS = ['id', 'user_id', 'title', 'axis', 'type', 'icon', 'target_quantity', 'is_active', 'created_at'];
+const ALLOWED_DAILY_HABIT_FIELDS = [
+  'id', 'user_id', 'date', 'bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport',
+  'light_work', 'deep_work', 'after_work', 'prospects_contacted', 'calls_made', 'content_published',
+  'client_projects', 'learning_minutes', 'comments', 'progression', 'habit_score', 'work_score',
+  'business_score', 'learning_score', 'total_score', 'created_at', 'updated_at'
+];
+
+function sanitizeObject(obj: any, allowedKeys: string[]) {
+  if (!obj || typeof obj !== 'object') return {};
+  const cleaned: any = {};
+  for (const key of allowedKeys) {
+    if (key in obj && obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+}
+
 /**
  * Marque qu'une action de modification a été effectuée localement par cet appareil,
  * afin de ne pas déclencher de boucle de ré-actualisation lors de l'écho Realtime Supabase.
@@ -53,7 +75,7 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
   for (const item of localData) {
     if (!item) continue;
     const validId = ensureUUID(item.id);
-    const key = conflictField === 'date' && item.date ? String(item.date) : validId;
+    const key = conflictField === 'date' && item.date ? String(item.date).substring(0, 10) : validId;
     map.set(key, { ...item, id: validId, user_id: userId });
   }
 
@@ -62,7 +84,7 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
     for (const item of remoteData) {
       if (!item) continue;
       const validId = ensureUUID(item.id);
-      const key = conflictField === 'date' && item.date ? String(item.date) : validId;
+      const key = conflictField === 'date' && item.date ? String(item.date).substring(0, 10) : validId;
       const existing = map.get(key);
       map.set(key, { ...existing, ...item, id: validId, user_id: userId });
     }
@@ -161,52 +183,49 @@ async function pushMergedDataToSupabase(supabase: any, userId: string, data: {
   custom_habits: any[];
 }) {
   try {
+    // Transactions
     if (data.transactions.length > 0) {
-      const payload = data.transactions.map(t => ({
-        ...t,
-        id: ensureUUID(t.id),
-        user_id: userId,
-      }));
+      const payload = data.transactions.map(t => sanitizeObject({ ...t, id: ensureUUID(t.id), user_id: userId }, ALLOWED_TX_FIELDS));
       const { error } = await supabase.from('transactions').upsert(payload, { onConflict: 'id' });
       if (error) console.error('Supabase transactions upsert error:', error);
     }
 
+    // Tasks
     if (data.tasks.length > 0) {
-      const payload = data.tasks.map(t => ({
-        ...t,
-        id: ensureUUID(t.id),
-        user_id: userId,
-      }));
+      const payload = data.tasks.map(t => sanitizeObject({ ...t, id: ensureUUID(t.id), user_id: userId }, ALLOWED_TASK_FIELDS));
       const { error } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
       if (error) console.error('Supabase tasks upsert error:', error);
     }
 
+    // Objectives
     if (data.objectives.length > 0) {
-      const payload = data.objectives.map(o => ({
-        ...o,
-        id: ensureUUID(o.id),
-        user_id: userId,
-      }));
-      const { error } = await supabase.from('objectives').upsert(payload, { onConflict: 'id' });
-      if (error) console.error('Supabase objectives upsert error:', error);
+      const payload = data.objectives.map(o => sanitizeObject({ ...o, id: ensureUUID(o.id), user_id: userId }, ALLOWED_OBJ_FIELDS));
+      let { error } = await supabase.from('objectives').upsert(payload, { onConflict: 'id' });
+      if (error && error.message?.includes('column')) {
+        // Fallback si la migration 004 n'a pas encore été exécutée dans Supabase SQL Editor
+        const fallbackFields = ALLOWED_OBJ_FIELDS.filter(f => f !== 'target_amount' && f !== 'allocated_budget');
+        const fallbackPayload = data.objectives.map(o => sanitizeObject({ ...o, id: ensureUUID(o.id), user_id: userId }, fallbackFields));
+        const retryRes = await supabase.from('objectives').upsert(fallbackPayload, { onConflict: 'id' });
+        if (retryRes.error) console.error('Supabase objectives fallback error:', retryRes.error);
+      }
     }
 
+    // Custom Habits
     if (data.custom_habits.length > 0) {
-      const payload = data.custom_habits.map(h => ({
-        ...h,
-        id: ensureUUID(h.id),
-        user_id: userId,
-      }));
-      const { error } = await supabase.from('custom_habits').upsert(payload, { onConflict: 'id' });
-      if (error) console.error('Supabase custom_habits upsert error:', error);
+      const payload = data.custom_habits.map(h => sanitizeObject({ ...h, id: ensureUUID(h.id), user_id: userId }, ALLOWED_CUSTOM_HABIT_FIELDS));
+      let { error } = await supabase.from('custom_habits').upsert(payload, { onConflict: 'id' });
+      if (error && error.message?.includes('column')) {
+        // Fallback si target_quantity n'existe pas encore dans la base
+        const fallbackFields = ALLOWED_CUSTOM_HABIT_FIELDS.filter(f => f !== 'target_quantity');
+        const fallbackPayload = data.custom_habits.map(h => sanitizeObject({ ...h, id: ensureUUID(h.id), user_id: userId }, fallbackFields));
+        const retryRes = await supabase.from('custom_habits').upsert(fallbackPayload, { onConflict: 'id' });
+        if (retryRes.error) console.error('Supabase custom_habits fallback error:', retryRes.error);
+      }
     }
 
+    // Daily Habits
     if (data.daily_habits.length > 0) {
-      const payload = data.daily_habits.map(h => ({
-        ...h,
-        id: ensureUUID(h.id),
-        user_id: userId,
-      }));
+      const payload = data.daily_habits.map(h => sanitizeObject({ ...h, id: ensureUUID(h.id), user_id: userId }, ALLOWED_DAILY_HABIT_FIELDS));
       const { error } = await supabase.from('daily_habits').upsert(payload, { onConflict: 'user_id,date' });
       if (error) console.error('Supabase daily_habits upsert error:', error);
     }
