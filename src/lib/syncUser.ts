@@ -6,6 +6,7 @@ import { ensureUserProfileExists } from '@/lib/ensureProfile';
 let isSyncingInFlight = false;
 let isLocalSelfMutation = false;
 let selfMutationTimeout: NodeJS.Timeout | null = null;
+let lastSyncTime = 0;
 
 const ALLOWED_TX_FIELDS = ['id', 'user_id', 'type', 'amount', 'category', 'date', 'note', 'is_satisfied', 'image_url', 'created_at'];
 const ALLOWED_TASK_FIELDS = ['id', 'user_id', 'title', 'deadline', 'priority', 'status', 'position', 'created_at', 'updated_at'];
@@ -63,7 +64,7 @@ export function markLocalSelfMutation() {
   if (selfMutationTimeout) clearTimeout(selfMutationTimeout);
   selfMutationTimeout = setTimeout(() => {
     isLocalSelfMutation = false;
-  }, 3000);
+  }, 5000); // 5 secondes de fenêtre de protection contre l'écho
 }
 
 /**
@@ -77,16 +78,15 @@ export function broadcastDataUpdate() {
 }
 
 /**
- * Fusionne en toute sécurité les données locales et distantes.
- * AUCUNE DONNÉE LOCALE N'EST JAMAIS SUPPRIMÉE OU EFFACÉE PAR ERREUR.
- * Isole les données pour éviter toute contamination inter-comptes.
+ * Fusionne intelligemment et sans risque de perte les données distantes Supabase avec le localStorage.
+ * NE SUPPRIME JAMAIS de données locales créées par l'utilisateur.
  */
-function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: string }>(
+export function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: string }>(
   storageKey: string,
   remoteData: T[] | null,
   userId: string,
   conflictField: 'id' | 'date' = 'id'
-): { merged: T[]; hasChanged: boolean } {
+): { merged: T[]; hasChanged: boolean; unsyncedLocal: T[] } {
   let localData: T[] = [];
   const rawBefore = localStorage.getItem(storageKey) || '[]';
   try {
@@ -96,27 +96,34 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
   if (!Array.isArray(localData)) localData = [];
 
   const map = new Map<string, T>();
+  const remoteKeys = new Set<string>();
 
-  // 1. Préserver les données locales qui appartiennent à cet utilisateur ou créées sans ID spécifique
-  for (const item of localData) {
-    if (!item) continue;
-    // Sécurité inter-compte : Si l'élément appartient explicitement à un autre utilisateur UUID, on l'ignore
-    if (item.user_id && item.user_id !== userId && item.user_id !== 'demo-user' && item.user_id.length > 20) {
-      continue;
-    }
-    const validId = ensureUUID(item.id);
-    const key = conflictField === 'date' && item.date ? String(item.date).substring(0, 10) : validId;
-    map.set(key, { ...item, id: validId, user_id: userId });
-  }
-
-  // 2. Fusionner les données de Supabase (les données distantes mettent à jour les champs existants)
+  // 1. Charger les données distantes (source de vérité cloud)
   if (Array.isArray(remoteData)) {
     for (const item of remoteData) {
       if (!item) continue;
       const validId = ensureUUID(item.id);
       const key = conflictField === 'date' && item.date ? String(item.date).substring(0, 10) : validId;
-      const existing = map.get(key);
-      map.set(key, { ...existing, ...item, id: validId, user_id: userId });
+      remoteKeys.add(key);
+      map.set(key, { ...item, id: validId, user_id: userId });
+    }
+  }
+
+  const unsyncedLocal: T[] = [];
+
+  // 2. Préserver les éléments locaux qui n'existent pas encore sur le serveur (données non synchronisées)
+  for (const item of localData) {
+    if (!item) continue;
+    if (item.user_id && item.user_id !== userId && item.user_id !== 'demo-user' && item.user_id.length > 20) {
+      continue;
+    }
+    const validId = ensureUUID(item.id);
+    const key = conflictField === 'date' && item.date ? String(item.date).substring(0, 10) : validId;
+
+    if (!map.has(key)) {
+      const sanitizedLocal = { ...item, id: validId, user_id: userId };
+      map.set(key, sanitizedLocal);
+      unsyncedLocal.push(sanitizedLocal);
     }
   }
 
@@ -128,21 +135,25 @@ function safeMergeAndPersist<T extends { id?: string; user_id?: string; date?: s
     localStorage.setItem(storageKey, rawAfter);
   }
 
-  return { merged, hasChanged };
+  return { merged, hasChanged, unsyncedLocal };
 }
 
 /**
- * Synchronise l'ensemble des données de l'utilisateur entre Supabase et le localStorage.
- * Garantit la fusion bidirectionnelle, l'auto-creation du profil et la protection contre la perte de données.
+ * Synchronise les données entre Supabase et le stockage local de manière intelligente.
+ * Evite les rafraîchissements intempestifs et les boucles de synchronisation infinies.
  */
 export async function syncUserDataFromSupabase(userId: string) {
   if (!isLiveSupabaseConfigured() || !userId || isSyncingInFlight) return;
+  const now = Date.now();
+  // Anti-rebond (debounce) de 2 secondes pour éviter les exécutions en rafale
+  if (now - lastSyncTime < 2000) return;
+
   isSyncingInFlight = true;
+  lastSyncTime = now;
 
   const supabase = createClient();
 
   try {
-    // 0. Auto-provisionnement garanti du profil utilisateur pour éliminer tout risque de Foreign Key Violation
     const { data: authData } = await supabase.auth.getUser();
     if (authData?.user) {
       await ensureUserProfileExists(supabase, authData.user);
@@ -150,7 +161,6 @@ export async function syncUserDataFromSupabase(userId: string) {
       await ensureUserProfileExists(supabase, { id: userId });
     }
 
-    // 1. Récupération simultanée de toutes les tables Supabase
     const [
       profileRes,
       initBalRes,
@@ -171,13 +181,11 @@ export async function syncUserDataFromSupabase(userId: string) {
       supabase.from('custom_habits').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     ]);
 
-    // Profile
     if (profileRes.data) {
       const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
       localStorage.setItem('cashsave_user', JSON.stringify({ ...localUser, ...profileRes.data }));
     }
 
-    // Fusion sécurisée des 5 collections principales avec UUIDs valides
     const resTx = safeMergeAndPersist('cashsave_transactions', txRes.data, userId, 'id');
     const resHabits = safeMergeAndPersist('cashsave_habits', habitRes.data, userId, 'date');
     const resTasks = safeMergeAndPersist('cashsave_tasks', taskRes.data, userId, 'id');
@@ -191,18 +199,29 @@ export async function syncUserDataFromSupabase(userId: string) {
       localStorage.setItem('cashsave_habit_preferences', JSON.stringify(habitPrefRes.data));
     }
 
-    // 2. Auto-sauvegarde / Push systématique par lots (chunks de 100) vers Supabase de l'ensemble fusionné
-    await pushMergedDataToSupabase(supabase, userId, {
-      transactions: resTx.merged,
-      daily_habits: resHabits.merged,
-      tasks: resTasks.merged,
-      objectives: resObj.merged,
-      custom_habits: resCustom.merged,
-    });
+    // Pousser VERS Supabase UNIQUEMENT les éléments locaux non encore présents sur le serveur
+    const hasUnsynced = 
+      resTx.unsyncedLocal.length > 0 ||
+      resHabits.unsyncedLocal.length > 0 ||
+      resTasks.unsyncedLocal.length > 0 ||
+      resObj.unsyncedLocal.length > 0 ||
+      resCustom.unsyncedLocal.length > 0;
+
+    if (hasUnsynced) {
+      await pushUnsyncedDataToSupabase(supabase, userId, {
+        transactions: resTx.unsyncedLocal,
+        daily_habits: resHabits.unsyncedLocal,
+        tasks: resTasks.unsyncedLocal,
+        objectives: resObj.unsyncedLocal,
+        custom_habits: resCustom.unsyncedLocal,
+      });
+    }
 
     const anyChanged = resTx.hasChanged || resHabits.hasChanged || resTasks.hasChanged || resObj.hasChanged || resCustom.hasChanged;
 
-    if (anyChanged) {
+    // Ne notifier l'IHM QUE si des données distantes ont réellement modifié le cache local
+    // et qu'aucune mutation locale n'est en cours (pour éviter de fermer les modals/formulaires)
+    if (anyChanged && !isLocalSelfMutation) {
       broadcastDataUpdate();
     }
   } catch (e) {
@@ -213,10 +232,9 @@ export async function syncUserDataFromSupabase(userId: string) {
 }
 
 /**
- * Envoie les données vers Supabase par lots (chunks de 100) pour accueillir des milliers
- * d'utilisateurs et des volumes massifs de données sans dépasser les limites de requêtes HTTP / PostgREST.
+ * Pousse UNIQUEMENT les éléments non encore enregistrés sur le serveur par lots de 100
  */
-async function pushMergedDataToSupabase(supabase: any, userId: string, data: {
+async function pushUnsyncedDataToSupabase(supabase: any, userId: string, data: {
   transactions: any[];
   daily_habits: any[];
   tasks: any[];
@@ -232,58 +250,42 @@ async function pushMergedDataToSupabase(supabase: any, userId: string, data: {
       let { error } = await supabase.from(table).upsert(chunk, { onConflict });
       if (error && fallbackFields && error.message?.includes('column')) {
         const fallbackChunk = chunk.map(item => sanitizeObject(item, fallbackFields));
-        const retryRes = await supabase.from(table).upsert(fallbackChunk, { onConflict });
-        if (retryRes.error) {
-          console.error(`Supabase ${table} fallback chunk upsert error:`, retryRes.error);
-        }
-      } else if (error) {
-        console.error(`Supabase ${table} chunk upsert error:`, error);
+        await supabase.from(table).upsert(fallbackChunk, { onConflict });
       }
     }
   }
 
   try {
-    // Transactions
+    // Verrouiller temporairement la détection d'écho Realtime pendant notre propre push
+    markLocalSelfMutation();
+
     if (data.transactions.length > 0) {
       const payload = data.transactions.map(t => sanitizeObject({ ...t, id: ensureUUID(t.id), user_id: userId }, ALLOWED_TX_FIELDS));
       await batchUpsert('transactions', payload, 'id');
     }
-
-    // Tasks
     if (data.tasks.length > 0) {
       const payload = data.tasks.map(t => sanitizeObject({ ...t, id: ensureUUID(t.id), user_id: userId }, ALLOWED_TASK_FIELDS));
       await batchUpsert('tasks', payload, 'id');
     }
-
-    // Objectives
     if (data.objectives.length > 0) {
       const payload = data.objectives.map(o => sanitizeObject({ ...o, id: ensureUUID(o.id), user_id: userId }, ALLOWED_OBJ_FIELDS));
       const fallbackFields = ALLOWED_OBJ_FIELDS.filter(f => f !== 'target_amount' && f !== 'allocated_budget');
       await batchUpsert('objectives', payload, 'id', fallbackFields);
     }
-
-    // Custom Habits
     if (data.custom_habits.length > 0) {
       const payload = data.custom_habits.map(h => sanitizeObject({ ...h, id: ensureUUID(h.id), user_id: userId }, ALLOWED_CUSTOM_HABIT_FIELDS));
       const fallbackFields = ALLOWED_CUSTOM_HABIT_FIELDS.filter(f => f !== 'target_quantity');
       await batchUpsert('custom_habits', payload, 'id', fallbackFields);
     }
-
-    // Daily Habits
     if (data.daily_habits.length > 0) {
       const payload = data.daily_habits.map(h => sanitizeObject({ ...h, id: ensureUUID(h.id), user_id: userId }, ALLOWED_DAILY_HABIT_FIELDS));
       await batchUpsert('daily_habits', payload, 'user_id,date');
     }
   } catch (e) {
-    console.error('pushMergedDataToSupabase error:', e);
+    console.error('pushUnsyncedDataToSupabase error:', e);
   }
 }
 
-/**
- * Souscrit en temps réel aux canaux Supabase Postgres Changes
- * pour répercuter immédiatement sur cet appareil les modifications
- * effectuées sur un autre ordinateur / téléphone par le même utilisateur.
- */
 export function subscribeToUserRealtimeChanges(userId: string, onDataChanged?: () => void) {
   if (!isLiveSupabaseConfigured() || !userId) return () => {};
   const supabase = createClient();
@@ -294,7 +296,8 @@ export function subscribeToUserRealtimeChanges(userId: string, onDataChanged?: (
       'postgres_changes',
       { event: '*', schema: 'public', filter: `user_id=eq.${userId}` },
       async () => {
-        if (isLocalSelfMutation) return;
+        // Bloquer l'écho en temps réel si l'action vient de cet appareil
+        if (isLocalSelfMutation || isSyncingInFlight) return;
         await syncUserDataFromSupabase(userId);
         if (onDataChanged) onDataChanged();
       }

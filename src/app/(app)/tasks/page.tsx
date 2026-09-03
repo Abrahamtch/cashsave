@@ -60,7 +60,7 @@ export default function TasksPage() {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
             setTasks(data);
             localStorage.setItem('cashsave_tasks', JSON.stringify(data));
           }

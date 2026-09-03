@@ -88,11 +88,11 @@ export default function DashboardPage() {
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
           ]);
           if (profileRes.data) setProfile(profileRes.data);
-          if (Array.isArray(habitsRes.data)) {
+          if (Array.isArray(habitsRes.data) && habitsRes.data.length > 0) {
             setHabits(habitsRes.data);
             localStorage.setItem('cashsave_habits', JSON.stringify(habitsRes.data));
           }
-          if (Array.isArray(transactionsRes.data)) {
+          if (Array.isArray(transactionsRes.data) && transactionsRes.data.length > 0) {
             setTransactions(transactionsRes.data);
             localStorage.setItem('cashsave_transactions', JSON.stringify(transactionsRes.data));
           }

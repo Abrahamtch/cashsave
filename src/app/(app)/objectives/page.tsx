@@ -72,11 +72,11 @@ export default function ObjectivesPage() {
           if (profileRes.data && profileRes.data.initial_balance_total) {
             setInitialBalanceTotal(profileRes.data.initial_balance_total);
           }
-          if (Array.isArray(objRes.data)) {
+          if (Array.isArray(objRes.data) && objRes.data.length > 0) {
             setObjectives(objRes.data);
             localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
           }
-          if (Array.isArray(txRes.data)) {
+          if (Array.isArray(txRes.data) && txRes.data.length > 0) {
             setTransactions(txRes.data);
             localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
           }
