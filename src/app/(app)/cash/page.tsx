@@ -12,7 +12,7 @@ import {
   Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
@@ -37,7 +37,13 @@ export default function CashPage() {
   const [savingTx, setSavingTx] = useState(false);
   const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
 
-  useEffect(() => { loadTransactions(); }, []);
+  useEffect(() => {
+    loadTransactions();
+
+    const handleUpdate = () => loadTransactions();
+    window.addEventListener('cashsave_data_updated', handleUpdate);
+    return () => window.removeEventListener('cashsave_data_updated', handleUpdate);
+  }, []);
 
   async function loadTransactions() {
     const isLive = isLiveSupabaseConfigured();
@@ -53,10 +59,10 @@ export default function CashPage() {
             supabase.from('profiles').select('initial_balance_total').eq('id', user.id).single(),
             supabase.from('initial_balances').select('amount').eq('user_id', user.id),
           ]);
-          if (txRes.data && txRes.data.length > 0) {
-            setTransactions(txRes.data);
-            localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
-          }
+          
+          const { merged } = safeMergeAndPersist('cashsave_transactions', txRes.data, user.id, 'id');
+          setTransactions(merged);
+
           let totalBal = profileRes.data?.initial_balance_total || 0;
           if (initBalRes.data && initBalRes.data.length > 0) {
             const sum = initBalRes.data.reduce((acc, b) => acc + (b.amount || 0), 0);
@@ -94,9 +100,10 @@ export default function CashPage() {
     setShowModal(true);
   };
 
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === 'string') {
@@ -111,6 +118,7 @@ export default function CashPage() {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
     setSavingTx(true);
+    markLocalSelfMutation();
 
     const defaultCats = modalType === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
     const finalCategory = category || defaultCats[0] || 'Autre';
@@ -134,11 +142,6 @@ export default function CashPage() {
       const updatedLocal = localTx.map((t: any) => t.id === editingTx.id ? updatedTx : t);
       localStorage.setItem('cashsave_transactions', JSON.stringify(updatedLocal));
 
-      setSavingTx(false);
-      setShowModal(false);
-      markLocalSelfMutation();
-      broadcastDataUpdate();
-
       if (isLiveSupabaseConfigured()) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -158,6 +161,10 @@ export default function CashPage() {
           }
         } catch (e) {}
       }
+
+      setSavingTx(false);
+      setShowModal(false);
+      broadcastDataUpdate();
     } else {
       const newId = generateUUID();
       const newTx: Transaction = {
@@ -178,11 +185,6 @@ export default function CashPage() {
       localTx.unshift(newTx);
       localStorage.setItem('cashsave_transactions', JSON.stringify(localTx));
 
-      setSavingTx(false);
-      setShowModal(false);
-      markLocalSelfMutation();
-      broadcastDataUpdate();
-
       if (isLiveSupabaseConfigured()) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -193,6 +195,10 @@ export default function CashPage() {
           }
         } catch (e) {}
       }
+
+      setSavingTx(false);
+      setShowModal(false);
+      broadcastDataUpdate();
     }
   };
 

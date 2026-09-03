@@ -9,7 +9,7 @@ import {
   Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
@@ -22,7 +22,7 @@ export default function TasksPage() {
 
   // Form states
   const [title, setTitle] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [deadline, setDeadline] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [saving, setSaving] = useState(false);
@@ -35,10 +35,12 @@ export default function TasksPage() {
 
   useEffect(() => {
     loadTasks();
-    const handleUpdate = () => { loadTasks(); };
+
+    const handleUpdate = () => loadTasks();
     window.addEventListener('focus', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('cashsave_data_updated', handleUpdate);
+
     return () => {
       window.removeEventListener('focus', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
@@ -60,10 +62,8 @@ export default function TasksPage() {
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-          if (Array.isArray(data) && data.length > 0) {
-            setTasks(data);
-            localStorage.setItem('cashsave_tasks', JSON.stringify(data));
-          }
+          const { merged } = safeMergeAndPersist('cashsave_tasks', data, user.id, 'id');
+          setTasks(merged);
         }
       } catch (e) {
         // Fallback
@@ -91,9 +91,10 @@ export default function TasksPage() {
     setShowModal(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    markLocalSelfMutation();
 
     const validId = editingTask ? ensureUUID(editingTask.id) : generateUUID();
     const newTask: Task = {
@@ -125,13 +126,8 @@ export default function TasksPage() {
     }
     localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks));
 
-    setSaving(false);
-    setShowModal(false);
-    markLocalSelfMutation();
-    broadcastDataUpdate();
-
-    // 2. Synchro Supabase en tâche de fond
-    (async () => {
+    // 2. Synchro Supabase avant broadcast
+    if (isLiveSupabaseConfigured()) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -143,7 +139,11 @@ export default function TasksPage() {
           if (error) console.error('Supabase task save error:', error);
         }
       } catch (e) {}
-    })();
+    }
+
+    setSaving(false);
+    setShowModal(false);
+    broadcastDataUpdate();
   };
 
   const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {

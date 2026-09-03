@@ -9,7 +9,7 @@ import { fr } from 'date-fns/locale';
 import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
+import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
@@ -24,23 +24,23 @@ export default function ObjectivesPage() {
   // Form states
   const [title, setTitle] = useState('');
   const [isFinancial, setIsFinancial] = useState(true);
-  const [targetAmount, setTargetAmount] = useState<string>('');
-  const [allocatedBudget, setAllocatedBudget] = useState<string>('');
-  const [generalProgress, setGeneralProgress] = useState<number>(0);
-  const [deadline, setDeadline] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [allocatedBudget, setAllocatedBudget] = useState('');
+  const [generalProgress, setGeneralProgress] = useState(0);
+  const [deadline, setDeadline] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [status, setStatus] = useState<ObjectiveStatus>('IN_PROGRESS');
   const [saving, setSaving] = useState(false);
-
+  const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
   const supabase = createClient();
 
-  const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
-
   useEffect(() => {
-    loadData();
-    const handleUpdate = () => { loadData(); };
+    loadObjectives();
+
+    const handleUpdate = () => loadObjectives();
     window.addEventListener('focus', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('cashsave_data_updated', handleUpdate);
+
     return () => {
       window.removeEventListener('focus', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
@@ -48,15 +48,10 @@ export default function ObjectivesPage() {
     };
   }, []);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadObjectives() {
     const isLive = isLiveSupabaseConfigured();
     const localObj = JSON.parse(localStorage.getItem('cashsave_objectives') || '[]');
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
-    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
-    if (localUser.initial_balance_total) {
-      setInitialBalanceTotal(localUser.initial_balance_total);
-    }
     setObjectives(localObj);
     setTransactions(localTx);
 
@@ -72,14 +67,10 @@ export default function ObjectivesPage() {
           if (profileRes.data && profileRes.data.initial_balance_total) {
             setInitialBalanceTotal(profileRes.data.initial_balance_total);
           }
-          if (Array.isArray(objRes.data) && objRes.data.length > 0) {
-            setObjectives(objRes.data);
-            localStorage.setItem('cashsave_objectives', JSON.stringify(objRes.data));
-          }
-          if (Array.isArray(txRes.data) && txRes.data.length > 0) {
-            setTransactions(txRes.data);
-            localStorage.setItem('cashsave_transactions', JSON.stringify(txRes.data));
-          }
+          const { merged: mergedObj } = safeMergeAndPersist('cashsave_objectives', objRes.data, user.id, 'id');
+          const { merged: mergedTx } = safeMergeAndPersist('cashsave_transactions', txRes.data, user.id, 'id');
+          setObjectives(mergedObj);
+          setTransactions(mergedTx);
         }
       } catch (e) {
         // Fallback
@@ -142,10 +133,11 @@ export default function ObjectivesPage() {
     setShowModal(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isOverBudget) return;
     setSaving(true);
+    markLocalSelfMutation();
 
     const isCompleted = computedProgress === 100 ? 'COMPLETED' : status;
     const validId = editingObjective ? ensureUUID(editingObjective.id) : generateUUID();
@@ -181,13 +173,8 @@ export default function ObjectivesPage() {
 
     if (computedProgress === 100) triggerConfetti();
 
-    setSaving(false);
-    setShowModal(false);
-    markLocalSelfMutation();
-    broadcastDataUpdate();
-
-    // 2. Synchronisation Supabase en arrière-plan
-    (async () => {
+    // 2. Synchronisation Supabase avant broadcast
+    if (isLiveSupabaseConfigured()) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -199,7 +186,11 @@ export default function ObjectivesPage() {
           if (error) console.error('Supabase objective save error:', error);
         }
       } catch (err) { /* silent background sync */ }
-    })();
+    }
+
+    setSaving(false);
+    setShowModal(false);
+    broadcastDataUpdate();
   };
 
   const handleDelete = (id: string) => {
