@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
 
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { syncUserDataFromSupabase } from '@/lib/syncUser';
+import { syncUserDataFromSupabase, clearUserDataOnLogout } from '@/lib/syncUser';
+import { ensureUserProfileExists } from '@/lib/ensureProfile';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,6 +23,9 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Nettoyer le localStorage local pour isoler parfaitement la session du nouvel utilisateur connecté
+    clearUserDataOnLogout();
 
     try {
       const isLive = isLiveSupabaseConfigured();
@@ -42,13 +46,7 @@ export default function LoginPage() {
         }
 
         if (data?.user) {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            email: data.user.email,
-            full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' });
-
+          await ensureUserProfileExists(supabase, data.user);
           await syncUserDataFromSupabase(data.user.id);
         }
       } else {

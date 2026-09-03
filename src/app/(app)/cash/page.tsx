@@ -14,6 +14,7 @@ import {
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
+import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function CashPage() {
@@ -142,6 +143,7 @@ export default function CashPage() {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
+            await ensureUserProfileExists(supabase, user);
             const { error } = await supabase.from('transactions').update({
               type: updatedTx.type,
               amount: updatedTx.amount,
@@ -185,6 +187,7 @@ export default function CashPage() {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
+            await ensureUserProfileExists(supabase, user);
             const { error } = await supabase.from('transactions').insert({ ...newTx, id: newId, user_id: user.id });
             if (error) console.error('Supabase transaction insert error:', error);
           }

@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
+import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function ObjectivesPage() {
@@ -190,6 +191,7 @@ export default function ObjectivesPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          await ensureUserProfileExists(supabase, user);
           const payload = { ...newObj, id: validId, user_id: user.id };
           const { error } = editingObjective
             ? await supabase.from('objectives').update(payload).eq('id', validId)

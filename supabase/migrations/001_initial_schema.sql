@@ -136,6 +136,12 @@ CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can manage own profile" ON public.profiles;
+CREATE POLICY "Users can manage own profile" ON public.profiles FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
 ALTER TABLE public.daily_habits ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own habits" ON public.daily_habits;
 CREATE POLICY "Users can view own habits" ON public.daily_habits FOR SELECT USING (auth.uid() = user_id);

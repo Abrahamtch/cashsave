@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID, isValidUUID } from '@/lib/uuid';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
@@ -530,6 +531,7 @@ export default function HabitsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        await ensureUserProfileExists(supabase, user);
         await supabase.from('daily_habits').upsert({ ...dataToSave, user_id: user.id }, { onConflict: 'user_id,date' });
       }
     } catch (e) { /* silent */ }

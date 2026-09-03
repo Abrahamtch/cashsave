@@ -7,6 +7,7 @@ import { getTrialDaysRemaining } from '@/lib/stats';
 import { useRouter } from 'next/navigation';
 import { Crown, LogOut, Check, MessageSquare, Send, Bug, Lightbulb, Star, HelpCircle } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { clearUserDataOnLogout } from '@/lib/syncUser';
 
 type SupportCategory = 'bug' | 'suggestion' | 'feedback' | 'question';
 
@@ -68,7 +69,7 @@ export default function SettingsPage() {
       await supabase.auth.signOut();
     } catch (e) {}
     document.cookie = 'cashsave_demo_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    localStorage.removeItem('cashsave_user');
+    clearUserDataOnLogout();
     router.push('/auth/login');
     router.refresh();
   };

@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, User, Sparkles, CheckCircle2 } from 'lucide-react';
 
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
-import { syncUserDataFromSupabase } from '@/lib/syncUser';
+import { syncUserDataFromSupabase, clearUserDataOnLogout } from '@/lib/syncUser';
+import { ensureUserProfileExists } from '@/lib/ensureProfile';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -24,6 +25,9 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Nettoyer toute ancienne session locale pour repartir sur un compte 100% neuf
+    clearUserDataOnLogout();
 
     if (password.length < 6) {
       setError('Le mot de passe doit contenir au moins 6 caractères');
@@ -54,15 +58,11 @@ export default function RegisterPage() {
         }
 
         if (data?.user) {
-          await supabase.from('profiles').upsert({
+          await ensureUserProfileExists(supabase, {
             id: data.user.id,
             email: data.user.email,
-            full_name: fullName.trim(),
-            trial_start_date: new Date().toISOString(),
-            is_premium: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' });
+            user_metadata: { full_name: fullName.trim() },
+          });
 
           if (data.session) {
             await syncUserDataFromSupabase(data.user.id);
