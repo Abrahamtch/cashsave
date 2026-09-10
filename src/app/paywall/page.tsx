@@ -226,7 +226,10 @@ export default function PaywallPage() {
               <div>
                 {billingCycle === 'annual' ? (
                   <>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline gap-2.5 flex-wrap">
+                      <span className="text-sm font-semibold line-through decoration-2" style={{ color: 'var(--text-tertiary)', opacity: 0.75 }}>
+                        36 000 FCFA
+                      </span>
                       <span className="text-3xl font-bold tracking-tight" style={{ color: '#D6B36A' }}>
                         28 800 FCFA
                       </span>
@@ -234,16 +237,16 @@ export default function PaywallPage() {
                         / an
                       </span>
                     </div>
-                    <p className="text-[11px] mt-1 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
-                      <span className="font-semibold">Soit 2 400 FCFA / mois</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--accent-subtle)] border border-[var(--accent-border)] font-bold">
-                        -20% d&apos;économie sur 36 000 FCFA/an
-                      </span>
+                    <p className="text-xs mt-1.5 font-semibold" style={{ color: 'var(--accent)' }}>
+                      (soit 2 400 FCFA / mois)
                     </p>
                   </>
                 ) : (
                   <>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline gap-2.5 flex-wrap">
+                      <span className="text-sm font-semibold line-through decoration-2" style={{ color: 'var(--text-tertiary)', opacity: 0.75 }}>
+                        3 000 FCFA
+                      </span>
                       <span className="text-3xl font-bold tracking-tight" style={{ color: '#D6B36A' }}>
                         1 000 FCFA
                       </span>
