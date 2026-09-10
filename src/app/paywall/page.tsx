@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Crown, CheckCircle2, ShieldCheck, Sparkles, CreditCard, Smartphone, ArrowRight, Lock, Check, X, Tag } from 'lucide-react';
+import { Crown, ArrowRight, Lock, Check, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PaywallPage() {
@@ -35,178 +35,190 @@ export default function PaywallPage() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
-      <div className="w-full max-w-4xl animate-fade-in-up space-y-8">
+    <div
+      className="min-h-dvh flex flex-col items-center justify-center px-4 py-12"
+      style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}
+    >
+      <div className="w-full max-w-3xl animate-fade-in-up space-y-10">
         
         {/* Header */}
         <div className="text-center space-y-3">
-          <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold"
-            style={{
-              background: 'linear-gradient(135deg, rgba(214,179,106,0.15), rgba(14,159,110,0.15))',
-              color: '#D6B36A',
-              border: '1px solid rgba(214,179,106,0.3)',
-            }}
-          >
-            <Crown size={14} strokeWidth={1.5} /> Choisissez le Forfait Cash Save
-          </div>
           <h1
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight"
-            style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}
+            className="text-3xl sm:text-4xl font-bold tracking-tight"
+            style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
           >
-            Boostez vos finances et vos habitudes
+            Investissez dans votre discipline
           </h1>
-          <p className="text-sm max-w-lg mx-auto" style={{ color: 'var(--text-tertiary)' }}>
-            Conservez le contrôle total sur votre argent, vos objectifs et votre productivité.
+          <p
+            className="text-sm max-w-lg mx-auto leading-relaxed"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            Choisissez la formule adaptée à vos ambitions financières et de productivité.
           </p>
-        </div>
-
-        {/* Special Offer Banner */}
-        <div
-          className="p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left"
-          style={{
-            background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.1) 100%)',
-            border: '1px solid rgba(214,179,106,0.4)',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(214,179,106,0.2)', color: '#D6B36A' }}>
-              <Tag size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D6B36A' }}>Offre Spéciale Nouveaux Membres</p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                Seulement <span className="text-emerald-500 font-extrabold text-base">1 000 FCFA / mois</span> pendant les 3 premiers mois !
-              </p>
-            </div>
-          </div>
-          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
-            Économisez 66%
-          </span>
         </div>
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           
           {/* Free Plan */}
-          <div className="glass-card p-6 flex flex-col justify-between space-y-6" style={{ opacity: 0.9 }}>
-            <div className="space-y-4">
+          <div
+            className="p-7 rounded-2xl flex flex-col justify-between space-y-8"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Forfait Gratuit</h3>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Pour débuter à votre rythme</p>
+                  <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Formule Découverte
+                  </h2>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    Accès essentiel
+                  </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}>
-                  Gratuit à vie
+                <span
+                  className="text-[11px] font-medium px-2.5 py-1 rounded-md"
+                  style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
+                >
+                  Gratuit
                 </span>
               </div>
 
-              <div className="text-3xl font-extrabold" style={{ color: 'var(--text-primary)' }}>
-                0 FCFA <span className="text-xs font-normal text-[var(--text-tertiary)]">/ mois</span>
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                    0 FCFA
+                  </span>
+                  <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+                    / mois
+                  </span>
+                </div>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  Sans aucune limite de durée
+                </p>
               </div>
 
-              <ul className="space-y-3 text-xs pt-2" style={{ color: 'var(--text-secondary)' }}>
-                <li className="flex items-center gap-2.5">
-                  <Check size={14} className="text-emerald-500 shrink-0" />
-                  <span><strong>3 transactions par jour</strong> (2 dépenses + 1 revenu)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check size={14} className="text-emerald-500 shrink-0" />
-                  <span><strong>10 tâches actives max</strong> (To-Do List)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check size={14} className="text-emerald-500 shrink-0" />
-                  <span><strong>5 objectifs max</strong> (Progression sur le 1er uniquement)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <Check size={14} className="text-emerald-500 shrink-0" />
-                  <span><strong>5 habitudes max</strong> (personnalisées incluses)</span>
-                </li>
-                <li className="flex items-center gap-2.5 opacity-50">
-                  <X size={14} className="text-rose-400 shrink-0" />
-                  <span>Graphiques d&apos;analyse floutés</span>
-                </li>
-                <li className="flex items-center gap-2.5 opacity-50">
-                  <X size={14} className="text-rose-400 shrink-0" />
-                  <span>Pas de pièces jointes/reçus ni avis satisfaction</span>
-                </li>
-                <li className="flex items-center gap-2.5 opacity-50">
-                  <X size={14} className="text-rose-400 shrink-0" />
-                  <span>Pas de glisser-déposer Kanban</span>
-                </li>
-              </ul>
+              <div className="space-y-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <p className="font-medium text-[11px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                  Inclus dans la formule :
+                </p>
+                <ul className="space-y-2.5">
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span>3 transactions par jour (2 dépenses, 1 revenu)</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span>10 tâches actives (To-Do List)</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span>5 objectifs actifs (suivi 1er objectif)</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span>5 habitudes de vie &amp; travail</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span>Historique d&apos;analyse sur 7 jours</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <Link
               href="/dashboard"
-              className="w-full py-3 rounded-xl text-xs font-semibold text-center transition-colors cursor-pointer"
-              style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
+              className="w-full py-3 rounded-xl text-xs font-medium text-center transition-all duration-200 cursor-pointer"
+              style={{
+                background: 'var(--bg-card-hover)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border)',
+              }}
             >
-              Continuer avec le forfait gratuit
+              Continuer en gratuit
             </Link>
           </div>
 
           {/* Premium Plan */}
           <div
-            className="glass-card p-6 flex flex-col justify-between space-y-6 relative overflow-hidden"
+            className="p-7 rounded-2xl flex flex-col justify-between space-y-8 relative overflow-hidden"
             style={{
-              border: '2px solid #D6B36A',
-              boxShadow: '0 8px 32px rgba(214,179,106,0.15)',
+              background: 'var(--bg-surface)',
+              border: '1px solid rgba(214,179,106,0.35)',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
             }}
           >
-            {/* Recommended Badge */}
-            <div
-              className="absolute -top-px right-6 text-[10px] font-bold px-3 py-1 rounded-b-lg shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #D6B36A, #B8934A)', color: '#000' }}
-            >
-              RECOMMANDÉ
-            </div>
-
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                    Forfait Premium <Crown size={16} className="text-amber-400" />
-                  </h3>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Liberté totale & statistiques illimitées</p>
+                  <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                    Formule Premium
+                    <Crown size={16} style={{ color: '#D6B36A' }} />
+                  </h2>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    Maîtrise totale &amp; illimitée
+                  </p>
                 </div>
+                <span
+                  className="text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md"
+                  style={{
+                    background: 'rgba(214,179,106,0.12)',
+                    color: '#D6B36A',
+                    border: '1px solid rgba(214,179,106,0.25)',
+                  }}
+                >
+                  Recommandé
+                </span>
               </div>
 
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-extrabold" style={{ color: '#D6B36A' }}>1 000 FCFA</span>
-                  <span className="text-xs line-through" style={{ color: 'var(--text-tertiary)' }}>3 000 FCFA</span>
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>/ mois (3 1er mois)</span>
+                  <span className="text-3xl font-bold tracking-tight" style={{ color: '#D6B36A' }}>
+                    1 000 FCFA
+                  </span>
+                  <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+                    / mois
+                  </span>
                 </div>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>Puis 3 000 FCFA / mois · Sans engagement</p>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  Tarif spécial les 3 premiers mois (puis 3 000 FCFA / mois)
+                </p>
               </div>
 
-              <ul className="space-y-3 text-xs pt-2" style={{ color: 'var(--text-primary)' }}>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span><strong>Transactions illimitées</strong> à toute heure</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span><strong>Tâches & Kanban illimités</strong> avec glisser-déposer</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span><strong>Objectifs illimités</strong> (financiers + barres de progression)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span><strong>Habitudes numériques & personnalisées illimitées</strong></span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span><strong>Graphiques d&apos;analyse débloqués</strong> & stats illimitées</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span><strong>Scans de reçu & avis satisfaction</strong> inclus</span>
-                </li>
-              </ul>
+              <div className="space-y-3 text-xs" style={{ color: 'var(--text-primary)' }}>
+                <p className="font-medium text-[11px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                  Tout le potentiel Cash Save débloqué :
+                </p>
+                <ul className="space-y-2.5">
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Transactions illimitées</strong> &amp; calcul de trésorerie net</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Kanban illimité</strong> avec glisser-déposer intuitif</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Objectifs financiers</strong> avec allocation de budget</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Habitudes numériques</strong> (min. d&apos;apprentissage, appels, etc.)</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Graphiques d&apos;analyse débloqués</strong> sans restriction</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Scans de reçu photo</strong> &amp; avis de satisfaction</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -226,11 +238,10 @@ export default function PaywallPage() {
               <button
                 onClick={handleSubscribe}
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.01] cursor-pointer"
+                className="w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 cursor-pointer shadow-sm"
                 style={{
-                  background: 'linear-gradient(135deg, #0E9F6E, #087A56)',
-                  color: '#fff',
-                  boxShadow: '0 4px 20px rgba(14,159,110,0.35)',
+                  background: '#0E9F6E',
+                  color: '#FFFFFF',
                 }}
                 id="paywall-submit-btn"
               >
@@ -238,24 +249,28 @@ export default function PaywallPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    Profiter de l&apos;offre 1 000 FCFA <ArrowRight size={16} strokeWidth={2} />
+                    Passer à la formule Premium (1 000 FCFA) <ArrowRight size={14} />
                   </>
                 )}
               </button>
-
-              <div className="text-center">
-                <p className="text-[10px] flex items-center justify-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-                  <Lock size={11} /> Paiement sécurisé via Maketou (Flooz, TMoney, MoMo, Carte)
-                </p>
-              </div>
             </div>
-
           </div>
 
+        </div>
+
+        {/* Footer info */}
+        <div className="text-center space-y-1.5 pt-2">
+          <p className="text-[11px] flex items-center justify-center gap-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            <Lock size={12} className="text-[#0E9F6E]" /> Paiement sécurisé via Maketou (Flooz, TMoney, MoMo, Carte bancaire)
+          </p>
+          <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+            Abonnement sans engagement · Annulation simple à tout moment
+          </p>
         </div>
 
       </div>
     </div>
   );
 }
+
 
