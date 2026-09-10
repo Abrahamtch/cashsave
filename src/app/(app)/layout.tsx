@@ -244,16 +244,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="px-3.5 py-4" style={{ borderTop: '1px solid var(--border)' }}>
           {userIsPremium ? (
             <div
-              className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
               style={{
-                background: 'rgba(214,179,106,0.08)',
-                border: '1px solid rgba(214,179,106,0.25)',
+                background: 'var(--bg-card-hover)',
+                border: '1px solid var(--border)',
               }}
             >
-              <Crown size={16} style={{ color: '#D6B36A' }} />
-              <div className="flex flex-col">
-                <span className="text-xs font-bold" style={{ color: '#D6B36A' }}>
-                  Statut Premium Active
+              <Crown size={15} style={{ color: '#D6B36A' }} />
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-semibold" style={{ color: '#D6B36A' }}>
+                  Statut Premium Actif
                 </span>
                 <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
                   Accès illimité
@@ -263,26 +263,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ) : (
             <Link
               href="/paywall"
-              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group shadow-md cursor-pointer"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer"
               style={{
-                background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
-                border: '1px solid rgba(214,179,106,0.35)',
+                background: 'var(--bg-card-hover)',
+                border: '1px solid rgba(214,179,106,0.3)',
               }}
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white gradient-primary shrink-0 shadow">
-                  <Crown size={14} className="text-amber-300 drop-shadow" />
-                </div>
+                <Crown size={15} style={{ color: '#D6B36A' }} />
                 <div className="flex flex-col text-left">
-                  <span className="text-xs font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
                     Passer Premium
                   </span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    3 000 F/mois (1 000 F les 3 mois)
+                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                    Débloquer tout Cash Save
                   </span>
                 </div>
               </div>
-              <Sparkles size={14} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(214,179,106,0.12)', color: '#D6B36A' }}>
+                Formules
+              </span>
             </Link>
           )}
         </div>
@@ -308,14 +308,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {!userIsPremium && (
             <Link
               href="/paywall"
-              className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer"
               style={{
-                background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
-                borderColor: 'rgba(214,179,106,0.35)',
-                color: 'var(--text-primary)',
+                background: 'var(--bg-card-hover)',
+                borderColor: 'rgba(214,179,106,0.3)',
+                color: '#D6B36A',
               }}
             >
-              <Crown size={12} className="text-amber-400" /> Premium
+              <Crown size={13} /> Premium
             </Link>
           )}
           <ThemeToggle />
