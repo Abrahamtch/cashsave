@@ -27,10 +27,8 @@ export default function ObjectivesPage() {
 
   // Form states
   const [title, setTitle] = useState('');
-  const [isFinancial, setIsFinancial] = useState(true);
   const [targetAmount, setTargetAmount] = useState('');
   const [allocatedBudget, setAllocatedBudget] = useState('');
-  const [generalProgress, setGeneralProgress] = useState(0);
   const [deadline, setDeadline] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [status, setStatus] = useState<ObjectiveStatus>('IN_PROGRESS');
   const [saving, setSaving] = useState(false);
@@ -125,15 +123,14 @@ export default function ObjectivesPage() {
   const parsedTarget = Math.max(0, parseFloat(targetAmount) || 0);
   const parsedAllocated = Math.max(0, parseFloat(allocatedBudget) || 0);
 
-  // Progression calculée automatiquement si financier
+  // Progression calculée automatiquement
   const computedProgress = useMemo(() => {
-    if (!isFinancial) return generalProgress;
     if (parsedTarget <= 0) return 0;
     return Math.min(100, Math.round((parsedAllocated / parsedTarget) * 100));
-  }, [isFinancial, parsedTarget, parsedAllocated, generalProgress]);
+  }, [parsedTarget, parsedAllocated]);
 
   // Détection de dépassement de budget Trésorerie
-  const isOverBudget = isFinancial && parsedAllocated > maxAvailableBudgetForThis;
+  const isOverBudget = parsedAllocated > maxAvailableBudgetForThis;
 
   const openCreateModal = () => {
     // Check quota for free users
@@ -151,10 +148,8 @@ export default function ObjectivesPage() {
     }
     setEditingObjective(null);
     setTitle('');
-    setIsFinancial(true); // Default to financial objective
     setTargetAmount('');
     setAllocatedBudget('');
-    setGeneralProgress(0);
     setDeadline(format(new Date(), 'yyyy-MM-dd'));
     setStatus('IN_PROGRESS');
     setShowModal(true);
@@ -163,11 +158,8 @@ export default function ObjectivesPage() {
   const openEditModal = (obj: Objective) => {
     setEditingObjective(obj);
     setTitle(obj.title);
-    const hasFinancial = (obj.target_amount || 0) > 0 || (obj.allocated_budget || 0) > 0;
-    setIsFinancial(hasFinancial);
     setTargetAmount(obj.target_amount ? String(obj.target_amount) : '');
     setAllocatedBudget(obj.allocated_budget ? String(obj.allocated_budget) : '');
-    setGeneralProgress(obj.progress || 0);
     setDeadline(obj.deadline || '');
     setStatus(obj.status);
     setShowModal(true);
@@ -179,7 +171,6 @@ export default function ObjectivesPage() {
     setSaving(true);
     markLocalSelfMutation();
 
-    const effectiveIsFinancial = isFinancial;
     const isCompleted = computedProgress === 100 ? 'COMPLETED' : status;
     const validId = editingObjective ? ensureUUID(editingObjective.id) : generateUUID();
     const newObj: Objective = {
@@ -187,8 +178,8 @@ export default function ObjectivesPage() {
       user_id: 'demo-user',
       title,
       deadline: deadline || null,
-      target_amount: effectiveIsFinancial ? parsedTarget : 0,
-      allocated_budget: effectiveIsFinancial ? parsedAllocated : 0,
+      target_amount: parsedTarget,
+      allocated_budget: parsedAllocated,
       progress: computedProgress,
       status: isCompleted,
       created_at: editingObjective ? editingObjective.created_at : new Date().toISOString(),
@@ -329,7 +320,6 @@ export default function ObjectivesPage() {
           </div>
         ) : (
           objectives.map((obj) => {
-            const isFin = (obj.target_amount || 0) > 0;
             return (
               <div key={obj.id} className="glass-card p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
@@ -338,7 +328,7 @@ export default function ObjectivesPage() {
                       <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
                         {obj.title}
                       </h3>
-                      {obj.status === 'COMPLETED' ? (
+                      {obj.status === 'COMPLETED' && (
                         <span
                           className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full"
                           style={{
@@ -349,14 +339,7 @@ export default function ObjectivesPage() {
                         >
                           <CheckCircle size={12} strokeWidth={2} /> Atteint
                         </span>
-                      ) : isFin ? (
-                        <span
-                          className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
-                          style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}
-                        >
-                          Financier
-                        </span>
-                      ) : null}
+                      )}
                     </div>
 
                     {obj.deadline && (
@@ -389,19 +372,17 @@ export default function ObjectivesPage() {
                   </div>
                 </div>
 
-                {/* Details & Progress */}
-                {isFin && (
-                  <div className="flex items-center justify-between text-xs p-3 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
-                    <div>
-                      <p style={{ color: 'var(--text-tertiary)' }}>Budget alloué</p>
-                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{formatCFA(obj.allocated_budget || 0)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p style={{ color: 'var(--text-tertiary)' }}>Coût total visé</p>
-                      <p className="font-semibold text-sm" style={{ color: 'var(--accent)' }}>{formatCFA(obj.target_amount || 0)}</p>
-                    </div>
+                {/* Financial Details & Allocation */}
+                <div className="flex items-center justify-between text-xs p-3 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
+                  <div>
+                    <p style={{ color: 'var(--text-tertiary)' }}>Budget alloué</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{formatCFA(obj.allocated_budget || 0)}</p>
                   </div>
-                )}
+                  <div className="text-right">
+                    <p style={{ color: 'var(--text-tertiary)' }}>Coût total visé</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--accent)' }}>{formatCFA(obj.target_amount || 0)}</p>
+                  </div>
+                </div>
 
                 {/* Progress Bar — only 1st objective for free users */}
                 {(() => {
@@ -467,104 +448,60 @@ export default function ObjectivesPage() {
                 />
               </div>
 
-              {/* Selector Type */}
-              <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsFinancial(true)}
-                  className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                  style={{
-                    background: isFinancial ? 'var(--accent)' : 'transparent',
-                    color: isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
-                  }}
-                >
-                  Objectif Financier
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFinancial(false)}
-                  className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
-                  style={{
-                    background: !isFinancial ? 'var(--accent)' : 'transparent',
-                    color: !isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
-                  }}
-                >
-                  Objectif Général
-                </button>
-              </div>
-
               {/* Financial Inputs */}
-              {isFinancial ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Coût total de l&apos;objectif (FCFA)
-                    </label>
-                    <input
-                      type="number"
-                      value={targetAmount}
-                      onChange={(e) => setTargetAmount(e.target.value)}
-                      placeholder="Ex: 800000"
-                      min="0"
-                      required={isFinancial}
-                      className="input-field"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                        Budget actuellement alloué (FCFA)
-                      </label>
-                      <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Max dispo : <strong style={{ color: 'var(--text-primary)' }}>{formatCFA(maxAvailableBudgetForThis)}</strong>
-                      </span>
-                    </div>
-                    <input
-                      type="number"
-                      value={allocatedBudget}
-                      onChange={(e) => setAllocatedBudget(e.target.value)}
-                      placeholder="Ex: 250000"
-                      min="0"
-                      className="input-field"
-                    />
-                  </div>
-
-                  {/* Warning exceed Cash Balance */}
-                  {isOverBudget && (
-                    <div className="flex items-start gap-2 p-3 rounded-xl text-xs" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)' }}>
-                      <AlertCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" />
-                      <p>
-                        Le budget alloué total dépasserait votre solde Trésorerie disponible ({formatCFA(cashBalance)}). Vous pouvez allouer au maximum <strong>{formatCFA(maxAvailableBudgetForThis)}</strong>.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Calculated Progress Preview */}
-                  {parsedTarget > 0 && !isOverBudget && (
-                    <div className="p-3 rounded-xl text-xs flex justify-between items-center" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Progression calculée automatique :</span>
-                      <span className="font-bold text-sm" style={{ color: 'var(--accent)' }}>{computedProgress}%</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
+              <div className="space-y-3">
                 <div>
                   <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    Progression actuelle ({generalProgress}%)
+                    Coût total de l&apos;objectif (FCFA)
                   </label>
                   <input
-                    type="range"
+                    type="number"
+                    value={targetAmount}
+                    onChange={(e) => setTargetAmount(e.target.value)}
+                    placeholder="Ex: 800000"
                     min="0"
-                    max="100"
-                    step="5"
-                    value={generalProgress}
-                    onChange={(e) => setGeneralProgress(parseInt(e.target.value, 10) || 0)}
-                    className="w-full cursor-pointer"
-                    style={{ accentColor: 'var(--accent)' }}
+                    required
+                    className="input-field"
                   />
                 </div>
-              )}
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      Budget actuellement alloué (FCFA)
+                    </label>
+                    <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                      Max dispo : <strong style={{ color: 'var(--text-primary)' }}>{formatCFA(maxAvailableBudgetForThis)}</strong>
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    value={allocatedBudget}
+                    onChange={(e) => setAllocatedBudget(e.target.value)}
+                    placeholder="Ex: 250000"
+                    min="0"
+                    className="input-field"
+                  />
+                </div>
+
+                {/* Warning exceed Cash Balance */}
+                {isOverBudget && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl text-xs" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)' }}>
+                    <AlertCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" />
+                    <p>
+                      Le budget alloué total dépasserait votre solde Trésorerie disponible ({formatCFA(cashBalance)}). Vous pouvez allouer au maximum <strong>{formatCFA(maxAvailableBudgetForThis)}</strong>.
+                    </p>
+                  </div>
+                )}
+
+                {/* Calculated Progress Preview */}
+                {parsedTarget > 0 && !isOverBudget && (
+                  <div className="p-3 rounded-xl text-xs flex justify-between items-center" style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Progression calculée automatique :</span>
+                    <span className="font-bold text-sm" style={{ color: 'var(--accent)' }}>{computedProgress}%</span>
+                  </div>
+                )}
+              </div>
 
               <FuturisticDatePicker
                 label="Échéance"
