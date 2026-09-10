@@ -11,8 +11,9 @@ import {
   getExpensesByCategory,
   getMonthlyRevenueVsExpenses,
   formatCFA,
-  getTrialDaysRemaining,
 } from '@/lib/stats';
+import { isPremiumActive, isTrialActive, getMaxChartPeriod } from '@/lib/plans';
+import PremiumGate from '@/components/PremiumGate';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { syncUserDataFromSupabase } from '@/lib/syncUser';
 import {
@@ -136,13 +137,14 @@ export default function DashboardPage() {
     );
   }
 
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
+  const maxPeriod = getMaxChartPeriod(profile);
   const currentStreak = calculateCurrentStreak(habits);
   const recordStreak = calculateRecordStreak(habits);
   const weeklyAvg = calculateWeeklyAverage(habits);
   const scoreData = getScoreChartData(habits, chartPeriod);
   const expenseCategories = getExpensesByCategory(transactions);
   const monthlyData = getMonthlyRevenueVsExpenses(transactions);
-  const trialDays = profile ? getTrialDaysRemaining(profile.trial_start_date) : 0;
   
   const initialStartingBalance = profile?.initial_balance_total || 0;
   const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
@@ -234,17 +236,31 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {!profile?.is_premium && trialDays > 0 && (
+        {!userIsPremium && (
           <div
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
             style={{
-              background: 'rgba(245,158,11,0.08)',
-              border: '1px solid rgba(245,158,11,0.18)',
+              background: 'rgba(214,179,106,0.08)',
+              border: '1px solid rgba(214,179,106,0.18)',
             }}
           >
-            <Timer size={13} strokeWidth={1.5} style={{ color: '#F59E0B' }} />
-            <span className="text-xs font-medium" style={{ color: '#F59E0B' }}>
-              {trialDays} jour{trialDays > 1 ? 's' : ''} d&apos;essai
+            <Crown size={13} strokeWidth={1.5} style={{ color: '#D6B36A' }} />
+            <span className="text-xs font-medium" style={{ color: '#D6B36A' }}>
+              Forfait gratuit
+            </span>
+          </div>
+        )}
+        {isTrialActive(profile) && (
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+            style={{
+              background: 'rgba(14,159,110,0.08)',
+              border: '1px solid rgba(14,159,110,0.18)',
+            }}
+          >
+            <Timer size={13} strokeWidth={1.5} style={{ color: '#0E9F6E' }} />
+            <span className="text-xs font-medium" style={{ color: '#0E9F6E' }}>
+              Essai Premium actif
             </span>
           </div>
         )}
@@ -293,19 +309,26 @@ export default function DashboardPage() {
             className="flex gap-0.5 p-1 rounded-lg"
             style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
           >
-            {([7, 30, 365] as const).map((period) => (
-              <button
-                key={period}
-                onClick={() => setChartPeriod(period)}
-                className="px-3 py-1 rounded-md text-xs font-medium transition-all duration-200"
-                style={{
-                  background: chartPeriod === period ? 'var(--accent)' : 'transparent',
-                  color: chartPeriod === period ? '#fff' : 'var(--text-tertiary)',
-                }}
-              >
-                {periodLabels[period]}
-              </button>
-            ))}
+            {([7, 30, 365] as const).map((period) => {
+              const isLocked = period > maxPeriod;
+              return (
+                <button
+                  key={period}
+                  onClick={() => !isLocked && setChartPeriod(period)}
+                  className="px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 relative"
+                  style={{
+                    background: chartPeriod === period ? 'var(--accent)' : 'transparent',
+                    color: isLocked ? 'var(--text-tertiary)' : chartPeriod === period ? '#fff' : 'var(--text-tertiary)',
+                    opacity: isLocked ? 0.4 : 1,
+                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                  }}
+                  title={isLocked ? 'Disponible avec Premium' : undefined}
+                >
+                  {periodLabels[period]}
+                  {isLocked && <span className="ml-0.5 text-[9px]">🔒</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="h-56">
@@ -350,38 +373,40 @@ export default function DashboardPage() {
             Répartition des dépenses
           </h2>
           <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>Par catégorie</p>
-          {expenseCategories.length > 0 ? (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expenseCategories}
-                    cx="50%" cy="50%"
-                    innerRadius={48} outerRadius={76}
-                    paddingAngle={2}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {expenseCategories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: any) => formatCFA(Number(value) || 0)}
-                    contentStyle={tooltipStyle}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div
-              className="h-52 flex flex-col items-center justify-center gap-2"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <BarChart2 size={24} strokeWidth={1.5} />
-              <p className="text-xs">Aucune dépense enregistrée</p>
-            </div>
-          )}
+          <PremiumGate isPremium={userIsPremium} blurred={true} message="Graphique Premium">
+            {expenseCategories.length > 0 ? (
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={expenseCategories}
+                      cx="50%" cy="50%"
+                      innerRadius={48} outerRadius={76}
+                      paddingAngle={2}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {expenseCategories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: any) => formatCFA(Number(value) || 0)}
+                      contentStyle={tooltipStyle}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div
+                className="h-52 flex flex-col items-center justify-center gap-2"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <BarChart2 size={24} strokeWidth={1.5} />
+                <p className="text-xs">Aucune dépense enregistrée</p>
+              </div>
+            )}
+          </PremiumGate>
         </div>
 
         <div className="glass-card p-6">
@@ -389,41 +414,43 @@ export default function DashboardPage() {
             Revenus vs Dépenses
           </h2>
           <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>Par mois</p>
-          {monthlyData.length > 0 ? (
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} barGap={4}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="var(--border)" vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }}
-                    tickLine={false} axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }}
-                    tickLine={false} axisLine={false} width={30}
-                  />
-                  <Tooltip
-                    formatter={(value: any) => formatCFA(Number(value) || 0)}
-                    contentStyle={tooltipStyle}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: '11px', color: 'var(--text-secondary)' }}
-                  />
-                  <Bar dataKey="revenus" name="Revenus" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32} />
-                  <Bar dataKey="depenses" name="Dépenses" fill="#F43F5E" radius={[4, 4, 0, 0]} maxBarSize={32} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div
-              className="h-52 flex flex-col items-center justify-center gap-2"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <TrendingUp size={24} strokeWidth={1.5} />
-              <p className="text-xs">Aucune transaction enregistrée</p>
-            </div>
-          )}
+          <PremiumGate isPremium={userIsPremium} blurred={true} message="Graphique Premium">
+            {monthlyData.length > 0 ? (
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData} barGap={4}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="var(--border)" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }}
+                      tickLine={false} axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }}
+                      tickLine={false} axisLine={false} width={30}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => formatCFA(Number(value) || 0)}
+                      contentStyle={tooltipStyle}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: '11px', color: 'var(--text-secondary)' }}
+                    />
+                    <Bar dataKey="revenus" name="Revenus" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                    <Bar dataKey="depenses" name="Dépenses" fill="#F43F5E" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div
+                className="h-52 flex flex-col items-center justify-center gap-2"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <TrendingUp size={24} strokeWidth={1.5} />
+                <p className="text-xs">Aucune transaction enregistrée</p>
+              </div>
+            )}
+          </PremiumGate>
         </div>
       </div>
 

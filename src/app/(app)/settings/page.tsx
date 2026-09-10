@@ -146,35 +146,37 @@ _Envoyé depuis l'application Cash Save_`;
 
       {/* Subscription Card */}
       <div className="glass-card p-5 relative overflow-hidden">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Crown className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
-              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Statut de l&apos;abonnement</h3>
+              <Crown className="w-4 h-4 text-amber-400" />
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Mon Forfait Cash Save</h3>
             </div>
 
             {profile?.is_premium ? (
-              <div className="mt-2">
+              <div className="mt-2 space-y-1">
                 <span
                   className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
-                  style={{ color: 'var(--color-success)', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)' }}
+                  style={{ color: '#D6B36A', background: 'rgba(214,179,106,0.1)', border: '1px solid rgba(214,179,106,0.3)' }}
                 >
-                  <Check className="w-3.5 h-3.5" /> Compte Premium Actif
+                  <Check className="w-3.5 h-3.5 text-amber-400" />
+                  {profile?.trial_7d_used && profile?.premium_expires_at ? 'Essai Gratuit 7 Jours Actif' : 'Compte Premium Actif'}
                 </span>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Accès illimité à toutes les fonctionnalités de l&apos;application.
+                </p>
               </div>
             ) : (
-              <div className="mt-2 space-y-2">
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Période d&apos;essai :{' '}
-                  <span className="font-semibold" style={{ color: 'var(--color-warning)' }}>{trialDays} jours restants</span>
-                  {' '}(sur 42)
+              <div className="mt-2 space-y-1">
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ color: 'var(--text-secondary)', background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}
+                >
+                  Forfait Gratuit
+                </span>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Limité à 3 transactions/jour, 10 tâches, 5 objectifs &amp; 5 habitudes.
                 </p>
-                <div className="progress-bar max-w-xs">
-                  <div
-                    className="progress-bar-fill"
-                    style={{ width: `${Math.min(100, Math.max(0, (trialDays / 42) * 100))}%`, background: 'var(--color-warning)' }}
-                  />
-                </div>
               </div>
             )}
           </div>
@@ -182,10 +184,10 @@ _Envoyé depuis l'application Cash Save_`;
           {!profile?.is_premium && (
             <button
               onClick={() => router.push('/paywall')}
-              className="btn-primary text-xs py-2 px-3 shrink-0 cursor-pointer"
+              className="btn-primary text-xs py-2.5 px-4 shrink-0 cursor-pointer shadow-md"
               id="upgrade-btn"
             >
-              Passer Premium
+              <Crown size={14} className="text-amber-300" /> Passer au Forfait Premium
             </button>
           )}
         </div>

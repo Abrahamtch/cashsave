@@ -9,6 +9,9 @@ import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { syncUserDataFromSupabase, subscribeToUserRealtimeChanges } from '@/lib/syncUser';
 import OnboardingFlow from '@/components/OnboardingFlow';
+import TrialPrompt from '@/components/TrialPrompt';
+import { Profile } from '@/types';
+import { isPremiumActive, isTrialActive, shouldTrigger7DayTrialPrompt } from '@/lib/plans';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +34,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isReconfiguring, setIsReconfiguring] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [showTrialPrompt, setShowTrialPrompt] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -38,6 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     async function init() {
       await checkOnboardingStatus();
+      await trackActiveDaysAndCheckTrial();
       if (isLiveSupabaseConfigured()) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -53,6 +59,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const handleFocusOrVisible = async () => {
       checkOnboardingStatus();
+      trackActiveDaysAndCheckTrial();
       if (isLiveSupabaseConfigured()) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -68,6 +75,53 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       window.removeEventListener('focus', handleFocusOrVisible);
     };
   }, []);
+
+  async function trackActiveDaysAndCheckTrial() {
+    const today = new Date().toISOString().substring(0, 10);
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    const lastActiveDate = localStorage.getItem('cashsave_last_active_date');
+
+    let currentDays = localUser.active_days_count || 0;
+
+    if (lastActiveDate !== today) {
+      currentDays += 1;
+      localStorage.setItem('cashsave_last_active_date', today);
+      localUser.active_days_count = currentDays;
+      localStorage.setItem('cashsave_user', JSON.stringify(localUser));
+
+      if (isLiveSupabaseConfigured()) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('profiles').update({ active_days_count: currentDays }).eq('id', user.id);
+          }
+        } catch (e) {}
+      }
+    }
+
+    const currentProfile: Profile = {
+      id: localUser.id || 'demo-user',
+      email: localUser.email || '',
+      full_name: localUser.full_name || '',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: localUser.premium_expires_at || null,
+      trial_7d_used: localUser.trial_7d_used || false,
+      trial_7d_start: localUser.trial_7d_start || null,
+      active_days_count: currentDays,
+      last_trial_prompt_day: localUser.last_trial_prompt_day || 0,
+      created_at: localUser.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Profile;
+
+    setProfile(currentProfile);
+
+    // Check if 7-day trial popup should trigger (every 5 active days for non-premium users)
+    if (shouldTrigger7DayTrialPrompt(currentProfile)) {
+      setShowTrialPrompt(true);
+    }
+  }
 
   async function checkOnboardingStatus() {
     if (typeof window !== 'undefined') {
@@ -111,6 +165,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setShowOnboarding(true);
     }
   }
+
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
 
   return (
     <div
@@ -184,31 +240,51 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer — Premium CTA Button */}
+        {/* Footer — Premium Status / CTA Button */}
         <div className="px-3.5 py-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <Link
-            href="/paywall"
-            className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group shadow-md cursor-pointer"
-            style={{
-              background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
-              border: '1px solid rgba(214,179,106,0.35)',
-            }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white gradient-primary shrink-0 shadow">
-                <Crown size={14} className="text-amber-300 drop-shadow" />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                  Passer Premium
+          {userIsPremium ? (
+            <div
+              className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl"
+              style={{
+                background: 'rgba(214,179,106,0.08)',
+                border: '1px solid rgba(214,179,106,0.25)',
+              }}
+            >
+              <Crown size={16} style={{ color: '#D6B36A' }} />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold" style={{ color: '#D6B36A' }}>
+                  Statut Premium Active
                 </span>
-                <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                  Débloquez tout Cash Save
+                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                  Accès illimité
                 </span>
               </div>
             </div>
-            <Sparkles size={14} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
-          </Link>
+          ) : (
+            <Link
+              href="/paywall"
+              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group shadow-md cursor-pointer"
+              style={{
+                background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
+                border: '1px solid rgba(214,179,106,0.35)',
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white gradient-primary shrink-0 shadow">
+                  <Crown size={14} className="text-amber-300 drop-shadow" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-xs font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                    Passer Premium
+                  </span>
+                  <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    3 000 F/mois (1 000 F les 3 mois)
+                  </span>
+                </div>
+              </div>
+              <Sparkles size={14} className="text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+            </Link>
+          )}
         </div>
       </aside>
 
@@ -229,17 +305,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/paywall"
-            className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
-            style={{
-              background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
-              borderColor: 'rgba(214,179,106,0.35)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <Crown size={12} className="text-amber-400" /> Premium
-          </Link>
+          {!userIsPremium && (
+            <Link
+              href="/paywall"
+              className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
+              style={{
+                background: 'linear-gradient(135deg, rgba(214,179,106,0.15) 0%, rgba(14,159,110,0.15) 100%)',
+                borderColor: 'rgba(214,179,106,0.35)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <Crown size={12} className="text-amber-400" /> Premium
+            </Link>
+          )}
           <ThemeToggle />
         </div>
       </header>
@@ -298,6 +376,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }}
         />
       )}
+
+      {/* 7-Day Trial Prompt Overlay */}
+      {showTrialPrompt && profile && (
+        <TrialPrompt
+          profile={profile}
+          onDismiss={() => setShowTrialPrompt(false)}
+          onActivate={() => {
+            setShowTrialPrompt(false);
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }
+

@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Transaction, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
+import { Transaction, Profile, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import { calculateFinancialSummary, formatCFA } from '@/lib/stats';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Plus, Minus, TrendingUp, TrendingDown, Wallet, Activity,
   X, Check, ThumbsUp, ThumbsDown, SlidersHorizontal, ArrowUpRight, ArrowDownRight,
-  Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles
+  Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles, Lock, Crown
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
+import { isPremiumActive, isTrialActive, getTransactionQuota, hasFeature } from '@/lib/plans';
+import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function CashPage() {
@@ -36,14 +38,35 @@ export default function CashPage() {
   const [viewingReceiptUrl, setViewingReceiptUrl] = useState<string | null>(null);
   const [savingTx, setSavingTx] = useState(false);
   const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [quotaWarning, setQuotaWarning] = useState('');
 
   useEffect(() => {
     loadTransactions();
+    loadProfile();
 
     const handleUpdate = () => loadTransactions();
     window.addEventListener('cashsave_data_updated', handleUpdate);
     return () => window.removeEventListener('cashsave_data_updated', handleUpdate);
   }, []);
+
+  function loadProfile() {
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    setProfile({
+      id: localUser.id || 'demo-user',
+      email: localUser.email || '',
+      full_name: localUser.full_name || '',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: localUser.premium_expires_at || null,
+      trial_7d_used: localUser.trial_7d_used || false,
+      trial_7d_start: localUser.trial_7d_start || null,
+      active_days_count: localUser.active_days_count || 0,
+      created_at: localUser.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Profile);
+  }
 
   async function loadTransactions() {
     const isLive = isLiveSupabaseConfigured();
@@ -75,7 +98,19 @@ export default function CashPage() {
     setLoading(false);
   }
 
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
+
   const openCreateModal = (type: 'INCOME' | 'EXPENSE') => {
+    // Check quota for free users
+    if (!userIsPremium) {
+      const quota = getTransactionQuota(profile, transactions, type);
+      if (quota.reached) {
+        const typeLabel = type === 'EXPENSE' ? 'dépenses' : 'revenus';
+        setQuotaWarning(`Limite atteinte : ${quota.limit} ${typeLabel}/jour max en forfait gratuit. Passez Premium pour un accès illimité.`);
+        setTimeout(() => setQuotaWarning(''), 5000);
+        return;
+      }
+    }
     setEditingTx(null);
     setModalType(type);
     const defaultCats = type === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
@@ -282,6 +317,41 @@ export default function CashPage() {
           </button>
         </div>
       </div>
+
+      {/* Quota Warning */}
+      {quotaWarning && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl animate-fade-in-up"
+          style={{
+            background: 'linear-gradient(135deg, rgba(214,179,106,0.08), rgba(14,159,110,0.05))',
+            border: '1px solid rgba(214,179,106,0.25)',
+          }}
+        >
+          <Crown size={16} style={{ color: '#D6B36A', flexShrink: 0 }} />
+          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {quotaWarning}
+          </p>
+        </div>
+      )}
+
+      {/* Free tier daily quota indicator */}
+      {!userIsPremium && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px]"
+          style={{
+            background: 'rgba(214,179,106,0.06)',
+            border: '1px solid rgba(214,179,106,0.15)',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          <Lock size={11} style={{ color: '#D6B36A' }} />
+          {(() => {
+            const expQ = getTransactionQuota(profile, transactions, 'EXPENSE');
+            const incQ = getTransactionQuota(profile, transactions, 'INCOME');
+            return `Aujourd'hui : ${expQ.remaining}/${expQ.limit} dépenses · ${incQ.remaining}/${incQ.limit} revenu restant(s)`;
+          })()}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -525,97 +595,107 @@ export default function CashPage() {
               </div>
 
               {/* Attachement de Photo / Reçu / Justificatif */}
-              <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-                <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                  Justificatif / Reçu de la transaction
-                </label>
+              {userIsPremium ? (
+                <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                    Justificatif / Reçu de la transaction
+                  </label>
 
-                {imageUrl ? (
-                  <div className="relative rounded-xl overflow-hidden border p-2 flex items-center justify-between" style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}>
-                    <div className="flex items-center gap-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imageUrl} alt="Aperçu reçu" className="w-12 h-12 object-cover rounded-lg border border-white/20" />
-                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Photo de justificatif jointe</span>
+                  {imageUrl ? (
+                    <div className="relative rounded-xl overflow-hidden border p-2 flex items-center justify-between" style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}>
+                      <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={imageUrl} alt="Aperçu reçu" className="w-12 h-12 object-cover rounded-lg border border-white/20" />
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Photo de justificatif jointe</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl(null)}
+                        className="btn-secondary py-1 px-2.5 text-xs"
+                        style={{ color: 'var(--color-danger)' }}
+                      >
+                        Supprimer
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl(null)}
-                      className="btn-secondary py-1 px-2.5 text-xs"
-                      style={{ color: 'var(--color-danger)' }}
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <label
-                      htmlFor="tx-file-input"
-                      className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <FileImage size={15} /> Importer photo
-                    </label>
-                    <input
-                      type="file"
-                      id="tx-file-input"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageFile}
-                    />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <label
+                        htmlFor="tx-file-input"
+                        className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <FileImage size={15} /> Importer photo
+                      </label>
+                      <input
+                        type="file"
+                        id="tx-file-input"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageFile}
+                      />
 
-                    <label
-                      htmlFor="tx-camera-input"
-                      className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                      style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
-                    >
-                      <Camera size={15} /> Prendre photo
-                    </label>
-                    <input
-                      type="file"
-                      id="tx-camera-input"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={handleImageFile}
-                    />
-                  </div>
-                )}
-              </div>
+                      <label
+                        htmlFor="tx-camera-input"
+                        className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
+                      >
+                        <Camera size={15} /> Prendre photo
+                      </label>
+                      <input
+                        type="file"
+                        id="tx-camera-input"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={handleImageFile}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <PremiumGate isPremium={false} compact message="Joindre un justificatif — Premium" />
+                </div>
+              )}
 
               {modalType === 'EXPENSE' && (
-                <div>
-                  <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Satisfait de cette dépense ?
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsSatisfied(true)}
-                      className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
-                      style={{
-                        background: isSatisfied === true ? 'rgba(14,159,110,0.12)' : 'var(--bg-card-hover)',
-                        border: isSatisfied === true ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--border)',
-                        color: isSatisfied === true ? '#0E9F6E' : 'var(--text-secondary)',
-                      }}
-                    >
-                      <ThumbsUp size={14} strokeWidth={1.5} />
-                      Oui
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsSatisfied(false)}
-                      className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
-                      style={{
-                        background: isSatisfied === false ? 'rgba(244,63,94,0.1)' : 'var(--bg-card-hover)',
-                        border: isSatisfied === false ? '1px solid rgba(244,63,94,0.2)' : '1px solid var(--border)',
-                        color: isSatisfied === false ? '#F43F5E' : 'var(--text-secondary)',
-                      }}
-                    >
-                      <ThumbsDown size={14} strokeWidth={1.5} />
-                      Non
-                    </button>
+                userIsPremium ? (
+                  <div>
+                    <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      Satisfait de cette dépense ?
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsSatisfied(true)}
+                        className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+                        style={{
+                          background: isSatisfied === true ? 'rgba(14,159,110,0.12)' : 'var(--bg-card-hover)',
+                          border: isSatisfied === true ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--border)',
+                          color: isSatisfied === true ? '#0E9F6E' : 'var(--text-secondary)',
+                        }}
+                      >
+                        <ThumbsUp size={14} strokeWidth={1.5} />
+                        Oui
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSatisfied(false)}
+                        className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+                        style={{
+                          background: isSatisfied === false ? 'rgba(244,63,94,0.1)' : 'var(--bg-card-hover)',
+                          border: isSatisfied === false ? '1px solid rgba(244,63,94,0.2)' : '1px solid var(--border)',
+                          color: isSatisfied === false ? '#F43F5E' : 'var(--text-secondary)',
+                        }}
+                      >
+                        <ThumbsDown size={14} strokeWidth={1.5} />
+                        Non
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <PremiumGate isPremium={false} compact message="Satisfaction — Premium" />
+                )
               )}
 
               <button

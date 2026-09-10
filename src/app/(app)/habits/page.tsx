@@ -22,6 +22,8 @@ import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import { broadcastDataUpdate, markLocalSelfMutation } from '@/lib/syncUser';
 import { generateUUID, ensureUUID, isValidUUID } from '@/lib/uuid';
+import { isPremiumActive, isTrialActive, getCountQuota, hasFeature, FREE_LIMITS } from '@/lib/plans';
+import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
@@ -313,10 +315,27 @@ export default function HabitsPage() {
     setSaved(false);
   };
 
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
+  const [quotaWarning, setQuotaWarning] = useState('');
+
   const openCreateCustomHabitModal = () => {
+    // Check both total habits and custom habits limits
+    if (!userIsPremium) {
+      const totalActive = activeHabits.length + customHabits.length;
+      const totalQuota = getCountQuota(profile, totalActive, 'MAX_ACTIVE_HABITS');
+      const customQuota = getCountQuota(profile, customHabits.length, 'MAX_CUSTOM_HABITS');
+      if (totalQuota.reached || customQuota.reached) {
+        const msg = totalQuota.reached
+          ? `Limite atteinte : ${totalQuota.limit} habitudes max en forfait gratuit.`
+          : `Limite atteinte : ${customQuota.limit} habitudes personnalisées max en forfait gratuit.`;
+        setQuotaWarning(msg + ' Passez Premium pour un accès illimité.');
+        setTimeout(() => setQuotaWarning(''), 5000);
+        return;
+      }
+    }
     setEditingCustomHabit(null);
     setCustomTitle('');
-    setCustomType('boolean');
+    setCustomType('boolean'); // Free users can only create boolean habits
     setCustomIcon('sparkles');
     setCustomTarget(1);
     setShowCustomHabitModal(true);

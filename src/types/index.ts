@@ -17,6 +17,13 @@ export interface Profile {
   onboarding_status?: OnboardingStatus;
   routine_status?: RoutineStatus;
   initial_balance_total?: number;
+  // Premium tier fields
+  first_premium_date?: string | null;
+  subscription_months_count?: number;
+  trial_7d_used?: boolean;
+  trial_7d_start?: string | null;
+  active_days_count?: number;
+  last_trial_prompt_day?: number;
   created_at: string;
   updated_at: string;
 }

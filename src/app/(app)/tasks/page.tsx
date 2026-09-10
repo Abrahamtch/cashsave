@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Task, TaskPriority, TaskStatus, PRIORITY_CONFIG, STATUS_CONFIG } from '@/types';
+import { Task, Profile, TaskPriority, TaskStatus, PRIORITY_CONFIG, STATUS_CONFIG } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, ArrowRight, ArrowLeft
+  Plus, CheckCircle2, Clock, AlertCircle, Trash2, Calendar, X, Edit3, ArrowRight, ArrowLeft, Crown, Lock
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
+import { isPremiumActive, isTrialActive, getCountQuota } from '@/lib/plans';
+import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function TasksPage() {
@@ -30,8 +32,31 @@ export default function TasksPage() {
   // Drag and drop states
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+  const [quotaWarning, setQuotaWarning] = useState('');
 
   const supabase = createClient();
+
+  // Load profile for premium check
+  const [profile, setProfile] = useState<Profile | null>(null);
+  useEffect(() => {
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    setProfile({
+      id: localUser.id || 'demo-user',
+      email: localUser.email || '',
+      full_name: localUser.full_name || '',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: localUser.premium_expires_at || null,
+      trial_7d_used: localUser.trial_7d_used || false,
+      trial_7d_start: localUser.trial_7d_start || null,
+      active_days_count: localUser.active_days_count || 0,
+      created_at: localUser.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Profile);
+  }, []);
+
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
 
   useEffect(() => {
     loadTasks();
@@ -74,6 +99,16 @@ export default function TasksPage() {
   }
 
   const openCreateModal = () => {
+    // Check quota for free users
+    if (!userIsPremium) {
+      const activeTasks = tasks.filter(t => t.status !== 'DONE').length;
+      const quota = getCountQuota(profile, activeTasks, 'MAX_ACTIVE_TASKS');
+      if (quota.reached) {
+        setQuotaWarning(`Limite atteinte : ${quota.limit} tâches actives max en forfait gratuit. Passez Premium pour un accès illimité.`);
+        setTimeout(() => setQuotaWarning(''), 5000);
+        return;
+      }
+    }
     setEditingTask(null);
     setTitle('');
     setDeadline(format(new Date(), 'yyyy-MM-dd'));
@@ -220,6 +255,38 @@ export default function TasksPage() {
         </button>
       </div>
 
+      {/* Quota Warning */}
+      {quotaWarning && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl animate-fade-in-up"
+          style={{
+            background: 'linear-gradient(135deg, rgba(214,179,106,0.08), rgba(14,159,110,0.05))',
+            border: '1px solid rgba(214,179,106,0.25)',
+          }}
+        >
+          <Crown size={16} style={{ color: '#D6B36A', flexShrink: 0 }} />
+          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {quotaWarning}
+          </p>
+        </div>
+      )}
+
+      {/* Free tier task count indicator */}
+      {!userIsPremium && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px]"
+          style={{
+            background: 'rgba(214,179,106,0.06)',
+            border: '1px solid rgba(214,179,106,0.15)',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          <Lock size={11} style={{ color: '#D6B36A' }} />
+          {tasks.filter(t => t.status !== 'DONE').length} / 10 tâches actives (gratuit)
+          {!userIsPremium && <span className="ml-1 opacity-60">· Glisser-déposer désactivé</span>}
+        </div>
+      )}
+
       {/* Kanban Board / Columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((statusKey) => {
@@ -298,8 +365,9 @@ export default function TasksPage() {
                     return (
                       <div
                         key={task.id}
-                        draggable={true}
+                        draggable={userIsPremium}
                         onDragStart={(e) => {
+                          if (!userIsPremium) return;
                           e.dataTransfer.setData('text/plain', task.id);
                           setDraggingTaskId(task.id);
                         }}
@@ -307,7 +375,9 @@ export default function TasksPage() {
                           setDraggingTaskId(null);
                           setDragOverColumn(null);
                         }}
-                        className={`p-3.5 rounded-xl transition-all duration-150 group cursor-grab active:cursor-grabbing select-none ${
+                        className={`p-3.5 rounded-xl transition-all duration-150 group select-none ${
+                          userIsPremium ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+                        } ${
                           isBeingDragged ? 'opacity-30 scale-95' : 'hover:scale-[1.01]'
                         }`}
                         style={{

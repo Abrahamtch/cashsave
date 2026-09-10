@@ -2,16 +2,18 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Objective, ObjectiveStatus, Transaction } from '@/types';
+import { Objective, ObjectiveStatus, Transaction, Profile } from '@/types';
 import { calculateFinancialSummary, formatCFA } from '@/lib/stats';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign } from 'lucide-react';
+import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign, Crown, Lock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
 import { generateUUID, ensureUUID } from '@/lib/uuid';
 import { ensureUserProfileExists } from '@/lib/ensureProfile';
+import { isPremiumActive, isTrialActive, getCountQuota, canShowProgressBar, hasFeature } from '@/lib/plans';
+import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 
 export default function ObjectivesPage() {
@@ -31,7 +33,30 @@ export default function ObjectivesPage() {
   const [status, setStatus] = useState<ObjectiveStatus>('IN_PROGRESS');
   const [saving, setSaving] = useState(false);
   const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
+  const [quotaWarning, setQuotaWarning] = useState('');
   const supabase = createClient();
+
+  // Load profile for premium check
+  const [profile, setProfile] = useState<Profile | null>(null);
+  useEffect(() => {
+    const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
+    setProfile({
+      id: localUser.id || 'demo-user',
+      email: localUser.email || '',
+      full_name: localUser.full_name || '',
+      avatar_url: '',
+      trial_start_date: localUser.trial_start_date || new Date().toISOString(),
+      is_premium: localUser.is_premium || false,
+      premium_expires_at: localUser.premium_expires_at || null,
+      trial_7d_used: localUser.trial_7d_used || false,
+      trial_7d_start: localUser.trial_7d_start || null,
+      active_days_count: localUser.active_days_count || 0,
+      created_at: localUser.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Profile);
+  }, []);
+
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
 
   useEffect(() => {
     loadObjectives();
@@ -109,9 +134,19 @@ export default function ObjectivesPage() {
   const isOverBudget = isFinancial && parsedAllocated > maxAvailableBudgetForThis;
 
   const openCreateModal = () => {
+    // Check quota for free users
+    if (!userIsPremium) {
+      const activeObj = objectives.filter(o => o.status !== 'ABANDONED' && o.status !== 'COMPLETED').length;
+      const quota = getCountQuota(profile, activeObj, 'MAX_ACTIVE_OBJECTIVES');
+      if (quota.reached) {
+        setQuotaWarning(`Limite atteinte : ${quota.limit} objectifs actifs max en forfait gratuit. Passez Premium pour un accès illimité.`);
+        setTimeout(() => setQuotaWarning(''), 5000);
+        return;
+      }
+    }
     setEditingObjective(null);
     setTitle('');
-    setIsFinancial(true);
+    setIsFinancial(userIsPremium); // Default to general for free users since financial is premium-only
     setTargetAmount('');
     setAllocatedBudget('');
     setGeneralProgress(0);
@@ -247,6 +282,37 @@ export default function ObjectivesPage() {
         </button>
       </div>
 
+      {/* Quota Warning */}
+      {quotaWarning && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl animate-fade-in-up"
+          style={{
+            background: 'linear-gradient(135deg, rgba(214,179,106,0.08), rgba(14,159,110,0.05))',
+            border: '1px solid rgba(214,179,106,0.25)',
+          }}
+        >
+          <Crown size={16} style={{ color: '#D6B36A', flexShrink: 0 }} />
+          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {quotaWarning}
+          </p>
+        </div>
+      )}
+
+      {/* Free tier indicator */}
+      {!userIsPremium && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px]"
+          style={{
+            background: 'rgba(214,179,106,0.06)',
+            border: '1px solid rgba(214,179,106,0.15)',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          <Lock size={11} style={{ color: '#D6B36A' }} />
+          {objectives.filter(o => o.status !== 'ABANDONED' && o.status !== 'COMPLETED').length} / 5 objectifs actifs · Barre de progression sur le 1er uniquement
+        </div>
+      )}
+
       {/* Trésorerie & Allocations Banner */}
       <div className="glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -362,19 +428,30 @@ export default function ObjectivesPage() {
                   </div>
                 )}
 
-                {/* Progress Bar */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span style={{ color: 'var(--text-secondary)' }}>Progression</span>
-                    <span className="font-semibold" style={{ color: 'var(--accent)' }}>{obj.progress}%</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-bar-fill"
-                      style={{ width: `${obj.progress}%` }}
-                    />
-                  </div>
-                </div>
+                {/* Progress Bar — only 1st objective for free users */}
+                {(() => {
+                  const objIndex = objectives.findIndex(o => o.id === obj.id);
+                  const showBar = canShowProgressBar(profile, objIndex);
+                  return showBar ? (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span style={{ color: 'var(--text-secondary)' }}>Progression</span>
+                        <span className="font-semibold" style={{ color: 'var(--accent)' }}>{obj.progress}%</span>
+                      </div>
+                      <div className="progress-bar">
+                        <div
+                          className="progress-bar-fill"
+                          style={{ width: `${obj.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between text-xs">
+                      <span style={{ color: 'var(--text-tertiary)' }}>Progression : {obj.progress}%</span>
+                      <PremiumGate isPremium={false} compact message="Barre — Premium" />
+                    </div>
+                  );
+                })()}
               </div>
             );
           })
@@ -417,28 +494,43 @@ export default function ObjectivesPage() {
 
               {/* Selector Type */}
               <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsFinancial(true)}
-                  className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
-                  style={{
-                    background: isFinancial ? 'var(--accent)' : 'transparent',
-                    color: isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
-                  }}
-                >
-                  Objectif Financier
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFinancial(false)}
-                  className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
-                  style={{
-                    background: !isFinancial ? 'var(--accent)' : 'transparent',
-                    color: !isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
-                  }}
-                >
-                  Objectif Général
-                </button>
+                {userIsPremium ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsFinancial(true)}
+                      className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
+                      style={{
+                        background: isFinancial ? 'var(--accent)' : 'transparent',
+                        color: isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
+                      }}
+                    >
+                      Objectif Financier
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFinancial(false)}
+                      className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
+                      style={{
+                        background: !isFinancial ? 'var(--accent)' : 'transparent',
+                        color: !isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
+                      }}
+                    >
+                      Objectif Général
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="flex-1 py-2 text-xs font-medium rounded-lg transition-all"
+                      style={{ background: 'var(--accent)', color: '#FFFFFF' }}
+                    >
+                      Objectif Général
+                    </button>
+                    <PremiumGate isPremium={false} compact message="Financier — Premium" />
+                  </>
+                )}
               </div>
 
               {/* Financial Inputs */}
