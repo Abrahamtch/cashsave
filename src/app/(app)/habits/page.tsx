@@ -25,6 +25,7 @@ import { generateUUID, ensureUUID, isValidUUID } from '@/lib/uuid';
 import { isPremiumActive, isTrialActive, getCountQuota, hasFeature, FREE_LIMITS } from '@/lib/plans';
 import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
+import PremiumLimitPopup from '@/components/PremiumLimitPopup';
 
 const BOOLEAN_FIELDS = ['bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport', 'light_work', 'deep_work', 'after_work'] as const;
 const NUMERIC_FIELDS = ['prospects_contacted', 'calls_made', 'content_published', 'client_projects', 'learning_minutes'] as const;
@@ -316,26 +317,24 @@ export default function HabitsPage() {
   };
 
   const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
-  const [quotaWarning, setQuotaWarning] = useState('');
+  const [limitPopup, setLimitPopup] = useState<{ isOpen: boolean; title?: string; message: string }>({ isOpen: false, message: '' });
 
   const openCreateCustomHabitModal = () => {
-    // Check both total habits and custom habits limits
+    // Check total habits limit for free users (max 5)
     if (!userIsPremium) {
       const totalActive = activeHabits.length + customHabits.length;
-      const totalQuota = getCountQuota(profile, totalActive, 'MAX_ACTIVE_HABITS');
-      const customQuota = getCountQuota(profile, customHabits.length, 'MAX_CUSTOM_HABITS');
-      if (totalQuota.reached || customQuota.reached) {
-        const msg = totalQuota.reached
-          ? `Limite atteinte : ${totalQuota.limit} habitudes max en forfait gratuit.`
-          : `Limite atteinte : ${customQuota.limit} habitudes personnalisées max en forfait gratuit.`;
-        setQuotaWarning(msg + ' Passez Premium pour un accès illimité.');
-        setTimeout(() => setQuotaWarning(''), 5000);
+      if (totalActive >= 5) {
+        setLimitPopup({
+          isOpen: true,
+          title: 'Limite d\'habitudes atteinte',
+          message: 'Vous avez atteint la limite de 5 habitudes du forfait gratuit. Passez au forfait Premium pour créer des habitudes en illimité.',
+        });
         return;
       }
     }
     setEditingCustomHabit(null);
     setCustomTitle('');
-    setCustomType('boolean'); // Free users can only create boolean habits
+    setCustomType('boolean');
     setCustomIcon('sparkles');
     setCustomTarget(1);
     setShowCustomHabitModal(true);
@@ -359,6 +358,17 @@ export default function HabitsPage() {
   };
 
   const handleToggleWizardKey = (key: string) => {
+    if (!userIsPremium && !wizardSelectedKeys.includes(key)) {
+      const currentTotal = wizardSelectedKeys.length + customHabits.length;
+      if (currentTotal >= 5) {
+        setLimitPopup({
+          isOpen: true,
+          title: 'Limite d\'habitudes atteinte',
+          message: 'Le forfait gratuit est limité à 5 habitudes actives au total. Passez au forfait Premium pour des habitudes illimitées.',
+        });
+        return;
+      }
+    }
     setWizardSelectedKeys(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
@@ -900,6 +910,14 @@ export default function HabitsPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (!userIsPremium) {
+                            setLimitPopup({
+                              isOpen: true,
+                              title: 'Fonctionnalité Premium',
+                              message: 'La personnalisation des quotas quotidiens chiffrés est réservée aux membres Premium.',
+                            });
+                            return;
+                          }
                           setEditingTargetModal({ key: field, label: NUMERIC_HABIT_LABELS[field], currentTarget: target });
                           setTargetInputValue(String(target));
                         }}
@@ -1399,7 +1417,17 @@ export default function HabitsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomType('numeric')}
+                    onClick={() => {
+                      if (!userIsPremium) {
+                        setLimitPopup({
+                          isOpen: true,
+                          title: 'Fonctionnalité Premium',
+                          message: 'Les habitudes quantifiées avec compteurs numériques sont réservées aux membres Premium.',
+                        });
+                        return;
+                      }
+                      setCustomType('numeric');
+                    }}
                     className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer border"
                     style={{
                       background: customType === 'numeric' ? 'var(--accent-subtle)' : 'var(--bg-card-hover)',
@@ -1407,6 +1435,7 @@ export default function HabitsPage() {
                       color: customType === 'numeric' ? 'var(--accent)' : 'var(--text-secondary)',
                     }}
                   >
+                    {!userIsPremium && <Lock size={12} style={{ color: '#D6B36A' }} />}
                     <Plus size={14} /> Compteur numérique
                   </button>
                 </div>
@@ -1465,7 +1494,13 @@ export default function HabitsPage() {
             </form>
           </div>
         </div>
-      )}
+      {/* Premium Limit Backdrop Blur Popup */}
+      <PremiumLimitPopup
+        isOpen={limitPopup.isOpen}
+        onClose={() => setLimitPopup({ ...limitPopup, isOpen: false })}
+        title={limitPopup.title}
+        message={limitPopup.message}
+      />
     </div>
   );
 }

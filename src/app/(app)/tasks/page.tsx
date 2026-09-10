@@ -15,12 +15,14 @@ import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import { isPremiumActive, isTrialActive, getCountQuota } from '@/lib/plans';
 import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
+import PremiumLimitPopup from '@/components/PremiumLimitPopup';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [limitPopup, setLimitPopup] = useState<{ isOpen: boolean; title?: string; message: string }>({ isOpen: false, message: '' });
 
   // Form states
   const [title, setTitle] = useState('');
@@ -104,8 +106,11 @@ export default function TasksPage() {
       const activeTasks = tasks.filter(t => t.status !== 'DONE').length;
       const quota = getCountQuota(profile, activeTasks, 'MAX_ACTIVE_TASKS');
       if (quota.reached) {
-        setQuotaWarning(`Limite atteinte : ${quota.limit} tâches actives max en forfait gratuit. Passez Premium pour un accès illimité.`);
-        setTimeout(() => setQuotaWarning(''), 5000);
+        setLimitPopup({
+          isOpen: true,
+          title: 'Limite de tâches atteinte',
+          message: `Vous avez atteint la limite de ${quota.limit} tâches actives du forfait gratuit. Passez au forfait Premium pour une gestion illimitée.`,
+        });
         return;
       }
     }
@@ -181,7 +186,16 @@ export default function TasksPage() {
     broadcastDataUpdate();
   };
 
-  const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {
+  const handleStatusChange = (taskId: string, newStatus: TaskStatus, isDrag = false) => {
+    if (isDrag && !userIsPremium) {
+      setLimitPopup({
+        isOpen: true,
+        title: 'Fonctionnalité Premium',
+        message: 'Le réordonnancement des tâches par glisser-déposer est réservé aux membres Premium.',
+      });
+      return;
+    }
+
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     const localTasks = JSON.parse(localStorage.getItem('cashsave_tasks') || '[]');
     localStorage.setItem('cashsave_tasks', JSON.stringify(localTasks.map((t: any) => t.id === taskId ? { ...t, status: newStatus } : t)));
@@ -255,38 +269,6 @@ export default function TasksPage() {
         </button>
       </div>
 
-      {/* Quota Warning */}
-      {quotaWarning && (
-        <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl animate-fade-in-up"
-          style={{
-            background: 'linear-gradient(135deg, rgba(214,179,106,0.08), rgba(14,159,110,0.05))',
-            border: '1px solid rgba(214,179,106,0.25)',
-          }}
-        >
-          <Crown size={16} style={{ color: '#D6B36A', flexShrink: 0 }} />
-          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-            {quotaWarning}
-          </p>
-        </div>
-      )}
-
-      {/* Free tier task count indicator */}
-      {!userIsPremium && (
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px]"
-          style={{
-            background: 'rgba(214,179,106,0.06)',
-            border: '1px solid rgba(214,179,106,0.15)',
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          <Lock size={11} style={{ color: '#D6B36A' }} />
-          {tasks.filter(t => t.status !== 'DONE').length} / 10 tâches actives (gratuit)
-          {!userIsPremium && <span className="ml-1 opacity-60">· Glisser-déposer désactivé</span>}
-        </div>
-      )}
-
       {/* Kanban Board / Columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((statusKey) => {
@@ -311,7 +293,7 @@ export default function TasksPage() {
                 e.preventDefault();
                 const taskId = e.dataTransfer.getData('text/plain') || draggingTaskId;
                 if (taskId) {
-                  handleStatusChange(taskId, statusKey);
+                  handleStatusChange(taskId, statusKey, true);
                 }
                 setDragOverColumn(null);
                 setDraggingTaskId(null);
@@ -568,7 +550,13 @@ export default function TasksPage() {
             </form>
           </div>
         </div>
-      )}
+      {/* Premium Limit Backdrop Blur Popup */}
+      <PremiumLimitPopup
+        isOpen={limitPopup.isOpen}
+        onClose={() => setLimitPopup({ ...limitPopup, isOpen: false })}
+        title={limitPopup.title}
+        message={limitPopup.message}
+      />
     </div>
   );
 }

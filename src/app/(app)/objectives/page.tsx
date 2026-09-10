@@ -15,6 +15,7 @@ import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import { isPremiumActive, isTrialActive, getCountQuota, canShowProgressBar, hasFeature } from '@/lib/plans';
 import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
+import PremiumLimitPopup from '@/components/PremiumLimitPopup';
 
 export default function ObjectivesPage() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -22,6 +23,7 @@ export default function ObjectivesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
+  const [limitPopup, setLimitPopup] = useState<{ isOpen: boolean; title?: string; message: string }>({ isOpen: false, message: '' });
 
   // Form states
   const [title, setTitle] = useState('');
@@ -139,8 +141,11 @@ export default function ObjectivesPage() {
       const activeObj = objectives.filter(o => o.status !== 'ABANDONED' && o.status !== 'COMPLETED').length;
       const quota = getCountQuota(profile, activeObj, 'MAX_ACTIVE_OBJECTIVES');
       if (quota.reached) {
-        setQuotaWarning(`Limite atteinte : ${quota.limit} objectifs actifs max en forfait gratuit. Passez Premium pour un accès illimité.`);
-        setTimeout(() => setQuotaWarning(''), 5000);
+        setLimitPopup({
+          isOpen: true,
+          title: 'Limite d\'objectifs atteinte',
+          message: `Vous avez atteint la limite de ${quota.limit} objectifs du forfait gratuit. Passez au forfait Premium pour créer des objectifs en illimité.`,
+        });
         return;
       }
     }
@@ -281,37 +286,6 @@ export default function ObjectivesPage() {
           <Plus size={15} strokeWidth={2} /> Nouvel objectif
         </button>
       </div>
-
-      {/* Quota Warning */}
-      {quotaWarning && (
-        <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl animate-fade-in-up"
-          style={{
-            background: 'linear-gradient(135deg, rgba(214,179,106,0.08), rgba(14,159,110,0.05))',
-            border: '1px solid rgba(214,179,106,0.25)',
-          }}
-        >
-          <Crown size={16} style={{ color: '#D6B36A', flexShrink: 0 }} />
-          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-            {quotaWarning}
-          </p>
-        </div>
-      )}
-
-      {/* Free tier indicator */}
-      {!userIsPremium && (
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px]"
-          style={{
-            background: 'rgba(214,179,106,0.06)',
-            border: '1px solid rgba(214,179,106,0.15)',
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          <Lock size={11} style={{ color: '#D6B36A' }} />
-          {objectives.filter(o => o.status !== 'ABANDONED' && o.status !== 'COMPLETED').length} / 5 objectifs actifs · Barre de progression sur le 1er uniquement
-        </div>
-      )}
 
       {/* Trésorerie & Allocations Banner */}
       <div className="glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -494,43 +468,39 @@ export default function ObjectivesPage() {
 
               {/* Selector Type */}
               <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
-                {userIsPremium ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setIsFinancial(true)}
-                      className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
-                      style={{
-                        background: isFinancial ? 'var(--accent)' : 'transparent',
-                        color: isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
-                      }}
-                    >
-                      Objectif Financier
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsFinancial(false)}
-                      className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
-                      style={{
-                        background: !isFinancial ? 'var(--accent)' : 'transparent',
-                        color: !isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
-                      }}
-                    >
-                      Objectif Général
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="flex-1 py-2 text-xs font-medium rounded-lg transition-all"
-                      style={{ background: 'var(--accent)', color: '#FFFFFF' }}
-                    >
-                      Objectif Général
-                    </button>
-                    <PremiumGate isPremium={false} compact message="Financier — Premium" />
-                  </>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!userIsPremium) {
+                      setLimitPopup({
+                        isOpen: true,
+                        title: 'Fonctionnalité Premium',
+                        message: 'L\'allocation de trésorerie sur les objectifs financiers est réservée aux membres Premium.',
+                      });
+                    } else {
+                      setIsFinancial(true);
+                    }
+                  }}
+                  className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  style={{
+                    background: isFinancial ? 'var(--accent)' : 'transparent',
+                    color: isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
+                  }}
+                >
+                  {!userIsPremium && <Lock size={12} style={{ color: '#D6B36A' }} />}
+                  Objectif Financier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFinancial(false)}
+                  className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
+                  style={{
+                    background: !isFinancial ? 'var(--accent)' : 'transparent',
+                    color: !isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
+                  }}
+                >
+                  Objectif Général
+                </button>
               </div>
 
               {/* Financial Inputs */}
@@ -622,7 +592,13 @@ export default function ObjectivesPage() {
             </form>
           </div>
         </div>
-      )}
+      {/* Premium Limit Backdrop Blur Popup */}
+      <PremiumLimitPopup
+        isOpen={limitPopup.isOpen}
+        onClose={() => setLimitPopup({ ...limitPopup, isOpen: false })}
+        title={limitPopup.title}
+        message={limitPopup.message}
+      />
     </div>
   );
 }

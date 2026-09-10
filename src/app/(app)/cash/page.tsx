@@ -18,6 +18,7 @@ import { ensureUserProfileExists } from '@/lib/ensureProfile';
 import { isPremiumActive, isTrialActive, getTransactionQuota, hasFeature } from '@/lib/plans';
 import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
+import PremiumLimitPopup from '@/components/PremiumLimitPopup';
 
 export default function CashPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -98,6 +99,8 @@ export default function CashPage() {
     setLoading(false);
   }
 
+  const [limitPopup, setLimitPopup] = useState<{ isOpen: boolean; title?: string; message: string }>({ isOpen: false, message: '' });
+
   const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
 
   const openCreateModal = (type: 'INCOME' | 'EXPENSE') => {
@@ -106,8 +109,11 @@ export default function CashPage() {
       const quota = getTransactionQuota(profile, transactions, type);
       if (quota.reached) {
         const typeLabel = type === 'EXPENSE' ? 'dépenses' : 'revenus';
-        setQuotaWarning(`Limite atteinte : ${quota.limit} ${typeLabel}/jour max en forfait gratuit. Passez Premium pour un accès illimité.`);
-        setTimeout(() => setQuotaWarning(''), 5000);
+        setLimitPopup({
+          isOpen: true,
+          title: 'Limite quotidienne atteinte',
+          message: `Vous avez atteint la limite de ${quota.limit} ${typeLabel} par jour du forfait gratuit. Passez au forfait Premium pour un enregistrement illimité.`,
+        });
         return;
       }
     }
@@ -595,107 +601,148 @@ export default function CashPage() {
               </div>
 
               {/* Attachement de Photo / Reçu / Justificatif */}
-              {userIsPremium ? (
-                <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                    Justificatif / Reçu de la transaction
-                  </label>
+              <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+                <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                  Justificatif / Reçu de la transaction
+                </label>
 
-                  {imageUrl ? (
-                    <div className="relative rounded-xl overflow-hidden border p-2 flex items-center justify-between" style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}>
-                      <div className="flex items-center gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={imageUrl} alt="Aperçu reçu" className="w-12 h-12 object-cover rounded-lg border border-white/20" />
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Photo de justificatif jointe</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl(null)}
-                        className="btn-secondary py-1 px-2.5 text-xs"
-                        style={{ color: 'var(--color-danger)' }}
-                      >
-                        Supprimer
-                      </button>
+                {imageUrl ? (
+                  <div className="relative rounded-xl overflow-hidden border p-2 flex items-center justify-between" style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imageUrl} alt="Aperçu reçu" className="w-12 h-12 object-cover rounded-lg border border-white/20" />
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Photo de justificatif jointe</span>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <label
-                        htmlFor="tx-file-input"
-                        className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        <FileImage size={15} /> Importer photo
-                      </label>
-                      <input
-                        type="file"
-                        id="tx-file-input"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageFile}
-                      />
-
-                      <label
-                        htmlFor="tx-camera-input"
-                        className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                        style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
-                      >
-                        <Camera size={15} /> Prendre photo
-                      </label>
-                      <input
-                        type="file"
-                        id="tx-camera-input"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={handleImageFile}
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <PremiumGate isPremium={false} compact message="Joindre un justificatif — Premium" />
-                </div>
-              )}
-
-              {modalType === 'EXPENSE' && (
-                userIsPremium ? (
-                  <div>
-                    <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Satisfait de cette dépense ?
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsSatisfied(true)}
-                        className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
-                        style={{
-                          background: isSatisfied === true ? 'rgba(14,159,110,0.12)' : 'var(--bg-card-hover)',
-                          border: isSatisfied === true ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--border)',
-                          color: isSatisfied === true ? '#0E9F6E' : 'var(--text-secondary)',
-                        }}
-                      >
-                        <ThumbsUp size={14} strokeWidth={1.5} />
-                        Oui
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsSatisfied(false)}
-                        className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
-                        style={{
-                          background: isSatisfied === false ? 'rgba(244,63,94,0.1)' : 'var(--bg-card-hover)',
-                          border: isSatisfied === false ? '1px solid rgba(244,63,94,0.2)' : '1px solid var(--border)',
-                          color: isSatisfied === false ? '#F43F5E' : 'var(--text-secondary)',
-                        }}
-                      >
-                        <ThumbsDown size={14} strokeWidth={1.5} />
-                        Non
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl(null)}
+                      className="btn-secondary py-1 px-2.5 text-xs"
+                      style={{ color: 'var(--color-danger)' }}
+                    >
+                      Supprimer
+                    </button>
                   </div>
                 ) : (
-                  <PremiumGate isPremium={false} compact message="Satisfaction — Premium" />
-                )
+                  <div className="grid grid-cols-2 gap-2">
+                    {userIsPremium ? (
+                      <>
+                        <label
+                          htmlFor="tx-file-input"
+                          className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          <FileImage size={15} /> Importer photo
+                        </label>
+                        <input
+                          type="file"
+                          id="tx-file-input"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageFile}
+                        />
+
+                        <label
+                          htmlFor="tx-camera-input"
+                          className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
+                        >
+                          <Camera size={15} /> Prendre photo
+                        </label>
+                        <input
+                          type="file"
+                          id="tx-camera-input"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={handleImageFile}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setLimitPopup({
+                            isOpen: true,
+                            title: 'Fonctionnalité Premium',
+                            message: 'L\'ajout de reçu et justificatif photo est réservé aux membres Premium. Passez au forfait Premium pour débloquer cette option.'
+                          })}
+                          className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          <FileImage size={15} /> Importer photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLimitPopup({
+                            isOpen: true,
+                            title: 'Fonctionnalité Premium',
+                            message: 'L\'ajout de reçu et justificatif photo est réservé aux membres Premium. Passez au forfait Premium pour débloquer cette option.'
+                          })}
+                          className="btn-secondary py-2.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          style={{ color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
+                        >
+                          <Camera size={15} /> Prendre photo
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {modalType === 'EXPENSE' && (
+                <div>
+                  <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Satisfait de cette dépense ?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!userIsPremium) {
+                          setLimitPopup({
+                            isOpen: true,
+                            title: 'Fonctionnalité Premium',
+                            message: 'Le suivi de satisfaction des dépenses est réservé aux membres Premium.'
+                          });
+                        } else {
+                          setIsSatisfied(true);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+                      style={{
+                        background: isSatisfied === true ? 'rgba(14,159,110,0.12)' : 'var(--bg-card-hover)',
+                        border: isSatisfied === true ? '1px solid rgba(14,159,110,0.25)' : '1px solid var(--border)',
+                        color: isSatisfied === true ? '#0E9F6E' : 'var(--text-secondary)',
+                      }}
+                    >
+                      <ThumbsUp size={14} strokeWidth={1.5} />
+                      Oui
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!userIsPremium) {
+                          setLimitPopup({
+                            isOpen: true,
+                            title: 'Fonctionnalité Premium',
+                            message: 'Le suivi de satisfaction des dépenses est réservé aux membres Premium.'
+                          });
+                        } else {
+                          setIsSatisfied(false);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+                      style={{
+                        background: isSatisfied === false ? 'rgba(244,63,94,0.1)' : 'var(--bg-card-hover)',
+                        border: isSatisfied === false ? '1px solid rgba(244,63,94,0.2)' : '1px solid var(--border)',
+                        color: isSatisfied === false ? '#F43F5E' : 'var(--text-secondary)',
+                      }}
+                    >
+                      <ThumbsDown size={14} strokeWidth={1.5} />
+                      Non
+                    </button>
+                  </div>
+                </div>
               )}
 
               <button
@@ -726,14 +773,10 @@ export default function CashPage() {
           onClick={() => setViewingReceiptUrl(null)}
         >
           <div
-            className="modal-content max-w-2xl p-4 flex flex-col items-center gap-4"
+            className="modal-content max-w-2xl p-4 flex flex-col items-center gap-4 relative"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-full flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
-              <div className="flex items-center gap-2">
-                <ImageIcon size={18} style={{ color: 'var(--accent)' }} />
-                <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Justificatif de transaction</span>
-              </div>
+            <div className="w-full flex justify-end">
               <button
                 type="button"
                 onClick={() => setViewingReceiptUrl(null)}
@@ -755,6 +798,14 @@ export default function CashPage() {
           </div>
         </div>
       )}
+
+      {/* Premium Limit Backdrop Blur Popup */}
+      <PremiumLimitPopup
+        isOpen={limitPopup.isOpen}
+        onClose={() => setLimitPopup({ ...limitPopup, isOpen: false })}
+        title={limitPopup.title}
+        message={limitPopup.message}
+      />
     </div>
   );
 }
