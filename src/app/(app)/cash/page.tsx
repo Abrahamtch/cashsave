@@ -324,41 +324,6 @@ export default function CashPage() {
         </div>
       </div>
 
-      {/* Quota Warning */}
-      {quotaWarning && (
-        <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl animate-fade-in-up"
-          style={{
-            background: 'linear-gradient(135deg, rgba(214,179,106,0.08), rgba(14,159,110,0.05))',
-            border: '1px solid rgba(214,179,106,0.25)',
-          }}
-        >
-          <Crown size={16} style={{ color: '#D6B36A', flexShrink: 0 }} />
-          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-            {quotaWarning}
-          </p>
-        </div>
-      )}
-
-      {/* Free tier daily quota indicator */}
-      {!userIsPremium && (
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px]"
-          style={{
-            background: 'rgba(214,179,106,0.06)',
-            border: '1px solid rgba(214,179,106,0.15)',
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          <Lock size={11} style={{ color: '#D6B36A' }} />
-          {(() => {
-            const expQ = getTransactionQuota(profile, transactions, 'EXPENSE');
-            const incQ = getTransactionQuota(profile, transactions, 'INCOME');
-            return `Aujourd'hui : ${expQ.remaining}/${expQ.limit} dépenses · ${incQ.remaining}/${incQ.limit} revenu restant(s)`;
-          })()}
-        </div>
-      )}
-
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summaryCards.map((card) => {
