@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles, ArrowRight } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -244,45 +244,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="px-3.5 py-4" style={{ borderTop: '1px solid var(--border)' }}>
           {userIsPremium ? (
             <div
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold"
               style={{
                 background: 'var(--bg-card-hover)',
+                color: '#D6B36A',
                 border: '1px solid var(--border)',
               }}
             >
-              <Crown size={15} style={{ color: '#D6B36A' }} />
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-semibold" style={{ color: '#D6B36A' }}>
-                  Statut Premium Actif
-                </span>
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                  Accès illimité
-                </span>
+              <div className="flex items-center gap-2">
+                <Crown size={15} />
+                <span>Premium Actif</span>
               </div>
             </div>
           ) : (
             <Link
               href="/paywall"
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer hover:opacity-90 shadow-sm"
               style={{
-                background: 'var(--bg-card-hover)',
-                border: '1px solid rgba(214,179,106,0.3)',
+                background: '#0E9F6E',
+                color: '#FFFFFF',
               }}
             >
-              <div className="flex items-center gap-2.5">
-                <Crown size={15} style={{ color: '#D6B36A' }} />
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Passer Premium
-                  </span>
-                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                    Débloquer tout Cash Save
-                  </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <Crown size={15} />
+                <span>Passer Premium</span>
               </div>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(214,179,106,0.12)', color: '#D6B36A' }}>
-                Formules
-              </span>
+              <ArrowRight size={14} />
             </Link>
           )}
         </div>
@@ -308,11 +295,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {!userIsPremium && (
             <Link
               href="/paywall"
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer hover:opacity-90"
               style={{
-                background: 'var(--bg-card-hover)',
-                borderColor: 'rgba(214,179,106,0.3)',
-                color: '#D6B36A',
+                background: '#0E9F6E',
+                color: '#FFFFFF',
               }}
             >
               <Crown size={13} /> Premium
