@@ -592,6 +592,8 @@ export default function ObjectivesPage() {
             </form>
           </div>
         </div>
+      )}
+
       {/* Premium Limit Backdrop Blur Popup */}
       <PremiumLimitPopup
         isOpen={limitPopup.isOpen}

@@ -15,7 +15,7 @@ import {
   Pencil, Trash2, Settings2, X, Sliders, Target, HelpCircle,
   BookOpen, Heart, Flame, Dumbbell, Lightbulb, Moon, PhoneCall, Smartphone,
   FileText, Briefcase, GraduationCap, Droplet, Rocket, Coins, TrendingUp, Award,
-  Sun, Coffee, Star, Feather, Globe, UserCheck
+  Sun, Coffee, Star, Feather, Globe, UserCheck, Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -1494,6 +1494,8 @@ export default function HabitsPage() {
             </form>
           </div>
         </div>
+      )}
+
       {/* Premium Limit Backdrop Blur Popup */}
       <PremiumLimitPopup
         isOpen={limitPopup.isOpen}

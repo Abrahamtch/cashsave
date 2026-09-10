@@ -550,6 +550,8 @@ export default function TasksPage() {
             </form>
           </div>
         </div>
+      )}
+
       {/* Premium Limit Backdrop Blur Popup */}
       <PremiumLimitPopup
         isOpen={limitPopup.isOpen}

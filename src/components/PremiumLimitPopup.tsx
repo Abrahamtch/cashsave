@@ -113,7 +113,7 @@ export default function PremiumLimitPopup({
           }}
         />
 
-        <style jsx>{`
+        <style>{`
           @keyframes shrinkWidth {
             from {
               width: 100%;
