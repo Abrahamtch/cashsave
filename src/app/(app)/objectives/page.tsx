@@ -151,7 +151,7 @@ export default function ObjectivesPage() {
     }
     setEditingObjective(null);
     setTitle('');
-    setIsFinancial(userIsPremium); // Default to general for free users since financial is premium-only
+    setIsFinancial(false); // Default to general objective
     setTargetAmount('');
     setAllocatedBudget('');
     setGeneralProgress(0);
@@ -164,7 +164,7 @@ export default function ObjectivesPage() {
     setEditingObjective(obj);
     setTitle(obj.title);
     const hasFinancial = (obj.target_amount || 0) > 0 || (obj.allocated_budget || 0) > 0;
-    setIsFinancial(hasFinancial);
+    setIsFinancial(userIsPremium ? hasFinancial : false);
     setTargetAmount(obj.target_amount ? String(obj.target_amount) : '');
     setAllocatedBudget(obj.allocated_budget ? String(obj.allocated_budget) : '');
     setGeneralProgress(obj.progress || 0);
@@ -179,6 +179,7 @@ export default function ObjectivesPage() {
     setSaving(true);
     markLocalSelfMutation();
 
+    const effectiveIsFinancial = userIsPremium ? isFinancial : false;
     const isCompleted = computedProgress === 100 ? 'COMPLETED' : status;
     const validId = editingObjective ? ensureUUID(editingObjective.id) : generateUUID();
     const newObj: Objective = {
@@ -186,8 +187,8 @@ export default function ObjectivesPage() {
       user_id: 'demo-user',
       title,
       deadline: deadline || null,
-      target_amount: isFinancial ? parsedTarget : 0,
-      allocated_budget: isFinancial ? parsedAllocated : 0,
+      target_amount: effectiveIsFinancial ? parsedTarget : 0,
+      allocated_budget: effectiveIsFinancial ? parsedAllocated : 0,
       progress: computedProgress,
       status: isCompleted,
       created_at: editingObjective ? editingObjective.created_at : new Date().toISOString(),
@@ -475,7 +476,7 @@ export default function ObjectivesPage() {
                       setLimitPopup({
                         isOpen: true,
                         title: 'Fonctionnalité Premium',
-                        message: 'L\'allocation de trésorerie sur les objectifs financiers est réservée aux membres Premium.',
+                        message: 'L\'allocation de trésorerie sur les objectifs financiers est réservée au forfait Premium.',
                       });
                     } else {
                       setIsFinancial(true);
@@ -487,7 +488,6 @@ export default function ObjectivesPage() {
                     color: isFinancial ? '#FFFFFF' : 'var(--text-secondary)',
                   }}
                 >
-                  {!userIsPremium && <Lock size={12} style={{ color: '#D6B36A' }} />}
                   Objectif Financier
                 </button>
                 <button

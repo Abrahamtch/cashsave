@@ -35,7 +35,7 @@ export default function PremiumLimitPopup({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in"
       style={{
         background: 'rgba(0, 0, 0, 0.65)',
       }}
