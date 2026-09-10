@@ -1,6 +1,5 @@
-'use client';
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   format,
   addMonths,
@@ -37,33 +36,64 @@ export default function FuturisticDatePicker({
   disabled = false,
 }: FuturisticDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Parse date or fallback to today
   const selectedDate = useMemoDate(value);
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate);
-  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   // Sync current month when value changes
   useEffect(() => {
     setCurrentMonth(selectedDate);
   }, [value]);
 
-  // Smart placement detection (open upwards if near bottom of screen/modal)
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      if (spaceBelow < 340) {
-        setPlacement('top');
-      } else {
-        setPlacement('bottom');
-      }
+  // Positioning logic for Portal overlay
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 330 });
+
+  const updatePopoverPos = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const calendarHeight = 350;
+    const calendarWidth = Math.min(330, window.innerWidth - 24);
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const positionUpwards = spaceBelow < calendarHeight && rect.top > calendarHeight;
+
+    let top = positionUpwards ? rect.top - calendarHeight - 8 : rect.bottom + 8;
+    if (top < 12) top = 12;
+    if (top + calendarHeight > window.innerHeight - 12) {
+      top = Math.max(12, window.innerHeight - calendarHeight - 12);
     }
-  }, [isOpen]);
+
+    let left = rect.left;
+    if (left + calendarWidth > window.innerWidth - 12) {
+      left = window.innerWidth - 12 - calendarWidth;
+    }
+    if (left < 12) left = 12;
+
+    setPopoverPos({ top, left, width: calendarWidth });
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      updatePopoverPos();
+      window.addEventListener('resize', updatePopoverPos);
+      window.addEventListener('scroll', updatePopoverPos, true);
+    }
+    return () => {
+      window.removeEventListener('resize', updatePopoverPos);
+      window.removeEventListener('scroll', updatePopoverPos, true);
+    };
+  }, [isOpen, updatePopoverPos]);
 
   // Mouse inertia tracking for ambient glow
-  const calendarRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number; active: boolean }>({ x: 50, y: 50, active: false });
   const targetPos = useRef<{ x: number; y: number }>({ x: 50, y: 50 });
   const currentPos = useRef<{ x: number; y: number }>({ x: 50, y: 50 });
@@ -114,11 +144,16 @@ export default function FuturisticDatePicker({
     };
   }, []);
 
-  // Close popover when clicking outside
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Close popover when clicking outside trigger or portal
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        calendarRef.current &&
+        !calendarRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -153,61 +188,26 @@ export default function FuturisticDatePicker({
 
   const formattedDisplay = value ? format(selectedDate, 'dd MMMM yyyy', { locale: fr }) : '';
 
-  return (
-    <div ref={containerRef} className={`relative w-full ${className}`}>
-      {label && (
-        <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-          {label}
-        </label>
-      )}
-
-      {/* Input Field Button */}
-      <button
-        ref={triggerRef}
-        type="button"
-        disabled={disabled}
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer text-left select-none group"
-        style={{
-          background: 'var(--bg-input)',
-          border: isOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
-          boxShadow: isOpen ? '0 0 0 3px var(--accent-subtle)' : 'none',
-        }}
-      >
-        <div className="flex items-center gap-2.5">
-          <CalendarIcon
-            size={16}
-            strokeWidth={1.75}
-            className="transition-colors duration-200"
-            style={{ color: isOpen ? 'var(--accent)' : 'var(--text-tertiary)' }}
-          />
-          <span
-            className="text-sm font-medium"
-            style={{ color: formattedDisplay ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-          >
-            {formattedDisplay || placeholder}
-          </span>
-        </div>
-      </button>
-
-      {/* Popover Calendar */}
-      {isOpen && (
-        <div
-          ref={calendarRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          className={`absolute z-[9999] left-0 right-0 sm:right-auto sm:w-[330px] rounded-2xl p-4 transition-all duration-300 animate-fade-in-up ${
-            placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
-          }`}
-          style={{
-            background: 'color-mix(in srgb, var(--bg-card) 95%, transparent)',
-            backdropFilter: 'blur(24px) saturate(140%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(140%)',
-            border: '1px solid var(--border-strong)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.65), 0 0 0 1px rgba(14,159,110,0.25)',
-            overflow: 'hidden',
-          }}
-        >
+  const popoverContent = isOpen && mounted ? (
+    <div
+      ref={calendarRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="rounded-2xl p-4 transition-all duration-300 animate-fade-in-up"
+      style={{
+        position: 'fixed',
+        top: `${popoverPos.top}px`,
+        left: `${popoverPos.left}px`,
+        width: `${popoverPos.width}px`,
+        zIndex: 999999,
+        background: 'color-mix(in srgb, var(--bg-card) 96%, transparent)',
+        backdropFilter: 'blur(24px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(140%)',
+        border: '1px solid var(--border-strong)',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(14,159,110,0.3)',
+        overflow: 'hidden',
+      }}
+    >
           {/* Mouse-Reactive Ambient Light Canvas */}
           <div
             className="pointer-events-none absolute inset-0 transition-opacity duration-500"
@@ -338,7 +338,47 @@ export default function FuturisticDatePicker({
             )}
           </div>
         </div>
+  ) : null;
+
+  return (
+    <div ref={containerRef} className={`relative w-full ${className}`}>
+      {label && (
+        <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+          {label}
+        </label>
       )}
+
+      {/* Input Field Button */}
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer text-left select-none group"
+        style={{
+          background: 'var(--bg-input)',
+          border: isOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
+          boxShadow: isOpen ? '0 0 0 3px var(--accent-subtle)' : 'none',
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <CalendarIcon
+            size={16}
+            strokeWidth={1.75}
+            className="transition-colors duration-200"
+            style={{ color: isOpen ? 'var(--accent)' : 'var(--text-tertiary)' }}
+          />
+          <span
+            className="text-sm font-medium"
+            style={{ color: formattedDisplay ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+          >
+            {formattedDisplay || placeholder}
+          </span>
+        </div>
+      </button>
+
+      {/* Portal Floating Calendar */}
+      {mounted && popoverContent && createPortal(popoverContent, document.body)}
     </div>
   );
 }
