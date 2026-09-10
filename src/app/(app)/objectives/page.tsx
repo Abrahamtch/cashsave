@@ -151,7 +151,7 @@ export default function ObjectivesPage() {
     }
     setEditingObjective(null);
     setTitle('');
-    setIsFinancial(false); // Default to general objective
+    setIsFinancial(true); // Default to financial objective
     setTargetAmount('');
     setAllocatedBudget('');
     setGeneralProgress(0);
@@ -164,7 +164,7 @@ export default function ObjectivesPage() {
     setEditingObjective(obj);
     setTitle(obj.title);
     const hasFinancial = (obj.target_amount || 0) > 0 || (obj.allocated_budget || 0) > 0;
-    setIsFinancial(userIsPremium ? hasFinancial : false);
+    setIsFinancial(hasFinancial);
     setTargetAmount(obj.target_amount ? String(obj.target_amount) : '');
     setAllocatedBudget(obj.allocated_budget ? String(obj.allocated_budget) : '');
     setGeneralProgress(obj.progress || 0);
@@ -179,7 +179,7 @@ export default function ObjectivesPage() {
     setSaving(true);
     markLocalSelfMutation();
 
-    const effectiveIsFinancial = userIsPremium ? isFinancial : false;
+    const effectiveIsFinancial = isFinancial;
     const isCompleted = computedProgress === 100 ? 'COMPLETED' : status;
     const validId = editingObjective ? ensureUUID(editingObjective.id) : generateUUID();
     const newObj: Objective = {
@@ -471,17 +471,7 @@ export default function ObjectivesPage() {
               <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!userIsPremium) {
-                      setLimitPopup({
-                        isOpen: true,
-                        title: 'Fonctionnalité Premium',
-                        message: 'L\'allocation de trésorerie sur les objectifs financiers est réservée au forfait Premium.',
-                      });
-                    } else {
-                      setIsFinancial(true);
-                    }
-                  }}
+                  onClick={() => setIsFinancial(true)}
                   className="flex-1 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   style={{
                     background: isFinancial ? 'var(--accent)' : 'transparent',

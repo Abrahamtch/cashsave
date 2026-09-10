@@ -14,7 +14,7 @@ export const FREE_LIMITS = {
   MAX_ACTIVE_HABITS: 5,           // standard + custom combined (Track My Cash excluded)
   MAX_CUSTOM_HABITS: 3,
   CHART_MAX_PERIOD: 7,            // days
-  FINANCIAL_OBJECTIVES: false,
+  FINANCIAL_OBJECTIVES: true,
   NUMERIC_HABITS: false,
   DRAG_AND_DROP_TASKS: false,
   RECEIPT_PHOTOS: false,
