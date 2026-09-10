@@ -7,12 +7,18 @@ export interface CreateCartParams {
   userId: string;
   userEmail: string;
   redirectUrl: string;
+  billingCycle?: string;
 }
 
-export async function createMaketouCart({ userId, userEmail, redirectUrl }: CreateCartParams) {
+export async function createMaketouCart({ userId, userEmail, redirectUrl, billingCycle = 'annual' }: CreateCartParams) {
   const apiKey = process.env.MAKETOU_API_KEY;
-  const productDocId = process.env.MAKETOU_PRODUCT_DOCUMENT_ID;
-  const directCheckoutUrl = process.env.MAKETOU_PRODUCT_URL || 'https://cash-save.mymaketou.shop/en/products/abonnement-cash-save-3-000-fcfamois/checkout';
+  const isAnnual = billingCycle === 'annual';
+  const productDocId = isAnnual
+    ? process.env.MAKETOU_ANNUAL_PRODUCT_DOCUMENT_ID || process.env.MAKETOU_PRODUCT_DOCUMENT_ID
+    : process.env.MAKETOU_PRODUCT_DOCUMENT_ID;
+  const directCheckoutUrl = isAnnual
+    ? (process.env.MAKETOU_ANNUAL_PRODUCT_URL || 'https://cash-save.mymaketou.shop/en/products/abonnement-annuel-cash-save-28-800-fcfaan/checkout')
+    : (process.env.MAKETOU_PRODUCT_URL || 'https://cash-save.mymaketou.shop/en/products/abonnement-cash-save-3-000-fcfamois/checkout');
 
   // Tenter l'appel API Maketou REST s'il est disponible
   if (apiKey && productDocId) {

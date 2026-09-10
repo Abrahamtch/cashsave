@@ -6,6 +6,7 @@ import { Crown, ArrowRight, Lock, Check, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PaywallPage() {
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -17,6 +18,8 @@ export default function PaywallPage() {
     try {
       const res = await fetch('/api/payment/create', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billingCycle }),
       });
 
       const data = await res.json();
@@ -55,6 +58,52 @@ export default function PaywallPage() {
           >
             Choisissez la formule adaptée à vos ambitions financières et de productivité.
           </p>
+        </div>
+
+        {/* Toggle Billing Cycle */}
+        <div className="flex justify-center">
+          <div
+            className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setBillingCycle('monthly')}
+              className="px-5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer"
+              style={{
+                background: billingCycle === 'monthly' ? 'var(--bg-card-hover)' : 'transparent',
+                color: billingCycle === 'monthly' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                border: billingCycle === 'monthly' ? '1px solid var(--border)' : '1px solid transparent',
+              }}
+            >
+              Paiement Mensuel
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingCycle('annual')}
+              className="px-5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-2"
+              style={{
+                background: billingCycle === 'annual' ? 'var(--accent)' : 'transparent',
+                color: billingCycle === 'annual' ? '#FFFFFF' : 'var(--text-secondary)',
+                boxShadow: billingCycle === 'annual' ? '0 4px 12px rgba(14, 159, 110, 0.35)' : 'none',
+              }}
+            >
+              <span>Paiement Annuel</span>
+              <span
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{
+                  background: billingCycle === 'annual' ? 'rgba(255,255,255,0.25)' : 'rgba(214,179,106,0.15)',
+                  color: billingCycle === 'annual' ? '#FFFFFF' : '#D6B36A',
+                  border: billingCycle === 'annual' ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(214,179,106,0.3)',
+                }}
+              >
+                -20%
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Plans Grid */}
@@ -165,27 +214,48 @@ export default function PaywallPage() {
                 <span
                   className="text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md"
                   style={{
-                    background: 'rgba(214,179,106,0.12)',
-                    color: '#D6B36A',
-                    border: '1px solid rgba(214,179,106,0.25)',
+                    background: billingCycle === 'annual' ? 'rgba(14,159,110,0.15)' : 'rgba(214,179,106,0.12)',
+                    color: billingCycle === 'annual' ? 'var(--accent)' : '#D6B36A',
+                    border: billingCycle === 'annual' ? '1px solid var(--accent-border)' : '1px solid rgba(214,179,106,0.25)',
                   }}
                 >
-                  Recommandé
+                  {billingCycle === 'annual' ? '-20% Réduction' : 'Recommandé'}
                 </span>
               </div>
 
               <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tracking-tight" style={{ color: '#D6B36A' }}>
-                    1 000 FCFA
-                  </span>
-                  <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
-                    / mois
-                  </span>
-                </div>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  Tarif spécial les 3 premiers mois (puis 3 000 FCFA / mois)
-                </p>
+                {billingCycle === 'annual' ? (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold tracking-tight" style={{ color: '#D6B36A' }}>
+                        28 800 FCFA
+                      </span>
+                      <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+                        / an
+                      </span>
+                    </div>
+                    <p className="text-[11px] mt-1 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+                      <span className="font-semibold">Soit 2 400 FCFA / mois</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--accent-subtle)] border border-[var(--accent-border)] font-bold">
+                        -20% d&apos;économie sur 36 000 FCFA/an
+                      </span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold tracking-tight" style={{ color: '#D6B36A' }}>
+                        1 000 FCFA
+                      </span>
+                      <span className="text-xs font-normal" style={{ color: 'var(--text-tertiary)' }}>
+                        / mois
+                      </span>
+                    </div>
+                    <p className="text-[11px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Tarif spécial les 3 premiers mois (puis 3 000 FCFA / mois)
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="space-y-3 text-xs" style={{ color: 'var(--text-primary)' }}>
@@ -249,7 +319,9 @@ export default function PaywallPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    Passer à la formule Premium (1 000 FCFA) <ArrowRight size={14} />
+                    {billingCycle === 'annual'
+                      ? 'Passer à la formule Annuelle (28 800 FCFA / an)'
+                      : 'Passer à la formule Mensuelle (1 000 FCFA)'} <ArrowRight size={14} />
                   </>
                 )}
               </button>
