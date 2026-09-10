@@ -22,8 +22,14 @@ export interface Profile {
   subscription_months_count?: number;
   trial_7d_used?: boolean;
   trial_7d_start?: string | null;
+  // Notification & Reminder fields
+  reminder_enabled?: boolean;
+  reminder_time?: string;
+  whatsapp_enabled?: boolean;
+  whatsapp_number?: string;
+  // Activity tracking for trial prompts
   active_days_count?: number;
-  last_trial_prompt_day?: number;
+  last_trial_prompt_day?: number | null;
   created_at: string;
   updated_at: string;
 }

@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles, ArrowRight, Bell } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { syncUserDataFromSupabase, subscribeToUserRealtimeChanges } from '@/lib/syncUser';
 import OnboardingFlow from '@/components/OnboardingFlow';
 import TrialPrompt from '@/components/TrialPrompt';
+import ReminderSettingsModal from '@/components/ReminderSettingsModal';
 import { Profile } from '@/types';
 import { isPremiumActive, isTrialActive, shouldTrigger7DayTrialPrompt } from '@/lib/plans';
 
@@ -36,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isReconfiguring, setIsReconfiguring] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [showTrialPrompt, setShowTrialPrompt] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -194,7 +196,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               Cash Save
             </span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setShowReminderModal(true)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer hover:bg-[var(--bg-card-hover)]"
+              style={{ color: 'var(--text-secondary)' }}
+              title="Rappels & Notifications WhatsApp"
+            >
+              <Bell size={17} strokeWidth={1.5} />
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Nav Items */}
@@ -304,6 +317,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Crown size={13} /> Premium
             </Link>
           )}
+          <button
+            type="button"
+            onClick={() => setShowReminderModal(true)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+            style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
+            title="Rappels & WhatsApp"
+          >
+            <Bell size={16} strokeWidth={1.5} />
+          </button>
           <ThemeToggle />
         </div>
       </header>
@@ -374,6 +396,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }}
         />
       )}
+      {/* Reminder & WhatsApp Settings Modal */}
+      <ReminderSettingsModal
+        isOpen={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+      />
     </div>
   );
 }
