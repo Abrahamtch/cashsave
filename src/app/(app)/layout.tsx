@@ -13,6 +13,7 @@ import TrialPrompt from '@/components/TrialPrompt';
 import ReminderSettingsModal from '@/components/ReminderSettingsModal';
 import { Profile } from '@/types';
 import { isPremiumActive, isTrialActive, shouldTrigger7DayTrialPrompt } from '@/lib/plans';
+import { registerServiceWorker, subscribeToPush } from '@/lib/pushSubscription';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -46,6 +47,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     async function init() {
       await checkOnboardingStatus();
       await trackActiveDaysAndCheckTrial();
+
+      // Register Service Worker for push notifications
+      registerServiceWorker().then(() => {
+        // Auto-subscribe if user previously granted permission
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          subscribeToPush().catch(() => {});
+        }
+      }).catch(() => {});
+
       if (isLiveSupabaseConfigured()) {
         try {
           const { data: { user } } = await supabase.auth.getUser();

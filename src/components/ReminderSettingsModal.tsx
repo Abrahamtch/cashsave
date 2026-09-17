@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, MessageSquare, Clock, Check, X, Smartphone, Sparkles, Send, ShieldCheck } from 'lucide-react';
+import { Bell, MessageSquare, Clock, Check, X, Smartphone, Sparkles, Send, ShieldCheck, Loader2, Zap } from 'lucide-react';
 import {
   NotificationSettings,
   getNotificationSettings,
@@ -10,6 +10,12 @@ import {
   sendLocalNotification,
   triggerTestWhatsAppReminder
 } from '@/lib/notifications';
+import {
+  registerServiceWorker,
+  subscribeToPush,
+  unsubscribeFromPush,
+  getPushSubscriptionStatus,
+} from '@/lib/pushSubscription';
 import { createClient } from '@/lib/supabase/client';
 
 interface ReminderSettingsModalProps {
@@ -35,13 +41,18 @@ const COUNTRY_CODES = [
 export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSettingsModalProps) {
   const [settings, setSettings] = useState<NotificationSettings>(getNotificationSettings());
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
   const [countryCode, setCountryCode] = useState('+225');
   const [localNumber, setLocalNumber] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [testSent, setTestSent] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setPermissionStatus(Notification.permission);
     }
@@ -58,19 +69,58 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
         setLocalNumber(current.whatsapp_number);
       }
     }
+
+    // Check push subscription status
+    getPushSubscriptionStatus().then(status => {
+      setPushSupported(status.supported);
+      setPushSubscribed(status.subscribed);
+      setPermissionStatus(status.permission);
+    });
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleRequestPermission = async () => {
-    const res = await requestWebNotificationPermission();
-    setPermissionStatus(res);
-    if (res === 'granted') {
-      sendLocalNotification(
-        'Rappels Cash Save Activés ! ⚡',
-        'Vous recevrez désormais une notification douce chaque soir pour valider vos finances et vos habitudes.'
-      );
+  // ─── Activate Push Notifications (full flow) ────────────────
+  const handleActivatePush = async () => {
+    setSubscribing(true);
+    try {
+      // 1. Register Service Worker
+      await registerServiceWorker();
+
+      // 2. Subscribe to push (handles permission request + VAPID + server sync)
+      const subscription = await subscribeToPush();
+
+      if (subscription) {
+        setPushSubscribed(true);
+        setPermissionStatus('granted');
+        setSettings(prev => ({ ...prev, reminder_enabled: true }));
+
+        // Show a confirmation notification
+        sendLocalNotification(
+          'Rappels Cash Save Activés ! ⚡',
+          'Vous recevrez une notification chaque soir pour valider vos finances et habitudes.'
+        );
+      } else {
+        // Permission was denied or error
+        setPermissionStatus(Notification.permission);
+      }
+    } catch (e) {
+      console.error('Push activation failed:', e);
     }
+    setSubscribing(false);
+  };
+
+  // ─── Deactivate Push ────────────────────────────────────────
+  const handleDeactivatePush = async () => {
+    setSubscribing(true);
+    try {
+      await unsubscribeFromPush();
+      setPushSubscribed(false);
+      setSettings(prev => ({ ...prev, reminder_enabled: false }));
+    } catch (e) {
+      console.error('Push deactivation failed:', e);
+    }
+    setSubscribing(false);
   };
 
   const handleTestWebPush = () => {
@@ -82,7 +132,7 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
       setTestSent(true);
       setTimeout(() => setTestSent(false), 3000);
     } else {
-      alert('Veuillez d\'abord autoriser les notifications dans votre navigateur.');
+      alert('Veuillez d\'abord activer les notifications.');
     }
   };
 
@@ -150,10 +200,10 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
             </div>
             <div>
               <h3 className="font-bold text-base tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                Rappels &amp; Relance Discipline
+                Rappels &amp; Notifications
               </h3>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                Ne manquez jamais votre routine financière du soir
+                Notifications push + relance WhatsApp automatique
               </p>
             </div>
           </div>
@@ -167,47 +217,59 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
           </button>
         </div>
 
-        {/* Section 1: Rappel Navigateur Web Push / PWA */}
+        {/* Section 1: Web Push Notifications */}
         <div className="p-4 rounded-xl space-y-3 border" style={{ background: 'var(--bg-card-hover)', borderColor: 'var(--border)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Smartphone size={16} style={{ color: 'var(--accent)' }} />
               <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                Notifications Web Push / Téléphone
+                Notifications Push
               </span>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.reminder_enabled}
-                onChange={(e) => setSettings(prev => ({ ...prev, reminder_enabled: e.target.checked }))}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0E9F6E]" />
-            </label>
+            {pushSubscribed && (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#0E9F6E] bg-[#0E9F6E]/10 px-2 py-1 rounded-full border border-[#0E9F6E]/25">
+                <Zap size={11} /> ACTIF
+              </div>
+            )}
           </div>
 
-          {settings.reminder_enabled && (
-            <div className="space-y-3 pt-2">
-              {permissionStatus !== 'granted' ? (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-[#D6B36A]/10 border border-[#D6B36A]/30 text-xs">
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    Autorisez les notifications pour recevoir les rappels du soir.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleRequestPermission}
-                    className="btn-primary py-1.5 px-3 text-[11px] shrink-0 cursor-pointer"
-                  >
-                    Autoriser
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-xs text-[#0E9F6E] font-medium">
-                  <ShieldCheck size={14} /> Notifications activées dans votre navigateur
-                </div>
-              )}
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            Recevez une notification automatique chaque soir, même quand l&apos;application est fermée. Fonctionne sur téléphone et ordinateur.
+          </p>
 
+          {!pushSupported ? (
+            <div className="text-xs p-3 rounded-lg" style={{ background: 'rgba(244,63,94,0.08)', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.2)' }}>
+              Votre navigateur ne supporte pas les notifications push. Utilisez Chrome, Firefox ou Safari récent.
+            </div>
+          ) : !pushSubscribed ? (
+            <button
+              type="button"
+              onClick={handleActivatePush}
+              disabled={subscribing}
+              className="w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
+              style={{
+                background: '#0E9F6E',
+                color: '#FFFFFF',
+                opacity: subscribing ? 0.7 : 1,
+              }}
+            >
+              {subscribing ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" /> Activation en cours...
+                </>
+              ) : (
+                <>
+                  <Bell size={15} /> Activer les notifications push
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-1.5 text-xs text-[#0E9F6E] font-medium">
+                <ShieldCheck size={14} /> Notifications push activées — vous serez notifié chaque soir
+              </div>
+
+              {/* Reminder Time */}
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                   Heure du rappel du soir :
@@ -224,21 +286,31 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
                 </select>
               </div>
 
-              {permissionStatus === 'granted' && (
+              {/* Test & Deactivate buttons */}
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={handleTestWebPush}
-                  className="btn-secondary w-full py-2 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 btn-secondary py-2 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  <Send size={13} /> {testSent ? 'Notification envoyée !' : 'Tester la notification maintenant'}
+                  <Send size={13} /> {testSent ? 'Envoyée !' : 'Tester'}
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={handleDeactivatePush}
+                  disabled={subscribing}
+                  className="btn-secondary py-2 px-3 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {subscribing ? <Loader2 size={13} className="animate-spin" /> : 'Désactiver'}
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Section 2: Relance WhatsApp Automatisée */}
+        {/* Section 2: WhatsApp Automatique */}
         <div
           className="p-4 rounded-xl space-y-3.5 border relative overflow-hidden"
           style={{
@@ -265,7 +337,7 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
           </div>
 
           <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            Recevez un message rapide sur WhatsApp à 21h00 si vous n&apos;avez pas encore enregistré votre journée.
+            Recevez un message personnalisé sur WhatsApp avec votre streak, score et résumé financier si vous n&apos;avez pas encore enregistré votre journée.
           </p>
 
           {settings.whatsapp_enabled && (
@@ -305,8 +377,12 @@ export default function ReminderSettingsModal({ isOpen, onClose }: ReminderSetti
                   color: '#25D366',
                 }}
               >
-                <MessageSquare size={14} /> Tester le rappel WhatsApp
+                <MessageSquare size={14} /> Tester le rappel WhatsApp personnalisé
               </button>
+
+              <p className="text-[10px] leading-relaxed px-1" style={{ color: 'var(--text-tertiary)' }}>
+                💡 Le test ouvre WhatsApp avec un message pré-rempli basé sur vos données réelles. En production, les messages sont envoyés automatiquement chaque soir.
+              </p>
             </div>
           )}
         </div>
