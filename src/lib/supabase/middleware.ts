@@ -2,7 +2,15 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Routes publiques
-const PUBLIC_ROUTES = ['/auth/login', '/auth/register', '/auth/callback', '/api/payment/webhook'];
+const PUBLIC_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/callback',
+  '/api/payment/webhook',
+  '/api/webhook/whatsapp',
+  '/api/cron/reminders',
+  '/api/push/subscribe',
+];
 
 // Routes protégées
 const PROTECTED_MUTATION_ROUTES = ['/habits', '/cash', '/tasks', '/objectives'];
