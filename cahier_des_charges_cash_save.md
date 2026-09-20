@@ -111,12 +111,12 @@ Suivi quotidien structuré en 14 indicateurs clés de performance personnelle :
 > **Objectif :** Convertir les visiteurs non connectés en utilisateurs inscrits via une page de présentation premium incarnant l'identité « Quiet Luxury Financial Productivity » de Cash Save.
 
 ### 5.1 Accès & Routing
-- **Visiteur non connecté :** La route `/` affiche la Landing Page marketing.
-- **Utilisateur connecté :** La route `/` redirige automatiquement vers `/dashboard`.
-- **Accès direct & Navigation :**
-  - **Route dédiée `/landing` :** Permet à quiconque (visiteur ou utilisateur connecté) d'accéder directement à la Landing Page vitrine à tout moment.
-  - **Lien Sidebar :** Pour les utilisateurs connectés, un lien *"Voir le Site"* (`/landing`) est accessible directement depuis le menu latéral de l'application.
-  - **Adaptation d'état :** Quand un utilisateur connecté consulte la Landing Page, les boutons d'action s'adaptent dynamiquement pour afficher *"Mon Dashboard"* (`/dashboard`).
+- **Accès principal `/` :** La racine du site `/` affiche systématiquement la Landing Page vitrine en premier pour TOUS les utilisateurs (visiteurs et utilisateurs connectés).
+- **Adaptation dynamique d'état :**
+  - **Pour un visiteur non connecté :** Les boutons de navigation et d'appel à l'action affichent *"Se connecter"* et *"Commencer gratuitement"* (`/auth/register`).
+  - **Pour un utilisateur connecté :** Les boutons s'adaptent automatiquement pour afficher *"Mon Dashboard"* (`/dashboard`), lui permettant d'accéder à son espace de travail en un clic tout en profitant d'abord de la vitrine.
+- **Route dédiée `/landing` :** Également disponible pour un accès direct permanent à la vitrine.
+- **Lien Sidebar :** Un lien *"Voir le Site"* (`/landing`) reste accessible dans la barre latérale de l'application.
 - **Composant principal :** [`LandingPage.tsx`](file:///f:/Digital%20Influence%20Marketing%20SARL%20U/Cash%20Save/src/components/LandingPage.tsx) (composant client).
 - **Styles dédiés :** [`landing.css`](file:///f:/Digital%20Influence%20Marketing%20SARL%20U/Cash%20Save/src/app/landing.css).
 

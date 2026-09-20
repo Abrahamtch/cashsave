@@ -675,8 +675,8 @@ export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boole
                     <li key={i}><Check size={14} style={{ color: 'var(--accent)' }} />{f}</li>
                   ))}
                 </ul>
-                <Link href="/auth/register" className="btn-secondary landing-plan-cta" id="pricing-free-cta">
-                  {t.pricing.free.cta}
+                <Link href={isLoggedIn ? "/dashboard" : "/auth/register"} className="btn-secondary landing-plan-cta" id="pricing-free-cta">
+                  {isLoggedIn ? (lang === 'fr' ? 'Accéder au Dashboard' : 'Go to Dashboard') : t.pricing.free.cta}
                 </Link>
               </div>
             </Reveal>
@@ -712,8 +712,8 @@ export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boole
                     <li key={i}><Check size={14} style={{ color: 'var(--accent)' }} />{f}</li>
                   ))}
                 </ul>
-                <Link href="/auth/register" className="btn-primary landing-plan-cta" id="pricing-premium-cta">
-                  {t.pricing.premium.cta} <ArrowRight size={14} />
+                <Link href={isLoggedIn ? "/dashboard" : "/auth/register"} className="btn-primary landing-plan-cta" id="pricing-premium-cta">
+                  {isLoggedIn ? (lang === 'fr' ? 'Accéder au Dashboard' : 'Go to Dashboard') : t.pricing.premium.cta} <ArrowRight size={14} />
                 </Link>
               </div>
             </Reveal>
@@ -744,8 +744,8 @@ export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boole
             <p className="landing-final-sub">{t.final.sub}</p>
           </Reveal>
           <Reveal delay={0.18}>
-            <Link href="/auth/register" className="btn-primary landing-final-cta" id="final-cta">
-              {t.final.cta} <ArrowRight size={15} />
+            <Link href={isLoggedIn ? "/dashboard" : "/auth/register"} className="btn-primary landing-final-cta" id="final-cta">
+              {isLoggedIn ? (lang === 'fr' ? 'Accéder au Dashboard' : 'Go to Dashboard') : t.final.cta} <ArrowRight size={15} />
             </Link>
           </Reveal>
         </div>
