@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Routes publiques
 const PUBLIC_ROUTES = [
+  '/',
+  '/landing',
   '/auth/login',
   '/auth/register',
   '/auth/callback',
@@ -44,7 +46,11 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Accès aux routes publiques
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+  const isPublicRoute = PUBLIC_ROUTES.some(route =>
+    route === '/' ? pathname === '/' : pathname.startsWith(route)
+  );
+
+  if (isPublicRoute) {
     if (isAuthenticated && (pathname === '/auth/login' || pathname === '/auth/register')) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/dashboard';
