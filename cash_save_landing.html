@@ -3,155 +3,177 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cash Save — Gestion financière & Discipline personnelle</title>
-  <meta name="description" content="Tout ce qui ne se mesure pas ne s'améliore pas. Commencez par mesurer vos finances et vos habitudes pour améliorer votre vie.">
+  <title>Cash Save — Quiet Luxury Financial Productivity</title>
+  <meta name="description" content="Tout ce qui ne se mesure pas ne s'améliore pas. Mesurez vos finances, vos habitudes et votre productivité dans un seul écosystème d'exception.">
+  
+  <!-- Fonts: Manrope & Space Grotesk -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
   <style>
-    /* ─── CASH SAVE DESIGN SYSTEM (QUIET LUXURY) ─── */
+    /* ─────────────────────────────────────────────────────────────
+       CASH SAVE OFFICIAL DESIGN SYSTEM (QUIET LUXURY & MOTION)
+       ───────────────────────────────────────────────────────────── */
     :root {
-      --bg-base: #0A0D14;
-      --bg-card: #121622;
-      --bg-card-hover: #181E2E;
-      --bg-nav: rgba(10, 13, 20, 0.85);
+      --bg-base: #0B0E0D;
+      --surface: #131817;
+      --surface-elevated: #1A201E;
+      --surface-hover: #222A27;
+      --bg-nav: rgba(11, 14, 13, 0.85);
       --border-color: rgba(255, 255, 255, 0.08);
-      --border-hover: rgba(255, 255, 255, 0.18);
-      --text-primary: #F3F4F6;
-      --text-secondary: #9CA3AF;
-      --text-muted: #6B7280;
-      --accent: #10B981;
-      --accent-glow: rgba(16, 185, 129, 0.25);
-      --gold: #F59E0B;
-      --gold-glow: rgba(245, 158, 11, 0.2);
-      --indigo: #6366F1;
-      --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --border-hover: rgba(14, 159, 110, 0.35);
+      
+      --text-primary: #F2F4F1;
+      --text-secondary: #929A96;
+      --text-muted: #646C68;
+      
+      --primary: #0E9F6E;
+      --primary-hover: #087A56;
+      --primary-glow: rgba(14, 159, 110, 0.25);
+      
+      --gold: #D6B36A;
+      --gold-glow: rgba(214, 179, 106, 0.2);
+      
+      --font-body: 'Manrope', -apple-system, sans-serif;
       --font-heading: 'Space Grotesk', sans-serif;
+      
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
       --radius-full: 9999px;
-      --shadow-premium: 0 20px 40px -15px rgba(0,0,0,0.5), 0 0 30px rgba(16, 185, 129, 0.08);
+      
+      --shadow-subtle: 0 10px 30px -10px rgba(0,0,0,0.5);
+      --shadow-glow: 0 20px 50px -15px rgba(14, 159, 110, 0.15);
     }
 
     html.light {
-      --bg-base: #F8F8F6;
-      --bg-card: #FFFFFF;
-      --bg-card-hover: #F3F3F0;
-      --bg-nav: rgba(248, 248, 246, 0.85);
+      --bg-base: #F7F7F3;
+      --surface: #FFFFFF;
+      --surface-elevated: #F0F0EB;
+      --surface-hover: #E6E6E0;
+      --bg-nav: rgba(247, 247, 243, 0.88);
       --border-color: rgba(0, 0, 0, 0.08);
-      --border-hover: rgba(0, 0, 0, 0.16);
-      --text-primary: #111827;
-      --text-secondary: #4B5563;
-      --text-muted: #9CA3AF;
-      --shadow-premium: 0 20px 40px -15px rgba(0,0,0,0.08);
+      --border-hover: rgba(14, 159, 110, 0.4);
+      --text-primary: #171A19;
+      --text-secondary: #737A76;
+      --text-muted: #9DA39F;
+      --shadow-subtle: 0 10px 30px -10px rgba(0,0,0,0.06);
+      --shadow-glow: 0 20px 50px -15px rgba(14, 159, 110, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-family: var(--font-body); background: var(--bg-base); color: var(--text-primary); transition: background 0.3s ease, color 0.3s ease; }
+    html { scroll-behavior: smooth; font-family: var(--font-body); background: var(--bg-base); color: var(--text-primary); transition: background 0.35s ease, color 0.35s ease; font-variant-numeric: tabular-nums; }
     body { min-height: 100vh; overflow-x: hidden; line-height: 1.6; }
 
+    /* ─── SCROLL PROGRESS BAR ─── */
+    #progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--primary), var(--gold)); z-index: 1000; width: 0%; transition: width 0.1s ease; box-shadow: 0 0 10px var(--primary); }
+
     /* ─── TYPOGRAPHY ─── */
-    h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
-    
-    /* ─── UTILITIES ─── */
+    h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
     .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    .gradient-text { background: linear-gradient(135deg, #10B981 0%, #3B82F6 50%, #6366F1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .gradient-gold { background: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    .gradient-emerald { background: linear-gradient(135deg, #0E9F6E 0%, #34D399 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .gradient-gold { background: linear-gradient(135deg, #D6B36A 0%, #F59E0B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
     /* ─── BUTTONS ─── */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-body); font-weight: 600; font-size: 0.95rem; padding: 12px 24px; border-radius: var(--radius-full); text-decoration: none; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); cursor: pointer; border: none; }
-    .btn-primary { background: linear-gradient(135deg, #10B981, #059669); color: #FFF; box-shadow: 0 8px 20px -4px var(--accent-glow); }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -4px var(--accent-glow); opacity: 0.95; }
-    .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
-    .btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--border-hover); transform: translateY(-2px); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-body); font-weight: 600; font-size: 0.95rem; padding: 14px 28px; border-radius: var(--radius-full); text-decoration: none; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); cursor: pointer; border: none; position: relative; overflow: hidden; }
+    .btn-primary { background: var(--primary); color: #FFFFFF; box-shadow: 0 8px 24px -4px var(--primary-glow); }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 14px 32px -4px var(--primary-glow); }
+    .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-hover); transform: translateY(-2px); }
+
+    /* Shimmer effect on buttons */
+    .btn::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(60deg, transparent, rgba(255,255,255,0.15), transparent); transform: rotate(30deg) translateX(-100%); transition: transform 0.6s ease; }
+    .btn:hover::after { transform: rotate(30deg) translateX(100%); }
 
     /* ─── NAVIGATION ─── */
-    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--bg-nav); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-color); }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 72px; }
-    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text-primary); font-family: var(--font-heading); font-weight: 700; font-size: 1.25rem; }
-    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #10B981, #6366F1); display: flex; align-items: center; justify-content: center; color: #FFF; font-weight: 800; font-size: 1.1rem; }
-    .nav-actions { display: flex; align-items: center; gap: 12px; }
-    .icon-btn { width: 40px; height: 40px; border-radius: var(--radius-full); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
-    .icon-btn:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--bg-nav); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text-primary); font-family: var(--font-heading); font-weight: 700; font-size: 1.3rem; }
+    .logo-mark { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #0E9F6E, #087A56); display: flex; align-items: center; justify-content: center; color: #FFF; }
+    .nav-actions { display: flex; align-items: center; gap: 14px; }
+    .icon-btn { width: 42px; height: 42px; border-radius: var(--radius-full); border: 1px solid var(--border-color); background: var(--surface); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
+    .icon-btn:hover { border-color: var(--border-hover); background: var(--surface-hover); transform: scale(1.05); }
 
-    /* ─── HERO ─── */
-    .hero { padding: 140px 0 80px; position: relative; overflow: hidden; }
-    .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; }
-    .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--accent); font-size: 0.85rem; font-weight: 600; margin-bottom: 24px; }
-    .hero-title { font-size: 3.2rem; line-height: 1.15; margin-bottom: 20px; }
-    .hero-sub { font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 32px; max-width: 540px; }
-    .hero-actions { display: flex; flex-direction: column; gap: 12px; }
-    .hero-subtext { font-size: 0.85rem; color: var(--text-muted); }
+    /* ─── HERO SECTION ─── */
+    .hero { padding: 150px 0 90px; position: relative; }
+    .hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 56px; align-items: center; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 10px; padding: 6px 18px; border-radius: var(--radius-full); background: rgba(14, 159, 110, 0.08); border: 1px solid rgba(14, 159, 110, 0.2); color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 24px; }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
     
-    /* ─── MOCKUP FRAME ─── */
-    .mockup-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-premium); position: relative; }
-    .mockup-header { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot-red { background: #EF4444; } .dot-yellow { background: #F59E0B; } .dot-green { background: #10B981; }
+    .hero-title { font-size: 3.4rem; margin-bottom: 22px; }
+    .hero-sub { font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 36px; max-width: 540px; }
+    .hero-actions { display: flex; flex-direction: column; gap: 12px; }
+    .hero-subtext { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+
+    /* ─── SPOTLIGHT CARDS WITH MOUSE REACTIVE GLOW ─── */
+    .spotlight-card { background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .spotlight-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(14, 159, 110, 0.12), transparent 40%); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+    .spotlight-card:hover::before { opacity: 1; }
+    .spotlight-card:hover { border-color: var(--border-hover); transform: translateY(-4px); box-shadow: var(--shadow-glow); }
 
     /* ─── SECTIONS GENERAL ─── */
-    .section { padding: 100px 0; border-top: 1px solid var(--border-color); }
-    .section-header { text-align: center; max-width: 680px; margin: 0 auto 60px; }
-    .section-title { font-size: 2.3rem; margin-bottom: 16px; }
-    .section-sub { font-size: 1.05rem; color: var(--text-secondary); }
+    .section { padding: 110px 0; border-top: 1px solid var(--border-color); }
+    .section-header { text-align: center; max-width: 680px; margin: 0 auto 64px; }
+    .section-title { font-size: 2.5rem; margin-bottom: 18px; }
+    .section-sub { font-size: 1.1rem; color: var(--text-secondary); }
 
-    /* ─── PROBLEM SOLUTION ─── */
+    /* ─── PROBLEM / SOLUTION ─── */
     .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
-    .problem-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 28px; transition: all 0.3s ease; }
-    .problem-card:hover { transform: translateY(-4px); border-color: var(--border-hover); }
-    .pain-text { color: #EF4444; font-size: 0.95rem; font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .fix-text { color: var(--accent); font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .pain-box { font-size: 0.95rem; color: #F87171; margin-bottom: 12px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .fix-box { font-size: 1.05rem; color: var(--primary); font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
-    /* ─── PILLARS ─── */
-    .pillars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
-    .pillar-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 28px; transition: all 0.3s ease; }
-    .pillar-card:hover { border-color: var(--accent); transform: translateY(-4px); }
-    .pillar-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 16px; }
-    .pillar-name { font-size: 1.2rem; margin-bottom: 8px; }
-    .pillar-desc { font-size: 0.9rem; color: var(--text-secondary); }
+    /* ─── INTERACTIVE TAB SWITCHER (5 PILLARS) ─── */
+    .pillars-nav { display: flex; justify-content: center; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
+    .pillar-tab { padding: 12px 24px; border-radius: var(--radius-full); border: 1px solid var(--border-color); background: var(--surface); color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.25s ease; display: flex; align-items: center; gap: 8px; }
+    .pillar-tab.active { background: var(--primary); color: #FFF; border-color: var(--primary); box-shadow: 0 6px 20px -4px var(--primary-glow); }
+    
+    .pillar-content-box { background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    .pillar-info h3 { font-size: 1.8rem; margin-bottom: 16px; }
+    .pillar-info p { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 24px; }
+    .pillar-check-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .pillar-check-list li { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-primary); }
 
-    /* ─── SCORE USP ─── */
-    .score-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; box-shadow: var(--shadow-premium); }
-    .gauge-wrapper { position: relative; width: 200px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
-    .gauge-svg { transform: rotate(-90deg); width: 200px; height: 200px; }
-    .gauge-bg { fill: none; stroke: var(--border-color); stroke-width: 14; }
-    .gauge-fill { fill: none; stroke: var(--accent); stroke-width: 14; stroke-dasharray: 502; stroke-dashoffset: 110; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
-    .gauge-text { position: absolute; text-align: center; }
-    .gauge-score { font-family: var(--font-heading); font-size: 3.2rem; font-weight: 800; color: var(--text-primary); }
-    .gauge-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-    .formula-list { display: flex; flex-direction: column; gap: 16px; }
-    .formula-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius-md); background: var(--bg-base); border: 1px solid var(--border-color); }
-    .formula-badge { font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem; color: var(--accent); width: 50px; text-align: center; }
+    /* ─── LIVE INTERACTIVE SCORE SIMULATOR ─── */
+    .simulator-box { background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 48px; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; box-shadow: var(--shadow-glow); }
+    .gauge-container { position: relative; width: 220px; height: 220px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+    .gauge-svg { transform: rotate(-90deg); width: 220px; height: 220px; }
+    .gauge-bg { fill: none; stroke: var(--border-color); stroke-width: 16; }
+    .gauge-fill { fill: none; stroke: var(--primary); stroke-width: 16; stroke-dasharray: 502; stroke-dashoffset: 110; stroke-linecap: round; transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease; }
+    .gauge-center { position: absolute; text-align: center; }
+    .gauge-val { font-family: var(--font-heading); font-size: 3.5rem; font-weight: 800; line-height: 1; }
+    .gauge-status { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-top: 6px; }
+    
+    .sliders-list { display: flex; flex-direction: column; gap: 24px; }
+    .slider-group label { display: flex; justify-content: space-between; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+    .slider-input { width: 100%; height: 8px; border-radius: 4px; background: var(--surface-elevated); outline: none; -webkit-appearance: none; accent-color: var(--primary); cursor: pointer; }
 
     /* ─── PRICING ─── */
-    .billing-toggle { display: flex; justify-content: center; gap: 8px; margin-bottom: 40px; }
-    .billing-btn { padding: 10px 20px; border-radius: var(--radius-full); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s ease; }
-    .billing-btn.active { background: var(--accent); color: #FFF; border-color: var(--accent); }
+    .billing-switch { display: flex; justify-content: center; gap: 10px; margin-bottom: 48px; }
     .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(280px, 440px)); gap: 32px; justify-content: center; }
-    .price-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 40px; display: flex; flex-direction: column; justify-content: space-between; }
-    .price-card.featured { border-color: var(--gold); box-shadow: 0 0 30px var(--gold-glow); position: relative; }
-    .badge-gold { position: absolute; top: -14px; right: 24px; background: linear-gradient(135deg, #F59E0B, #D97706); color: #FFF; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; padding: 4px 12px; border-radius: var(--radius-full); letter-spacing: 0.05em; }
-    .price-amount { font-family: var(--font-heading); font-size: 2.8rem; font-weight: 800; }
-    .price-features { list-style: none; margin: 30px 0; display: flex; flex-direction: column; gap: 14px; }
-    .price-features li { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: var(--text-secondary); }
-
-    /* ─── FOOTER ─── */
-    .footer { padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+    .price-card-featured { border-color: var(--gold) !important; box-shadow: 0 0 40px var(--gold-glow) !important; }
+    .badge-recommend { position: absolute; top: -14px; right: 28px; background: linear-gradient(135deg, #D6B36A, #B59045); color: #FFF; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; padding: 4px 14px; border-radius: var(--radius-full); letter-spacing: 0.05em; }
 
     /* ─── REVEAL ANIMATIONS ─── */
-    .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
     .reveal.active { opacity: 1; transform: translateY(0); }
 
+    /* ─── FOOTER ─── */
+    .footer { padding: 48px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
     @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; }
-      .score-box { grid-template-columns: 1fr; text-align: center; }
+      .hero-grid, .pillar-content-box, .simulator-box { grid-template-columns: 1fr; }
+      .hero-title { font-size: 2.5rem; }
       .pricing-grid { grid-template-columns: 1fr; }
-      .hero-title { font-size: 2.4rem; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Scroll Progress Indicator -->
+  <div id="progress-bar"></div>
 
   <!-- ══════════════════════════════════════
      NAVBAR
@@ -159,14 +181,15 @@
   <nav class="nav">
     <div class="container nav-inner">
       <a href="#" class="logo">
-        <div class="logo-icon">CS</div>
+        <div class="logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
         <span>Cash Save</span>
       </a>
+
       <div class="nav-actions">
-        <!-- Language toggle -->
-        <button class="icon-btn" id="lang-btn" onclick="toggleLang()" title="Changer de langue">EN</button>
-        <!-- Theme toggle -->
-        <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Basculer le thème">☀️</button>
+        <button class="icon-btn" id="lang-btn" onclick="toggleLang()" title="Switch Language">EN</button>
+        <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle Theme">☀️</button>
         <a href="#pricing" class="btn btn-secondary" id="nav-login">Se connecter</a>
         <a href="#pricing" class="btn btn-primary" id="nav-cta">Commencer gratuitement →</a>
       </div>
@@ -174,59 +197,72 @@
   </nav>
 
   <!-- ══════════════════════════════════════
-     SECTION 1 — HERO
+     HERO SECTION
      ══════════════════════════════════════ -->
   <header class="hero">
     <div class="container hero-grid">
       <div>
         <div class="hero-badge reveal active">
-          ⚡ <span id="hero-tagline">Gestion financière & Discipline personnelle</span>
+          <div class="badge-dot"></div>
+          <span id="hero-tagline">Quiet Luxury Financial Productivity</span>
         </div>
+        
         <h1 class="hero-title reveal active">
           <span id="hero-title-1">Tout ce qui ne se mesure pas</span><br>
-          <span class="gradient-text" id="hero-title-2">ne s'améliore pas.</span>
+          <span class="gradient-emerald" id="hero-title-2">ne s'améliore pas.</span>
         </h1>
+        
         <p class="hero-sub reveal active" id="hero-sub">
-          Commencez par mesurer vos finances et vos habitudes pour améliorer votre vie. Cash Save réunit trésorerie, objectifs, habitudes et productivité dans un seul outil premium.
+          Commencez par mesurer vos finances et vos habitudes pour améliorer votre vie. Cash Save rassemble trésorerie, objectifs, habitudes et productivité dans un seul écosystème d'exception.
         </p>
+
         <div class="hero-actions reveal active">
-          <a href="#pricing" class="btn btn-primary" style="font-size: 1.05rem; padding: 16px 32px;" id="hero-cta">
+          <a href="#pricing" class="btn btn-primary" style="font-size: 1.05rem; padding: 16px 36px;" id="hero-cta">
             Commencer gratuitement →
           </a>
-          <span class="hero-subtext" id="hero-subtext">Essai 7 jours · Sans engagement · Sans carte bancaire</span>
+          <div class="hero-subtext" id="hero-subtext">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            Essai 7 jours · Sans engagement · Sans carte bancaire
+          </div>
         </div>
       </div>
 
-      <div class="mockup-card reveal active">
-        <div class="mockup-header">
-          <div class="dot dot-red"></div>
-          <div class="dot dot-yellow"></div>
-          <div class="dot dot-green"></div>
-          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 10px;">Cash Save Dashboard</span>
+      <!-- Live Interactive Visual Frame -->
+      <div class="spotlight-card reveal active" style="padding: 28px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+          <div style="display: flex; gap: 8px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444;"></div>
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B;"></div>
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #10B981;"></div>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">CASH SAVE DASHBOARD</span>
         </div>
-        <div style="background: var(--bg-base); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+
+        <div style="background: var(--bg-base); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
             <div>
-              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Solde Net Total</span>
-              <h3 style="font-size: 1.8rem; color: var(--accent);">+ 1 450 000 FCFA</h3>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Solde Net Disponible</span>
+              <h3 style="font-size: 2rem; color: var(--primary); margin-top: 4px;">+ 1 450 000 FCFA</h3>
             </div>
             <div style="text-align: right;">
-              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Score Discipline</span>
-              <h3 style="font-size: 1.8rem; color: var(--gold);">78 / 100</h3>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Score Discipline</span>
+              <h3 style="font-size: 2rem; color: var(--gold); margin-top: 4px;" id="hero-live-score">84 / 100</h3>
             </div>
           </div>
-          <div style="height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
-            <div style="width: 78%; height: 100%; background: linear-gradient(90deg, #10B981, #F59E0B);"></div>
+
+          <div style="height: 10px; background: var(--surface-elevated); border-radius: 5px; overflow: hidden; margin-bottom: 24px;">
+            <div style="width: 84%; height: 100%; background: linear-gradient(90deg, #0E9F6E, #D6B36A); border-radius: 5px;"></div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.8rem; text-align: center;">
-            <div style="background: var(--bg-card); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-              <span style="color: var(--text-muted);">Habitudes</span><br><strong>12 / 14</strong>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+            <div style="background: var(--surface); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Habitudes</span><br><strong style="font-size: 1rem; color: var(--text-primary);">14 / 14</strong>
             </div>
-            <div style="background: var(--bg-card); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-              <span style="color: var(--text-muted);">Objectifs</span><br><strong>3 Actifs</strong>
+            <div style="background: var(--surface); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Objectifs</span><br><strong style="font-size: 1rem; color: var(--text-primary);">3 Actifs</strong>
             </div>
-            <div style="background: var(--bg-card); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-              <span style="color: var(--text-muted);">Tâches</span><br><strong>8/10 Fait</strong>
+            <div style="background: var(--surface); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Kanban</span><br><strong style="font-size: 1rem; color: var(--primary);">100% Fait</strong>
             </div>
           </div>
         </div>
@@ -235,115 +271,149 @@
   </header>
 
   <!-- ══════════════════════════════════════
-     SECTION 2 — PROBLEM / SOLUTION
+     PROBLEM / SOLUTION
      ══════════════════════════════════════ -->
   <section class="section">
     <div class="container">
       <div class="section-header reveal">
-        <h2 class="section-title" id="problem-title">Le problème que vous connaissez</h2>
-        <p class="section-sub" id="problem-sub">Pourquoi la plupart des gens n'atteignent jamais leurs objectifs financiers et personnels.</p>
+        <h2 class="section-title" id="prob-title">Le problème que vous connaissez</h2>
+        <p class="section-sub" id="prob-sub">Pourquoi la plupart des personnes n'atteignent jamais leurs objectifs financiers et personnels.</p>
       </div>
+
       <div class="problem-grid">
-        <div class="problem-card reveal">
-          <div class="pain-text">❌ <span id="p1-pain">Vous ne savez pas où part votre argent</span></div>
-          <div class="fix-text">✅ <span id="p1-fix">Trésorerie catégorisée en temps réel</span></div>
+        <div class="spotlight-card reveal">
+          <div class="pain-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+            <span id="p1-pain">Vous ne savez pas où part votre argent</span>
+          </div>
+          <div class="fix-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="p1-fix">Trésorerie catégorisée en temps réel</span>
+          </div>
         </div>
-        <div class="problem-card reveal">
-          <div class="pain-text">❌ <span id="p2-pain">Vos bonnes habitudes ne tiennent pas</span></div>
-          <div class="fix-text">✅ <span id="p2-fix">Suivi quotidien avec scoring de discipline</span></div>
+
+        <div class="spotlight-card reveal">
+          <div class="pain-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+            <span id="p2-pain">Vos bonnes habitudes ne tiennent pas</span>
+          </div>
+          <div class="fix-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="p2-fix">Suivi quotidien avec scoring de discipline</span>
+          </div>
         </div>
-        <div class="problem-card reveal">
-          <div class="pain-text">❌ <span id="p3-pain">Vos objectifs restent des vœux pieux</span></div>
-          <div class="fix-text">✅ <span id="p3-fix">Allocation budgétaire avec garde-fous</span></div>
+
+        <div class="spotlight-card reveal">
+          <div class="pain-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+            <span id="p3-pain">Vos objectifs restent des vœux pieux</span>
+          </div>
+          <div class="fix-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="p3-fix">Allocation budgétaire avec garde-fous</span>
+          </div>
         </div>
-        <div class="problem-card reveal">
-          <div class="pain-text">❌ <span id="p4-pain">Votre productivité est imprévisible</span></div>
-          <div class="fix-text">✅ <span id="p4-fix">Kanban + métriques de travail intégrés</span></div>
+
+        <div class="spotlight-card reveal">
+          <div class="pain-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+            <span id="p4-pain">Votre productivité est imprévisible</span>
+          </div>
+          <div class="fix-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="p4-fix">Kanban + métriques de travail intégrés</span>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════
-     SECTION 3 — 5 PILLARS
+     INTERACTIVE 5 PILLARS SHOWCASE (TABBED)
      ══════════════════════════════════════ -->
   <section class="section">
     <div class="container">
       <div class="section-header reveal">
         <h2 class="section-title" id="pillars-title">Cinq piliers. Un seul outil.</h2>
-        <p class="section-sub" id="pillars-sub">Chaque module est conçu pour fonctionner en synergie parfaite.</p>
+        <p class="section-sub" id="pillars-sub">Cliquez sur chaque pilier pour explorer la synergie du système Cash Save.</p>
       </div>
-      <div class="pillars-grid">
-        <div class="pillar-card reveal">
-          <div class="pillar-icon">💰</div>
-          <h3 class="pillar-name">My Cash</h3>
-          <p class="pillar-desc" id="pil-1">Registre financier complet avec solde net en temps réel, catégorisation et analyse de tendances.</p>
+
+      <!-- Tab Switcher -->
+      <div class="pillars-nav reveal">
+        <button class="pillar-tab active" onclick="switchPillar(0, this)">💰 My Cash</button>
+        <button class="pillar-tab" onclick="switchPillar(1, this)">🎯 My Objectives</button>
+        <button class="pillar-tab" onclick="switchPillar(2, this)">✅ My Habits</button>
+        <button class="pillar-tab" onclick="switchPillar(3, this)">📋 My Tasks</button>
+        <button class="pillar-tab" onclick="switchPillar(4, this)">📊 Dashboard</button>
+      </div>
+
+      <!-- Tab Content Box -->
+      <div class="pillar-content-box reveal" id="pillar-card-box">
+        <div class="pillar-info">
+          <h3 id="pil-tab-name" class="gradient-emerald">My Cash — Registre Financier</h3>
+          <p id="pil-tab-desc">Suivez l'intégralité de vos flux financiers avec un solde net en temps réel. Catégorisation intelligente et analyse de tendances sans aucune latence.</p>
+          <ul class="pillar-check-list">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> <span id="pil-f1">Catégorisation automatique des revenus et dépenses</span></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> <span id="pil-f2">Solde net exact disponible en temps réel</span></li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> <span id="pil-f3">Historique filtrable et exportation CSV</span></li>
+          </ul>
         </div>
-        <div class="pillar-card reveal">
-          <div class="pillar-icon">🎯</div>
-          <h3 class="pillar-name">My Objectives</h3>
-          <p class="pillar-desc" id="pil-2">Définissez des objectifs financiers avec garde-fous stricts. Interdiction d'allouer ce qu'on n'a pas.</p>
-        </div>
-        <div class="pillar-card reveal">
-          <div class="pillar-icon">✅</div>
-          <h3 class="pillar-name">My Habits</h3>
-          <p class="pillar-desc" id="pil-3">14 indicateurs de discipline personnelle suivis quotidiennement avec séries et streaks.</p>
-        </div>
-        <div class="pillar-card reveal">
-          <div class="pillar-icon">📋</div>
-          <h3 class="pillar-name">My Tasks</h3>
-          <p class="pillar-desc" id="pil-4">Kanban visuel avec drag & drop et priorités colorées pour une exécution quotidienne fluide.</p>
-        </div>
-        <div class="pillar-card reveal">
-          <div class="pillar-icon">📊</div>
-          <h3 class="pillar-name">Dashboard</h3>
-          <p class="pillar-desc" id="pil-5">Score de discipline global, graphiques de tendances et vue d'ensemble en un coup d'œil.</p>
+        <div style="background: var(--bg-base); padding: 32px; border-radius: var(--radius-md); border: 1px solid var(--border-color); text-align: center;">
+          <div style="font-size: 3rem; margin-bottom: 12px;" id="pil-tab-icon">💰</div>
+          <h4 style="font-size: 1.2rem; margin-bottom: 8px;" id="pil-tab-preview-title">Module My Cash</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted);" id="pil-tab-preview-sub">Affichage synchrone 0ms</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════
-     SECTION 4 — DISCIPLINE SCORE USP
+     LIVE INTERACTIVE SCORE SIMULATOR
      ══════════════════════════════════════ -->
   <section class="section">
     <div class="container">
       <div class="section-header reveal">
-        <h2 class="section-title" id="score-title">Votre succès se mesure au quotidien</h2>
-        <p class="section-sub" id="score-sub">Le Score de Discipline Cash Save fusionne toutes vos métriques en un seul chiffre de 0 à 100.</p>
+        <h2 class="section-title" id="score-title">Testez le Simulator de Discipline</h2>
+        <p class="section-sub" id="score-sub">Déplacez les curseurs ci-dessous pour voir comment le Score Cash Save calcule votre niveau de rigueur quotidienne.</p>
       </div>
-      <div class="score-box reveal">
-        <div class="gauge-wrapper">
-          <svg class="gauge-svg">
-            <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
-            <circle class="gauge-fill" cx="100" cy="100" r="80"></circle>
-          </svg>
-          <div class="gauge-text">
-            <div class="gauge-score" id="score-counter">78</div>
-            <div class="gauge-label">Points</div>
+
+      <div class="simulator-box reveal">
+        <!-- Interactive Sliders -->
+        <div class="sliders-list">
+          <div class="slider-group">
+            <label>
+              <span>1. Habitudes suivies (40%)</span>
+              <span id="slider-h-val" style="color: var(--primary);">14 / 14</span>
+            </label>
+            <input type="range" min="0" max="14" value="14" class="slider-input" id="slider-habits" oninput="updateLiveScore()">
+          </div>
+
+          <div class="slider-group">
+            <label>
+              <span>2. Maîtrise Financière (40%)</span>
+              <span id="slider-f-val" style="color: var(--primary);">85%</span>
+            </label>
+            <input type="range" min="0" max="100" value="85" class="slider-input" id="slider-cash" oninput="updateLiveScore()">
+          </div>
+
+          <div class="slider-group">
+            <label>
+              <span>3. Productivité Kanban (20%)</span>
+              <span id="slider-t-val" style="color: var(--primary);">90%</span>
+            </label>
+            <input type="range" min="0" max="100" value="90" class="slider-input" id="slider-tasks" oninput="updateLiveScore()">
           </div>
         </div>
-        <div class="formula-list">
-          <div class="formula-item">
-            <div class="formula-badge">40%</div>
-            <div>
-              <strong id="f1-title">Habitudes quotidiennes</strong>
-              <p style="font-size: 0.85rem; color: var(--text-secondary);" id="f1-sub">Exécution des 14 indicateurs de discipline</p>
-            </div>
-          </div>
-          <div class="formula-item">
-            <div class="formula-badge">40%</div>
-            <div>
-              <strong id="f2-title">Rigueur Financière</strong>
-              <p style="font-size: 0.85rem; color: var(--text-secondary);" id="f2-sub">Solde net disponible et maîtrise du budget</p>
-            </div>
-          </div>
-          <div class="formula-item">
-            <div class="formula-badge">20%</div>
-            <div>
-              <strong id="f3-title">Productivité & Tâches</strong>
-              <p style="font-size: 0.85rem; color: var(--text-secondary);" id="f3-sub">Complétion des priorités du Kanban</p>
-            </div>
+
+        <!-- Animated Gauge Ring -->
+        <div class="gauge-container">
+          <svg class="gauge-svg">
+            <circle class="gauge-bg" cx="110" cy="110" r="80"></circle>
+            <circle class="gauge-fill" id="gauge-ring" cx="110" cy="110" r="80"></circle>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-val" id="sim-score-num">92</div>
+            <div class="gauge-status" id="sim-score-status">Discipline Royale</div>
           </div>
         </div>
       </div>
@@ -351,65 +421,65 @@
   </section>
 
   <!-- ══════════════════════════════════════
-     SECTION 5 — PRICING
+     PRICING
      ══════════════════════════════════════ -->
   <section class="section" id="pricing">
     <div class="container">
       <div class="section-header reveal">
         <h2 class="section-title" id="pricing-title">Investissez dans votre discipline</h2>
-        <p class="section-sub" id="pricing-sub">Choisissez la formule adaptée à vos ambitions.</p>
+        <p class="section-sub" id="pricing-sub">Tarification transparente et accessible.</p>
       </div>
 
-      <div class="billing-toggle reveal">
-        <button class="billing-btn" id="b-monthly" onclick="setBilling('monthly')">Mensuel</button>
-        <button class="billing-btn active" id="b-annual" onclick="setBilling('annual')">Annuel <span style="color: #F59E0B;">(-60%)</span></button>
+      <div class="billing-switch reveal">
+        <button class="btn btn-secondary" id="b-monthly" onclick="setBilling('monthly')">Mensuel</button>
+        <button class="btn btn-primary" id="b-annual" onclick="setBilling('annual')">Annuel (-20%)</button>
       </div>
 
       <div class="pricing-grid">
         <!-- Starter -->
-        <div class="price-card reveal">
+        <div class="spotlight-card reveal">
           <div>
-            <h3>Starter</h3>
-            <div style="margin: 16px 0;">
-              <span class="price-amount">0 FCFA</span>
+            <h3>Découverte</h3>
+            <div style="margin: 20px 0;">
+              <span style="font-family: var(--font-heading); font-size: 2.8rem; font-weight: 800;">0 FCFA</span>
               <span style="color: var(--text-muted);">/ mois</span>
             </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted);" id="free-desc">Accès illimité dans le temps</p>
-            <ul class="price-features">
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Accès gratuit sans limite de durée</p>
+            <ul style="list-style: none; margin: 28px 0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; color: var(--text-secondary);">
               <li>✓ 3 transactions par jour</li>
-              <li>✓ 10 tâches actives</li>
-              <li>✓ 5 objectifs actifs</li>
-              <li>✓ 5 habitudes suivies</li>
-              <li>✓ Historique 7 jours</li>
+              <li>✓ 10 tâches actives sur le Kanban</li>
+              <li>✓ 5 objectifs financiers actifs</li>
+              <li>✓ 5 habitudes quotidiennes suivies</li>
+              <li>✓ Historique sur 7 jours</li>
             </ul>
           </div>
-          <a href="#" class="btn btn-secondary" style="width: 100%; text-align: center;">Découvrir gratuitement</a>
+          <a href="#" class="btn btn-secondary" style="width: 100%;">Découvrir gratuitement</a>
         </div>
 
         <!-- Premium -->
-        <div class="price-card featured reveal">
-          <div class="badge-gold">Recommandé</div>
+        <div class="spotlight-card price-card-featured reveal">
+          <div class="badge-recommend">Recommandé</div>
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <h3 class="gradient-gold">Premium</h3>
+              <h3 class="gradient-gold">Pass Premium</h3>
               <span style="font-size: 1.2rem;">👑</span>
             </div>
-            <div style="margin: 16px 0;">
-              <span style="text-decoration: line-through; color: var(--text-muted); font-size: 1.1rem;" id="old-price">60 000 FCFA</span><br>
-              <span class="price-amount gradient-gold" id="new-price">28 800 FCFA</span>
+            <div style="margin: 20px 0;">
+              <span style="text-decoration: line-through; color: var(--text-muted); font-size: 1.1rem;" id="old-price">36 000 FCFA</span><br>
+              <span style="font-family: var(--font-heading); font-size: 2.8rem; font-weight: 800;" class="gradient-gold" id="new-price">28 800 FCFA</span>
               <span style="color: var(--text-muted);" id="price-period">/ an</span>
             </div>
-            <p style="font-size: 0.85rem; color: var(--accent);" id="price-note">Soit seulement 2 400 FCFA / mois</p>
-            <ul class="price-features">
+            <p style="font-size: 0.85rem; color: var(--primary);" id="price-note">soit seulement 2 400 FCFA / mois</p>
+            <ul style="list-style: none; margin: 28px 0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; color: var(--text-secondary);">
               <li>✓ Transactions illimitées</li>
-              <li>✓ Tâches & Kanban illimités</li>
-              <li>✓ Objectifs & garde-fous illimités</li>
+              <li>✓ Kanban illimité avec drag & drop</li>
+              <li>✓ Objectifs financiers avec garde-fous</li>
               <li>✓ 14 habitudes de discipline complètes</li>
-              <li>✓ Historique illimité + export CSV</li>
-              <li>✓ Graphiques de tendances avancés</li>
+              <li>✓ Historique illimité & export CSV</li>
+              <li>✓ Graphiques d'analyse avancés</li>
             </ul>
           </div>
-          <a href="#" class="btn btn-primary" style="width: 100%; text-align: center; background: linear-gradient(135deg, #F59E0B, #D97706);">Activer le Pass Premium →</a>
+          <a href="#" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #D6B36A, #B59045);">Activer le Pass Premium →</a>
         </div>
       </div>
     </div>
@@ -425,78 +495,128 @@
   </footer>
 
   <!-- ══════════════════════════════════════
-     VANILLA JAVASCRIPT LOGIC
+     INTERACTIVE JAVASCRIPT LOGIC
      ══════════════════════════════════════ -->
   <script>
     let currentTheme = 'dark';
     let currentLang = 'fr';
     let currentBilling = 'annual';
 
-    const dict = {
-      fr: {
-        tagline: "Gestion financière & Discipline personnelle",
-        title1: "Tout ce qui ne se mesure pas",
-        title2: "ne s'améliore pas.",
-        sub: "Commencez par mesurer vos finances et vos habitudes pour améliorer votre vie. Cash Save réunit trésorerie, objectifs, habitudes et productivité dans un seul outil premium.",
-        cta: "Commencer gratuitement →",
-        subtext: "Essai 7 jours · Sans engagement · Sans carte bancaire",
-        login: "Se connecter",
-        navCta: "Commencer gratuitement →",
-        probTitle: "Le problème que vous connaissez",
-        probSub: "Pourquoi la plupart des gens n'atteignent jamais leurs objectifs financiers et personnels.",
-        p1Pain: "Vous ne savez pas où part votre argent", p1Fix: "Trésorerie catégorisée en temps réel",
-        p2Pain: "Vos bonnes habitudes ne tiennent pas", p2Fix: "Suivi quotidien avec scoring de discipline",
-        p3Pain: "Vos objectifs restent des vœux pieux", p3Fix: "Allocation budgétaire avec garde-fous",
-        p4Pain: "Votre productivité est imprévisible", p4Fix: "Kanban + métriques de travail intégrés",
-        pilTitle: "Cinq piliers. Un seul outil.",
-        pilSub: "Chaque module est conçu pour fonctionner en synergie parfaite.",
-        pil1: "Registre financier complet avec solde net en temps réel, catégorisation et analyse de tendances.",
-        pil2: "Définissez des objectifs financiers avec garde-fous stricts. Interdiction d'allouer ce qu'on n'a pas.",
-        pil3: "14 indicateurs de discipline personnelle suivis quotidiennement avec séries et streaks.",
-        pil4: "Kanban visuel avec drag & drop et priorités colorées pour une exécution quotidienne fluide.",
-        pil5: "Score de discipline global, graphiques de tendances et vue d'ensemble en un coup d'œil.",
-        scoreTitle: "Votre succès se mesure au quotidien",
-        scoreSub: "Le Score de Discipline Cash Save fusionne toutes vos métriques en un seul chiffre de 0 à 100.",
-        f1Title: "Habitudes quotidiennes", f1Sub: "Exécution des 14 indicateurs de discipline",
-        f2Title: "Rigueur Financière", f2Sub: "Solde net disponible et maîtrise du budget",
-        f3Title: "Productivité & Tâches", f3Sub: "Complétion des priorités du Kanban",
-        pricingTitle: "Investissez dans votre discipline", pricingSub: "Choisissez la formule adaptée à vos ambitions.",
-        oldPriceAnnual: "60 000 FCFA", newPriceAnnual: "28 800 FCFA", periodAnnual: "/ an", noteAnnual: "Soit seulement 2 400 FCFA / mois",
-        oldPriceMonthly: "5 000 FCFA", newPriceMonthly: "1 000 FCFA", periodMonthly: "/ mois", noteMonthly: "Tarif d'introduction récurrent"
-      },
-      en: {
-        tagline: "Financial Management & Personal Discipline",
-        title1: "Everything that is not measured",
-        title2: "does not improve.",
-        sub: "Start measuring your finances and habits to improve your life. Cash Save combines cash, objectives, habits and productivity into a single premium tool.",
-        cta: "Start free trial →",
-        subtext: "7-day trial · No obligation · No credit card required",
-        login: "Log in",
-        navCta: "Start free →",
-        probTitle: "The problem you know well",
-        probSub: "Why most people never achieve their financial and personal goals.",
-        p1Pain: "You don't know where your money goes", p1Fix: "Real-time categorized cash tracking",
-        p2Pain: "Your good habits never stick", p2Fix: "Daily tracking with discipline scoring",
-        p3Pain: "Your goals remain wishful thinking", p3Fix: "Budget allocation with safeguards",
-        p4Pain: "Your productivity is unpredictable", p4Fix: "Integrated Kanban + work metrics",
-        pilTitle: "Five pillars. One tool.",
-        pilSub: "Each module is designed to work together seamlessly.",
-        pil1: "Complete financial register with real-time net balance, categorization & trends.",
-        pil2: "Set financial goals with strict safeguards. Structurally impossible to over-allocate.",
-        pil3: "14 personal discipline indicators tracked daily with streaks.",
-        pil4: "Visual Kanban with drag & drop and color priorities for fluid execution.",
-        pil5: "Global discipline score, trend charts and instant overview at a glance.",
-        scoreTitle: "Your success is measured daily",
-        scoreSub: "The Cash Save Discipline Score merges all your metrics into a single number from 0 to 100.",
-        f1Title: "Daily Habits", f1Sub: "Execution of 14 discipline indicators",
-        f2Title: "Financial Rigor", f2Sub: "Net balance available & budget control",
-        f3Title: "Productivity & Tasks", f3Sub: "Kanban priority completion",
-        pricingTitle: "Invest in your discipline", pricingSub: "Choose the plan tailored to your ambitions.",
-        oldPriceAnnual: "$100", newPriceAnnual: "$48", periodAnnual: "/ year", noteAnnual: "Only $4 / month",
-        oldPriceMonthly: "$10", newPriceMonthly: "$2", periodMonthly: "/ month", noteMonthly: "Recurring introductory rate"
-      }
-    };
+    /* Spotlight Mouse Glow Listener */
+    document.addEventListener('mousemove', (e) => {
+      document.querySelectorAll('.spotlight-card').forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
 
+    /* Scroll Progress Bar */
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('progress-bar').style.width = scrolled + '%';
+    });
+
+    /* 5 Pillars Tab Switcher */
+    const pillarData = [
+      {
+        icon: '💰',
+        name: { fr: 'My Cash — Registre Financier', en: 'My Cash — Financial Register' },
+        desc: { fr: 'Suivez l\'intégralité de vos flux financiers avec un solde net en temps réel. Catégorisation intelligente et analyse de tendances sans aucune latence.', en: 'Track all your financial flows with a real-time net balance. Smart categorization and trend analysis with 0ms latency.' },
+        f1: { fr: 'Catégorisation automatique des revenus et dépenses', en: 'Automatic categorization of income and expenses' },
+        f2: { fr: 'Solde net exact disponible en temps réel', en: 'Exact available net balance in real time' },
+        f3: { fr: 'Historique filtrable et exportation CSV', en: 'Filterable history and CSV export' }
+      },
+      {
+        icon: '🎯',
+        name: { fr: 'My Objectives — Garde-fous Budgétaires', en: 'My Objectives — Budget Safeguards' },
+        desc: { fr: 'Fixez vos objectifs de trésorerie et vos projets d\'épargne. Le système vous empêche structurellement d\'allouer de l'argent que vous ne possédez pas.', en: 'Set cash goals and savings projects. The system structurally prevents you from allocating money you don\'t own.' },
+        f1: { fr: 'Allocation budgétaire sécurisée', en: 'Secured budget allocation' },
+        f2: { fr: 'Verrouillage automatique anti-dépassement', en: 'Automatic anti-overspending lock' },
+        f3: { fr: 'Visualisation de la progression vers vos objectifs', en: 'Visual progress tracking towards goals' }
+      },
+      {
+        icon: '✅',
+        name: { fr: 'My Habits — 14 Indicateurs de Discipline', en: 'My Habits — 14 Discipline Indicators' },
+        desc: { fr: 'Suivez au quotidien vos 14 piliers de rigueur personnelle (santé, esprit, business, focus). visualisez vos séries et maintenez vos streaks.', en: 'Track your 14 personal rigor indicators daily (health, mind, business, focus). Visualize streaks and maintain momentum.' },
+        f1: { fr: '14 habitudes prédéfinies basées sur l\'excellence', en: '14 preset habits built for excellence' },
+        f2: { fr: 'Statistiques de streak et séries quotidiennes', en: 'Streak statistics and daily streaks' },
+        f3: { fr: 'Calculateur d\'impact direct sur votre score', en: 'Direct impact calculation on your score' }
+      },
+      {
+        icon: '📋',
+        name: { fr: 'My Tasks — Kanban Visuel & Priorités', en: 'My Tasks — Visual Kanban & Priorities' },
+        desc: { fr: 'Gérez vos priorités quotidiennes avec un tableau Kanban fluide et réactif. Priorités colorées et passage d\'état en un clic.', en: 'Manage daily priorities with a smooth visual Kanban board. Color-coded priorities and one-click status transitions.' },
+        f1: { fr: 'Tableau Kanban visuel fluide', en: 'Fluid visual Kanban board' },
+        f2: { fr: 'Priorisation par couleurs et urgence', en: 'Color and urgency prioritization' },
+        f3: { fr: 'Intégration directe au score de productivité', en: 'Direct integration into productivity score' }
+      },
+      {
+        icon: '📊',
+        name: { fr: 'Dashboard — Score Global & Graphiques', en: 'Dashboard — Global Score & Analytics' },
+        desc: { fr: 'Une vue d\'ensemble panoramique qui réunit votre solde net, votre score de discipline et vos métriques clés en un clin d\'œil.', en: 'A panoramic dashboard unifying your net balance, discipline score, and key metrics at a glance.' },
+        f1: { fr: 'Calcul du Score de Discipline de 0 à 100', en: 'Discipline Score computation (0-100)' },
+        f2: { fr: 'Graphiques de dépenses et de tendances', en: 'Expense breakdown & trend charts' },
+        f3: { fr: 'Aperçu synthétique et prise de décision rapide', en: 'Synthetic overview for fast decision making' }
+      }
+    ];
+
+    function switchPillar(index, btn) {
+      document.querySelectorAll('.pillar-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const data = pillarData[index];
+      const lang = currentLang;
+
+      document.getElementById('pil-tab-icon').innerText = data.icon;
+      document.getElementById('pil-tab-name').innerText = data.name[lang];
+      document.getElementById('pil-tab-desc').innerText = data.desc[lang];
+      document.getElementById('pil-f1').innerText = data.f1[lang];
+      document.getElementById('pil-f2').innerText = data.f2[lang];
+      document.getElementById('pil-f3').innerText = data.f3[lang];
+      document.getElementById('pil-tab-preview-title').innerText = 'Module ' + data.name[lang].split('—')[0];
+    }
+
+    /* Live Score Simulator Calculation */
+    function updateLiveScore() {
+      const habitsVal = parseInt(document.getElementById('slider-habits').value);
+      const cashVal = parseInt(document.getElementById('slider-cash').value);
+      const tasksVal = parseInt(document.getElementById('slider-tasks').value);
+
+      document.getElementById('slider-h-val').innerText = habitsVal + ' / 14';
+      document.getElementById('slider-f-val').innerText = cashVal + '%';
+      document.getElementById('slider-t-val').innerText = tasksVal + '%';
+
+      // Formula: 40% habits + 40% cash + 20% tasks
+      const score = Math.round((habitsVal / 14 * 40) + (cashVal * 0.4) + (tasksVal * 0.2));
+
+      document.getElementById('sim-score-num').innerText = score;
+      document.getElementById('hero-live-score').innerText = score + ' / 100';
+
+      // Update Gauge SVG Ring
+      const maxDash = 502;
+      const offset = maxDash - (maxDash * (score / 100));
+      document.getElementById('gauge-ring').style.strokeDashoffset = offset;
+
+      // Status text
+      const statusEl = document.getElementById('sim-score-status');
+      if (score >= 85) {
+        statusEl.innerText = currentLang === 'fr' ? 'Discipline Royale 👑' : 'Royal Discipline 👑';
+        statusEl.style.color = '#D6B36A';
+      } else if (score >= 60) {
+        statusEl.innerText = currentLang === 'fr' ? 'Excellente Rigueur ⚡' : 'High Rigor ⚡';
+        statusEl.style.color = '#0E9F6E';
+      } else {
+        statusEl.innerText = currentLang === 'fr' ? 'À Améliorer 📈' : 'Needs Improvement 📈';
+        statusEl.style.color = '#F87171';
+      }
+    }
+
+    /* Theme & Language Toggles */
     function toggleTheme() {
       currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
       document.documentElement.className = currentTheme;
@@ -506,64 +626,25 @@
     function toggleLang() {
       currentLang = currentLang === 'fr' ? 'en' : 'fr';
       document.getElementById('lang-btn').innerText = currentLang === 'fr' ? 'EN' : 'FR';
-      const t = dict[currentLang];
-      
-      document.getElementById('hero-tagline').innerText = t.tagline;
-      document.getElementById('hero-title-1').innerText = t.title1;
-      document.getElementById('hero-title-2').innerText = t.title2;
-      document.getElementById('hero-sub').innerText = t.sub;
-      document.getElementById('hero-cta').innerText = t.cta;
-      document.getElementById('hero-subtext').innerText = t.subtext;
-      document.getElementById('nav-login').innerText = t.login;
-      document.getElementById('nav-cta').innerText = t.navCta;
-
-      document.getElementById('problem-title').innerText = t.probTitle;
-      document.getElementById('problem-sub').innerText = t.probSub;
-      document.getElementById('p1-pain').innerText = t.p1Pain; document.getElementById('p1-fix').innerText = t.p1Fix;
-      document.getElementById('p2-pain').innerText = t.p2Pain; document.getElementById('p2-fix').innerText = t.p2Fix;
-      document.getElementById('p3-pain').innerText = t.p3Pain; document.getElementById('p3-fix').innerText = t.p3Fix;
-      document.getElementById('p4-pain').innerText = t.p4Pain; document.getElementById('p4-fix').innerText = t.p4Fix;
-
-      document.getElementById('pillars-title').innerText = t.pilTitle;
-      document.getElementById('pillars-sub').innerText = t.pilSub;
-      document.getElementById('pil-1').innerText = t.pil1; document.getElementById('pil-2').innerText = t.pil2;
-      document.getElementById('pil-3').innerText = t.pil3; document.getElementById('pil-4').innerText = t.pil4;
-      document.getElementById('pil-5').innerText = t.pil5;
-
-      document.getElementById('score-title').innerText = t.scoreTitle;
-      document.getElementById('score-sub').innerText = t.scoreSub;
-      document.getElementById('f1-title').innerText = t.f1Title; document.getElementById('f1-sub').innerText = t.f1Sub;
-      document.getElementById('f2-title').innerText = t.f2Title; document.getElementById('f2-sub').innerText = t.f2Sub;
-      document.getElementById('f3-title').innerText = t.f3Title; document.getElementById('f3-sub').innerText = t.f3Sub;
-
-      document.getElementById('pricing-title').innerText = t.pricingTitle;
-      document.getElementById('pricing-sub').innerText = t.pricingSub;
-      updatePricing();
+      updateLiveScore();
     }
 
     function setBilling(mode) {
       currentBilling = mode;
-      document.getElementById('b-monthly').className = 'billing-btn ' + (mode === 'monthly' ? 'active' : '');
-      document.getElementById('b-annual').className = 'billing-btn ' + (mode === 'annual' ? 'active' : '');
-      updatePricing();
-    }
-
-    function updatePricing() {
-      const t = dict[currentLang];
-      if (currentBilling === 'annual') {
-        document.getElementById('old-price').innerText = t.oldPriceAnnual;
-        document.getElementById('new-price').innerText = t.newPriceAnnual;
-        document.getElementById('price-period').innerText = t.periodAnnual;
-        document.getElementById('price-note').innerText = t.noteAnnual;
+      if (mode === 'monthly') {
+        document.getElementById('old-price').innerText = '3 000 FCFA';
+        document.getElementById('new-price').innerText = '1 000 FCFA';
+        document.getElementById('price-period').innerText = '/ mois';
+        document.getElementById('price-note').innerText = 'Tarif spécial d\'introduction';
       } else {
-        document.getElementById('old-price').innerText = t.oldPriceMonthly;
-        document.getElementById('new-price').innerText = t.newPriceMonthly;
-        document.getElementById('price-period').innerText = t.periodMonthly;
-        document.getElementById('price-note').innerText = t.noteMonthly;
+        document.getElementById('old-price').innerText = '36 000 FCFA';
+        document.getElementById('new-price').innerText = '28 800 FCFA';
+        document.getElementById('price-period').innerText = '/ an';
+        document.getElementById('price-note').innerText = 'soit 2 400 FCFA / mois';
       }
     }
 
-    /* Scroll reveal observer */
+    /* Scroll Reveal Observer */
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -573,6 +654,9 @@
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Initialize Simulator Score
+    updateLiveScore();
   </script>
 </body>
 </html>
