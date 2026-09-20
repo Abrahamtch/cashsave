@@ -35,13 +35,68 @@ const content = {
     },
     pillars: {
       title: 'Cinq piliers. Un seul outil.',
-      sub: 'Chaque module est conçu pour fonctionner ensemble, créant un écosystème cohérent de progression personnelle.',
+      sub: 'Cliquez sur chaque pilier pour explorer la synergie du système Cash Save.',
       modules: [
-        { icon: 'Wallet', name: 'My Cash', desc: 'Registre financier complet avec solde net en temps réel, catégorisation des revenus et dépenses, et analyse de tendances.' },
-        { icon: 'Target', name: 'My Objectives', desc: 'Définissez des objectifs financiers avec allocation budgétaire. Le système interdit structurellement toute fausse illusion de trésorerie.' },
-        { icon: 'CheckSquare', name: 'My Habits', desc: '14 indicateurs de discipline personnelle — esprit, santé, focus, business — suivis quotidiennement avec séries et streaks.' },
-        { icon: 'ListTodo', name: 'My Tasks', desc: 'Kanban visuel avec drag & drop, priorités colorées et boutons de statut directs pour une gestion de tâches fluide.' },
-        { icon: 'LayoutDashboard', name: 'Dashboard', desc: 'Score de discipline global, graphiques de tendances, répartition des dépenses et vue d\'ensemble en un coup d\'œil.' },
+        {
+          icon: 'Wallet',
+          name: 'My Cash',
+          subtitle: 'Registre Financier',
+          desc: 'Suivez l\'intégralité de vos flux financiers avec un solde net en temps réel. Catégorisation intelligente et analyse de tendances sans aucune latence.',
+          features: [
+            'Catégorisation automatique des revenus et dépenses',
+            'Solde net exact disponible en temps réel',
+            'Historique filtrable et exportation CSV'
+          ],
+          image: '/mockups/dashboard-dark.png'
+        },
+        {
+          icon: 'Target',
+          name: 'My Objectives',
+          subtitle: 'Garde-fous Budgétaires',
+          desc: 'Fixez vos objectifs de trésorerie et vos projets d\'épargne. Le système vous empêche structurellement d\'allouer de l\'argent que vous ne possédez pas.',
+          features: [
+            'Allocation budgétaire sécurisée',
+            'Verrouillage automatique anti-dépassement',
+            'Visualisation de la progression vers vos objectifs'
+          ],
+          image: '/mockups/dashboard-dark.png'
+        },
+        {
+          icon: 'CheckSquare',
+          name: 'My Habits',
+          subtitle: '14 Indicateurs de Discipline',
+          desc: 'Suivez au quotidien vos 14 piliers de rigueur personnelle (santé, esprit, business, focus). Visualisez vos séries et maintenez vos streaks.',
+          features: [
+            '14 habitudes prédéfinies basées sur l\'excellence',
+            'Statistiques de streak et séries quotidiennes',
+            'Calculateur d\'impact direct sur votre score'
+          ],
+          image: '/mockups/habits-light.png'
+        },
+        {
+          icon: 'ListTodo',
+          name: 'My Tasks',
+          subtitle: 'Kanban Visuel & Priorités',
+          desc: 'Gérez vos priorités quotidiennes avec un tableau Kanban fluide et réactif. Priorités colorées et passage d\'état en un clic.',
+          features: [
+            'Tableau Kanban visuel fluide',
+            'Priorisation par couleurs et urgence',
+            'Intégration directe au score de productivité'
+          ],
+          image: '/mockups/tasks-kanban.png'
+        },
+        {
+          icon: 'LayoutDashboard',
+          name: 'Dashboard',
+          subtitle: 'Score Global & Graphiques',
+          desc: 'Une vue d\'ensemble panoramique qui réunit votre solde net, votre score de discipline et vos métriques clés en un clin d\'œil.',
+          features: [
+            'Calcul du Score de Discipline de 0 à 100',
+            'Graphiques de dépenses et de tendances',
+            'Aperçu synthétique et prise de décision rapide'
+          ],
+          image: '/mockups/dashboard-dark.png'
+        },
       ],
     },
     score: {
@@ -146,13 +201,68 @@ const content = {
     },
     pillars: {
       title: 'Five pillars. One tool.',
-      sub: 'Each module is designed to work together, creating a cohesive ecosystem for personal progress.',
+      sub: 'Click each pillar to explore the synergy of the Cash Save ecosystem.',
       modules: [
-        { icon: 'Wallet', name: 'My Cash', desc: 'Complete financial register with real-time net balance, income & expense categorization, and trend analysis.' },
-        { icon: 'Target', name: 'My Objectives', desc: 'Set financial goals with budget allocation. The system structurally prevents any false illusion of available cash.' },
-        { icon: 'CheckSquare', name: 'My Habits', desc: '14 personal discipline indicators — mind, health, focus, business — tracked daily with streaks.' },
-        { icon: 'ListTodo', name: 'My Tasks', desc: 'Visual Kanban with drag & drop, color-coded priorities and direct status buttons for fluid task management.' },
-        { icon: 'LayoutDashboard', name: 'Dashboard', desc: 'Global discipline score, trend charts, expense breakdown and a complete overview at a glance.' },
+        {
+          icon: 'Wallet',
+          name: 'My Cash',
+          subtitle: 'Financial Register',
+          desc: 'Track all your financial flows with a real-time net balance. Smart categorization and trend analysis with 0ms latency.',
+          features: [
+            'Automatic categorization of income and expenses',
+            'Exact available net balance in real time',
+            'Filterable history and CSV export'
+          ],
+          image: '/mockups/dashboard-dark.png'
+        },
+        {
+          icon: 'Target',
+          name: 'My Objectives',
+          subtitle: 'Budget Safeguards',
+          desc: 'Set cash goals and savings projects. The system structurally prevents you from allocating money you don\'t own.',
+          features: [
+            'Secured budget allocation',
+            'Automatic anti-overspending lock',
+            'Visual progress tracking towards goals'
+          ],
+          image: '/mockups/dashboard-dark.png'
+        },
+        {
+          icon: 'CheckSquare',
+          name: 'My Habits',
+          subtitle: '14 Discipline Indicators',
+          desc: 'Track your 14 personal rigor indicators daily (health, mind, business, focus). Visualize streaks and maintain momentum.',
+          features: [
+            '14 preset habits built for excellence',
+            'Streak statistics and daily streaks',
+            'Direct impact calculation on your score'
+          ],
+          image: '/mockups/habits-light.png'
+        },
+        {
+          icon: 'ListTodo',
+          name: 'My Tasks',
+          subtitle: 'Visual Kanban & Priorities',
+          desc: 'Manage daily priorities with a smooth visual Kanban board. Color-coded priorities and one-click status transitions.',
+          features: [
+            'Fluid visual Kanban board',
+            'Color and urgency prioritization',
+            'Direct integration into productivity score'
+          ],
+          image: '/mockups/tasks-kanban.png'
+        },
+        {
+          icon: 'LayoutDashboard',
+          name: 'Dashboard',
+          subtitle: 'Global Score & Analytics',
+          desc: 'A panoramic dashboard unifying your net balance, discipline score, and key metrics at a glance.',
+          features: [
+            'Discipline Score computation (0-100)',
+            'Expense breakdown & trend charts',
+            'Synthetic overview for fast decision making'
+          ],
+          image: '/mockups/dashboard-dark.png'
+        },
       ],
     },
     score: {
@@ -316,6 +426,7 @@ function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
 export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [lang, setLang] = useState<'fr' | 'en'>('fr');
   const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
+  const [activePillarTab, setActivePillarTab] = useState(0);
   const t = content[lang];
 
   /* ─── Theme toggle (independent from app) ─── */
@@ -465,7 +576,7 @@ export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boole
       </section>
 
       {/* ══════════════════════════════════════
-         SECTION 3 — 5 PILLARS
+         SECTION 3 — 5 PILLARS (TAB SHOWCASE)
          ══════════════════════════════════════ */}
       <section className="landing-section landing-section--alt" id="pillars">
         <div className="landing-container">
@@ -473,22 +584,65 @@ export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boole
             <h2 className="landing-section-title">{t.pillars.title}</h2>
             <p className="landing-section-sub">{t.pillars.sub}</p>
           </Reveal>
-          <div className="landing-pillars-grid">
-            {t.pillars.modules.map((mod, i) => {
-              const Icon = iconMap[mod.icon] || Wallet;
-              return (
-                <Reveal key={i} delay={0.06 * (i + 1)}>
-                  <div className="landing-pillar-card">
-                    <div className="landing-pillar-icon">
-                      <Icon size={20} style={{ color: 'var(--accent)' }} />
+
+          {/* Pillars Tab Nav */}
+          <Reveal delay={0.08}>
+            <div className="landing-pillars-tabs">
+              {t.pillars.modules.map((mod, i) => {
+                const Icon = iconMap[mod.icon] || Wallet;
+                const isActive = activePillarTab === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setActivePillarTab(i)}
+                    className={`landing-pillar-tab ${isActive ? 'active' : ''}`}
+                  >
+                    <Icon size={16} />
+                    <span>{mod.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Reveal>
+
+          {/* Active Pillar Card Showcase */}
+          {(() => {
+            const activeMod = t.pillars.modules[activePillarTab] || t.pillars.modules[0];
+            const Icon = iconMap[activeMod.icon] || Wallet;
+            return (
+              <Reveal key={activePillarTab} delay={0.12}>
+                <div className="landing-pillar-showcase">
+                  <div className="landing-pillar-showcase-info">
+                    <div className="landing-pillar-icon-box">
+                      <Icon size={24} style={{ color: 'var(--accent)' }} />
                     </div>
-                    <h3 className="landing-pillar-name">{mod.name}</h3>
-                    <p className="landing-pillar-desc">{mod.desc}</p>
+                    <h3 className="landing-pillar-showcase-title">
+                      {activeMod.name} <span className="landing-pillar-sub-badge">— {activeMod.subtitle}</span>
+                    </h3>
+                    <p className="landing-pillar-showcase-desc">{activeMod.desc}</p>
+                    <ul className="landing-pillar-features">
+                      {activeMod.features.map((feat, idx) => (
+                        <li key={idx}>
+                          <Check size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </Reveal>
-              );
-            })}
-          </div>
+
+                  <div className="landing-pillar-showcase-visual">
+                    <div className="landing-mockup-frame">
+                      <img
+                        src={activeMod.image}
+                        alt={activeMod.name}
+                        className="landing-mockup-img"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })()}
         </div>
       </section>
 

@@ -132,7 +132,7 @@ La landing page est entièrement bilingue avec un toggle FR/EN dans la barre de 
 |---|---|---|
 | 1 | **Hero** | Capter l'attention en 3 secondes avec le slogan + visuel du Dashboard |
 | 2 | **Problème / Solution** | Résonance émotionnelle : 4 douleurs utilisateur → 4 solutions Cash Save |
-| 3 | **5 Piliers** | Présentation des modules (My Cash, My Objectives, My Habits, My Tasks, Dashboard) |
+| 3 | **5 Piliers** | Showcase interactif à onglets pour explorer chaque module (My Cash, My Objectives, My Habits, My Tasks, Dashboard) avec aperçu visuel dédié |
 | 4 | **Score de Discipline** | USP unique — formule 40% Habitudes + 40% Trésorerie + 20% Tâches = Score /100 |
 | 5 | **Expérience Premium** | Showcase : Mode Obsidian, Mode Warm Stone, latence 0ms, garde-fous financiers |
 | 6 | **Social Proof** | Chiffres clés (14 indicateurs, 5 modules, 0ms, 100 points) + 3 témoignages |
