@@ -105,7 +105,46 @@ Suivi quotidien structuré en 14 indicateurs clés de performance personnelle :
 
 ---
 
-## 5. Déploiement & Qualité
+## 5. Landing Page Marketing (Vitrine Publique)
+
+> [!NOTE]
+> **Objectif :** Convertir les visiteurs non connectés en utilisateurs inscrits via une page de présentation premium incarnant l'identité « Quiet Luxury Financial Productivity » de Cash Save.
+
+### 5.1 Accès & Routing
+- **Visiteur non connecté :** La route `/` affiche la Landing Page marketing.
+- **Utilisateur connecté :** La route `/` redirige automatiquement vers `/dashboard`.
+- **Composant principal :** [`LandingPage.tsx`](file:///f:/Digital%20Influence%20Marketing%20SARL%20U/Cash%20Save/src/components/LandingPage.tsx) (composant client).
+- **Styles dédiés :** [`landing.css`](file:///f:/Digital%20Influence%20Marketing%20SARL%20U/Cash%20Save/src/app/landing.css).
+
+### 5.2 Slogan Officiel
+> *« Tout ce qui ne se mesure pas ne s'améliore pas. Commencez par mesurer vos finances et vos habitudes pour améliorer votre vie. »*
+
+### 5.3 Contenu Bilingue (FR / EN)
+La landing page est entièrement bilingue avec un toggle FR/EN dans la barre de navigation. Les deux versions couvrent les mêmes 8 sections de conversion.
+
+### 5.4 Structure des Sections (8 sections)
+
+| # | Section | Objectif de Conversion |
+|---|---|---|
+| 1 | **Hero** | Capter l'attention en 3 secondes avec le slogan + visuel du Dashboard |
+| 2 | **Problème / Solution** | Résonance émotionnelle : 4 douleurs utilisateur → 4 solutions Cash Save |
+| 3 | **5 Piliers** | Présentation des modules (My Cash, My Objectives, My Habits, My Tasks, Dashboard) |
+| 4 | **Score de Discipline** | USP unique — formule 40% Habitudes + 40% Trésorerie + 20% Tâches = Score /100 |
+| 5 | **Expérience Premium** | Showcase : Mode Obsidian, Mode Warm Stone, latence 0ms, garde-fous financiers |
+| 6 | **Social Proof** | Chiffres clés (14 indicateurs, 5 modules, 0ms, 100 points) + 3 témoignages |
+| 7 | **Tarification** | Plans Découverte (gratuit) vs Premium (1 000 FCFA/mois intro, 28 800 FCFA/an) |
+| 8 | **CTA Final** | Dernière poussée de conversion vers l'inscription |
+
+### 5.5 Éléments d'Interface
+- **Navigation fixe** : Logo + toggle langue + toggle thème + boutons Connexion / Inscription.
+- **Animations au scroll** : Révélation progressive des sections via `IntersectionObserver` avec `prefers-reduced-motion` respecté.
+- **Mockups visuels** : Screenshots générés des modules, stockés dans `/public/mockups/`.
+- **Score animé** : Compteur numérique animé (0→78) avec jauge SVG circulaire émeraude.
+- **Toggle thème** : Permet au visiteur de découvrir les modes Obsidian et Warm Stone depuis la landing page.
+
+---
+
+## 6. Déploiement & Qualité
 
 - **Hébergement Production :** Vercel / Firebase App Hosting avec SSL/TLS automatique.
 - **Contrôle de Version :** Synchronisation continue des modifications sur le dépôt Git distant (`main` branch).
