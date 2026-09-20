@@ -20,20 +20,20 @@
       --surface: #131817;
       --surface-elevated: #1A201E;
       --surface-hover: #222A27;
-      --bg-nav: rgba(11, 14, 13, 0.85);
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-hover: rgba(14, 159, 110, 0.35);
+      --bg-nav: rgba(11, 14, 13, 0.92);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-hover: rgba(14, 159, 110, 0.4);
       
       --text-primary: #F2F4F1;
-      --text-secondary: #929A96;
-      --text-muted: #646C68;
+      --text-secondary: #A0A8A4;
+      --text-muted: #6C7470;
       
       --primary: #0E9F6E;
       --primary-hover: #087A56;
-      --primary-glow: rgba(14, 159, 110, 0.25);
+      --primary-glow: rgba(14, 159, 110, 0.3);
       
       --gold: #D6B36A;
-      --gold-glow: rgba(214, 179, 106, 0.2);
+      --gold-glow: rgba(214, 179, 106, 0.25);
       
       --font-body: 'Manrope', -apple-system, sans-serif;
       --font-heading: 'Space Grotesk', sans-serif;
@@ -44,7 +44,7 @@
       --radius-full: 9999px;
       
       --shadow-subtle: 0 10px 30px -10px rgba(0,0,0,0.5);
-      --shadow-glow: 0 20px 50px -15px rgba(14, 159, 110, 0.15);
+      --shadow-glow: 0 20px 50px -15px rgba(14, 159, 110, 0.2);
     }
 
     html.light {
@@ -52,14 +52,14 @@
       --surface: #FFFFFF;
       --surface-elevated: #F0F0EB;
       --surface-hover: #E6E6E0;
-      --bg-nav: rgba(247, 247, 243, 0.88);
-      --border-color: rgba(0, 0, 0, 0.08);
+      --bg-nav: rgba(247, 247, 243, 0.92);
+      --border-color: rgba(0, 0, 0, 0.1);
       --border-hover: rgba(14, 159, 110, 0.4);
       --text-primary: #171A19;
-      --text-secondary: #737A76;
-      --text-muted: #9DA39F;
+      --text-secondary: #5A625E;
+      --text-muted: #8E9692;
       --shadow-subtle: 0 10px 30px -10px rgba(0,0,0,0.06);
-      --shadow-glow: 0 20px 50px -15px rgba(14, 159, 110, 0.1);
+      --shadow-glow: 0 20px 50px -15px rgba(14, 159, 110, 0.12);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,20 +78,21 @@
 
     /* ─── BUTTONS ─── */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-body); font-weight: 600; font-size: 0.95rem; padding: 14px 28px; border-radius: var(--radius-full); text-decoration: none; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); cursor: pointer; border: none; position: relative; overflow: hidden; }
-    .btn-primary { background: var(--primary); color: #FFFFFF; box-shadow: 0 8px 24px -4px var(--primary-glow); }
+    .btn-primary { background: var(--primary); color: #FFFFFF !important; box-shadow: 0 8px 24px -4px var(--primary-glow); }
     .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 14px 32px -4px var(--primary-glow); }
-    .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .btn-secondary { background: var(--surface); color: var(--text-primary) !important; border: 1px solid var(--border-color); }
     .btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-hover); transform: translateY(-2px); }
-
-    /* Shimmer effect on buttons */
-    .btn::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(60deg, transparent, rgba(255,255,255,0.15), transparent); transform: rotate(30deg) translateX(-100%); transition: transform 0.6s ease; }
-    .btn:hover::after { transform: rotate(30deg) translateX(100%); }
 
     /* ─── NAVIGATION ─── */
     .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--bg-nav); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 76px; }
     .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text-primary); font-family: var(--font-heading); font-weight: 700; font-size: 1.3rem; }
     .logo-mark { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #0E9F6E, #087A56); display: flex; align-items: center; justify-content: center; color: #FFF; }
+    
+    .nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: color 0.2s ease; }
+    .nav-links a:hover { color: var(--primary); }
+
     .nav-actions { display: flex; align-items: center; gap: 14px; }
     .icon-btn { width: 42px; height: 42px; border-radius: var(--radius-full); border: 1px solid var(--border-color); background: var(--surface); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
     .icon-btn:hover { border-color: var(--border-hover); background: var(--surface-hover); transform: scale(1.05); }
@@ -99,7 +100,7 @@
     /* ─── HERO SECTION ─── */
     .hero { padding: 150px 0 90px; position: relative; }
     .hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 56px; align-items: center; }
-    .hero-badge { display: inline-flex; align-items: center; gap: 10px; padding: 6px 18px; border-radius: var(--radius-full); background: rgba(14, 159, 110, 0.08); border: 1px solid rgba(14, 159, 110, 0.2); color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 24px; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 10px; padding: 6px 18px; border-radius: var(--radius-full); background: rgba(14, 159, 110, 0.12); border: 1px solid rgba(14, 159, 110, 0.3); color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 24px; }
     .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
     
@@ -108,14 +109,12 @@
     .hero-actions { display: flex; flex-direction: column; gap: 12px; }
     .hero-subtext { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
 
-    /* ─── SPOTLIGHT CARDS WITH MOUSE REACTIVE GLOW ─── */
-    .spotlight-card { background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-    .spotlight-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(14, 159, 110, 0.12), transparent 40%); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
-    .spotlight-card:hover::before { opacity: 1; }
-    .spotlight-card:hover { border-color: var(--border-hover); transform: translateY(-4px); box-shadow: var(--shadow-glow); }
+    /* ─── CARDS ─── */
+    .spotlight-card { background: var(--surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; transition: all 0.3s ease; position: relative; overflow: hidden; opacity: 1 !important; transform: none !important; }
+    .spotlight-card:hover { border-color: var(--border-hover); transform: translateY(-4px) !important; box-shadow: var(--shadow-glow); }
 
-    /* ─── SECTIONS GENERAL ─── */
-    .section { padding: 110px 0; border-top: 1px solid var(--border-color); }
+    /* ─── SECTIONS GENERAL (GUARANTEED VISIBILITY) ─── */
+    .section { padding: 110px 0; border-top: 1px solid var(--border-color); opacity: 1 !important; transform: none !important; }
     .section-header { text-align: center; max-width: 680px; margin: 0 auto 64px; }
     .section-title { font-size: 2.5rem; margin-bottom: 18px; }
     .section-sub { font-size: 1.1rem; color: var(--text-secondary); }
@@ -156,9 +155,8 @@
     .price-card-featured { border-color: var(--gold) !important; box-shadow: 0 0 40px var(--gold-glow) !important; }
     .badge-recommend { position: absolute; top: -14px; right: 28px; background: linear-gradient(135deg, #D6B36A, #B59045); color: #FFF; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; padding: 4px 14px; border-radius: var(--radius-full); letter-spacing: 0.05em; }
 
-    /* ─── REVEAL ANIMATIONS ─── */
-    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
-    .reveal.active { opacity: 1; transform: translateY(0); }
+    /* GUARANTEED VISIBILITY FOR ALL REVEAL ELEMENTS */
+    .reveal { opacity: 1 !important; transform: none !important; }
 
     /* ─── FOOTER ─── */
     .footer { padding: 48px 0; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.9rem; }
@@ -167,6 +165,7 @@
       .hero-grid, .pillar-content-box, .simulator-box { grid-template-columns: 1fr; }
       .hero-title { font-size: 2.5rem; }
       .pricing-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
     }
   </style>
 </head>
@@ -187,11 +186,19 @@
         <span>Cash Save</span>
       </a>
 
+      <!-- Quick Nav Anchor Links -->
+      <ul class="nav-links">
+        <li><a href="#problem" id="nl-prob">Problème & Solution</a></li>
+        <li><a href="#pillars" id="nl-pil">5 Piliers</a></li>
+        <li><a href="#simulator" id="nl-sim">Simulateur</a></li>
+        <li><a href="#pricing" id="nl-pri">Tarification</a></li>
+      </ul>
+
       <div class="nav-actions">
         <button class="icon-btn" id="lang-btn" onclick="toggleLang()" title="Switch Language">EN</button>
         <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle Theme">☀️</button>
-        <a href="#pricing" class="btn btn-secondary" id="nav-login">Se connecter</a>
-        <a href="#pricing" class="btn btn-primary" id="nav-cta">Commencer gratuitement →</a>
+        <a href="/auth/login" class="btn btn-secondary" id="nav-login" onclick="handleAuthClick(event, '/auth/login')">Se connecter</a>
+        <a href="/auth/register" class="btn btn-primary" id="nav-cta" onclick="handleAuthClick(event, '/auth/register')">Commencer gratuitement →</a>
       </div>
     </div>
   </nav>
@@ -202,33 +209,33 @@
   <header class="hero">
     <div class="container hero-grid">
       <div>
-        <div class="hero-badge reveal active">
+        <div class="hero-badge">
           <div class="badge-dot"></div>
           <span id="hero-tagline">Quiet Luxury Financial Productivity</span>
         </div>
         
-        <h1 class="hero-title reveal active">
+        <h1 class="hero-title">
           <span id="hero-title-1">Tout ce qui ne se mesure pas</span><br>
           <span class="gradient-emerald" id="hero-title-2">ne s'améliore pas.</span>
         </h1>
         
-        <p class="hero-sub reveal active" id="hero-sub">
+        <p class="hero-sub" id="hero-sub">
           Commencez par mesurer vos finances et vos habitudes pour améliorer votre vie. Cash Save rassemble trésorerie, objectifs, habitudes et productivité dans un seul écosystème d'exception.
         </p>
 
-        <div class="hero-actions reveal active">
-          <a href="#pricing" class="btn btn-primary" style="font-size: 1.05rem; padding: 16px 36px;" id="hero-cta">
+        <div class="hero-actions">
+          <a href="/auth/register" class="btn btn-primary" style="font-size: 1.05rem; padding: 16px 36px;" id="hero-cta" onclick="handleAuthClick(event, '/auth/register')">
             Commencer gratuitement →
           </a>
           <div class="hero-subtext" id="hero-subtext">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
             Essai 7 jours · Sans engagement · Sans carte bancaire
           </div>
         </div>
       </div>
 
       <!-- Live Interactive Visual Frame -->
-      <div class="spotlight-card reveal active" style="padding: 28px;">
+      <div class="spotlight-card" style="padding: 28px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
           <div style="display: flex; gap: 8px;">
             <div style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444;"></div>
@@ -273,15 +280,15 @@
   <!-- ══════════════════════════════════════
      PROBLEM / SOLUTION
      ══════════════════════════════════════ -->
-  <section class="section">
+  <section class="section" id="problem">
     <div class="container">
-      <div class="section-header reveal">
+      <div class="section-header">
         <h2 class="section-title" id="prob-title">Le problème que vous connaissez</h2>
         <p class="section-sub" id="prob-sub">Pourquoi la plupart des personnes n'atteignent jamais leurs objectifs financiers et personnels.</p>
       </div>
 
       <div class="problem-grid">
-        <div class="spotlight-card reveal">
+        <div class="spotlight-card">
           <div class="pain-box">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
             <span id="p1-pain">Vous ne savez pas où part votre argent</span>
@@ -292,7 +299,7 @@
           </div>
         </div>
 
-        <div class="spotlight-card reveal">
+        <div class="spotlight-card">
           <div class="pain-box">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
             <span id="p2-pain">Vos bonnes habitudes ne tiennent pas</span>
@@ -303,7 +310,7 @@
           </div>
         </div>
 
-        <div class="spotlight-card reveal">
+        <div class="spotlight-card">
           <div class="pain-box">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
             <span id="p3-pain">Vos objectifs restent des vœux pieux</span>
@@ -314,7 +321,7 @@
           </div>
         </div>
 
-        <div class="spotlight-card reveal">
+        <div class="spotlight-card">
           <div class="pain-box">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
             <span id="p4-pain">Votre productivité est imprévisible</span>
@@ -331,15 +338,15 @@
   <!-- ══════════════════════════════════════
      INTERACTIVE 5 PILLARS SHOWCASE (TABBED)
      ══════════════════════════════════════ -->
-  <section class="section">
+  <section class="section" id="pillars">
     <div class="container">
-      <div class="section-header reveal">
+      <div class="section-header">
         <h2 class="section-title" id="pillars-title">Cinq piliers. Un seul outil.</h2>
         <p class="section-sub" id="pillars-sub">Cliquez sur chaque pilier pour explorer la synergie du système Cash Save.</p>
       </div>
 
       <!-- Tab Switcher -->
-      <div class="pillars-nav reveal">
+      <div class="pillars-nav">
         <button class="pillar-tab active" onclick="switchPillar(0, this)">💰 My Cash</button>
         <button class="pillar-tab" onclick="switchPillar(1, this)">🎯 My Objectives</button>
         <button class="pillar-tab" onclick="switchPillar(2, this)">✅ My Habits</button>
@@ -348,7 +355,7 @@
       </div>
 
       <!-- Tab Content Box -->
-      <div class="pillar-content-box reveal" id="pillar-card-box">
+      <div class="pillar-content-box" id="pillar-card-box">
         <div class="pillar-info">
           <h3 id="pil-tab-name" class="gradient-emerald">My Cash — Registre Financier</h3>
           <p id="pil-tab-desc">Suivez l'intégralité de vos flux financiers avec un solde net en temps réel. Catégorisation intelligente et analyse de tendances sans aucune latence.</p>
@@ -359,8 +366,8 @@
           </ul>
         </div>
         <div style="background: var(--bg-base); padding: 32px; border-radius: var(--radius-md); border: 1px solid var(--border-color); text-align: center;">
-          <div style="font-size: 3rem; margin-bottom: 12px;" id="pil-tab-icon">💰</div>
-          <h4 style="font-size: 1.2rem; margin-bottom: 8px;" id="pil-tab-preview-title">Module My Cash</h4>
+          <div style="font-size: 3.5rem; margin-bottom: 12px;" id="pil-tab-icon">💰</div>
+          <h4 style="font-size: 1.3rem; margin-bottom: 8px;" id="pil-tab-preview-title">Module My Cash</h4>
           <p style="font-size: 0.85rem; color: var(--text-muted);" id="pil-tab-preview-sub">Affichage synchrone 0ms</p>
         </div>
       </div>
@@ -370,14 +377,14 @@
   <!-- ══════════════════════════════════════
      LIVE INTERACTIVE SCORE SIMULATOR
      ══════════════════════════════════════ -->
-  <section class="section">
+  <section class="section" id="simulator">
     <div class="container">
-      <div class="section-header reveal">
+      <div class="section-header">
         <h2 class="section-title" id="score-title">Testez le Simulator de Discipline</h2>
         <p class="section-sub" id="score-sub">Déplacez les curseurs ci-dessous pour voir comment le Score Cash Save calcule votre niveau de rigueur quotidienne.</p>
       </div>
 
-      <div class="simulator-box reveal">
+      <div class="simulator-box">
         <!-- Interactive Sliders -->
         <div class="sliders-list">
           <div class="slider-group">
@@ -425,19 +432,19 @@
      ══════════════════════════════════════ -->
   <section class="section" id="pricing">
     <div class="container">
-      <div class="section-header reveal">
+      <div class="section-header">
         <h2 class="section-title" id="pricing-title">Investissez dans votre discipline</h2>
         <p class="section-sub" id="pricing-sub">Tarification transparente et accessible.</p>
       </div>
 
-      <div class="billing-switch reveal">
+      <div class="billing-switch">
         <button class="btn btn-secondary" id="b-monthly" onclick="setBilling('monthly')">Mensuel</button>
         <button class="btn btn-primary" id="b-annual" onclick="setBilling('annual')">Annuel (-20%)</button>
       </div>
 
       <div class="pricing-grid">
         <!-- Starter -->
-        <div class="spotlight-card reveal">
+        <div class="spotlight-card">
           <div>
             <h3>Découverte</h3>
             <div style="margin: 20px 0;">
@@ -453,11 +460,11 @@
               <li>✓ Historique sur 7 jours</li>
             </ul>
           </div>
-          <a href="#" class="btn btn-secondary" style="width: 100%;">Découvrir gratuitement</a>
+          <a href="/auth/register" class="btn btn-secondary" style="width: 100%;" onclick="handleAuthClick(event, '/auth/register')">Découvrir gratuitement</a>
         </div>
 
         <!-- Premium -->
-        <div class="spotlight-card price-card-featured reveal">
+        <div class="spotlight-card price-card-featured">
           <div class="badge-recommend">Recommandé</div>
           <div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -479,7 +486,7 @@
               <li>✓ Graphiques d'analyse avancés</li>
             </ul>
           </div>
-          <a href="#" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #D6B36A, #B59045);">Activer le Pass Premium →</a>
+          <a href="/auth/register" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #D6B36A, #B59045);" onclick="handleAuthClick(event, '/auth/register')">Activer le Pass Premium →</a>
         </div>
       </div>
     </div>
@@ -502,16 +509,13 @@
     let currentLang = 'fr';
     let currentBilling = 'annual';
 
-    /* Spotlight Mouse Glow Listener */
-    document.addEventListener('mousemove', (e) => {
-      document.querySelectorAll('.spotlight-card').forEach(card => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
-      });
-    });
+    /* Auth Button Handler: If on local file (file://), open localhost:3000 */
+    function handleAuthClick(e, path) {
+      if (window.location.protocol === 'file:') {
+        e.preventDefault();
+        window.location.href = 'http://localhost:3000' + path;
+      }
+    }
 
     /* Scroll Progress Bar */
     window.addEventListener('scroll', () => {
@@ -626,6 +630,11 @@
     function toggleLang() {
       currentLang = currentLang === 'fr' ? 'en' : 'fr';
       document.getElementById('lang-btn').innerText = currentLang === 'fr' ? 'EN' : 'FR';
+      
+      document.getElementById('nl-prob').innerText = currentLang === 'fr' ? 'Problème & Solution' : 'Problem & Solution';
+      document.getElementById('nl-pil').innerText = currentLang === 'fr' ? '5 Piliers' : '5 Pillars';
+      document.getElementById('nl-sim').innerText = currentLang === 'fr' ? 'Simulateur' : 'Simulator';
+      document.getElementById('nl-pri').innerText = currentLang === 'fr' ? 'Tarification' : 'Pricing';
       updateLiveScore();
     }
 
@@ -643,17 +652,6 @@
         document.getElementById('price-note').innerText = 'soit 2 400 FCFA / mois';
       }
     }
-
-    /* Scroll Reveal Observer */
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('active');
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
     // Initialize Simulator Score
     updateLiveScore();
