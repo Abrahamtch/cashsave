@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles, ArrowRight, Bell } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Wallet, ListTodo, Settings, Target, Crown, Sparkles, ArrowRight, Bell, Globe } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -30,6 +30,7 @@ const SIDEBAR_ITEMS = [
   { href: '/tasks', label: 'To-Do List', icon: ListTodo },
   { href: '/objectives', label: 'Objectifs', icon: Target },
   { href: '/settings', label: 'Paramètres', icon: Settings },
+  { href: '/landing', label: 'Voir le Site', icon: Globe },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

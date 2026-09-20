@@ -313,7 +313,7 @@ function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
 /* ═════════════════════════════════════════════
    LANDING PAGE COMPONENT
    ═════════════════════════════════════════════ */
-export default function LandingPage() {
+export default function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [lang, setLang] = useState<'fr' | 'en'>('fr');
   const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
   const t = content[lang];
@@ -370,12 +370,20 @@ export default function LandingPage() {
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            <Link href="/auth/login" className="landing-nav-link" id="nav-login">
-              {t.nav.login}
-            </Link>
-            <Link href="/auth/register" className="landing-nav-cta" id="nav-register">
-              {t.nav.cta} <ArrowRight size={14} />
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="landing-nav-cta" id="nav-dashboard">
+                {lang === 'fr' ? 'Mon Dashboard' : 'My Dashboard'} <LayoutDashboard size={15} />
+              </Link>
+            ) : (
+              <>
+                <Link href="/auth/login" className="landing-nav-link" id="nav-login">
+                  {t.nav.login}
+                </Link>
+                <Link href="/auth/register" className="landing-nav-cta" id="nav-register">
+                  {t.nav.cta} <ArrowRight size={14} />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -405,10 +413,10 @@ export default function LandingPage() {
               </Reveal>
               <Reveal delay={0.24}>
                 <div className="landing-hero-actions">
-                  <Link href="/auth/register" className="btn-primary landing-hero-cta" id="hero-cta">
-                    {t.hero.cta} <ArrowRight size={15} />
+                  <Link href={isLoggedIn ? "/dashboard" : "/auth/register"} className="btn-primary landing-hero-cta" id="hero-cta">
+                    {isLoggedIn ? (lang === 'fr' ? 'Accéder au Dashboard' : 'Go to Dashboard') : t.hero.cta} <ArrowRight size={15} />
                   </Link>
-                  <span className="landing-hero-ctasub">{t.hero.ctaSub}</span>
+                  <span className="landing-hero-ctasub">{isLoggedIn ? (lang === 'fr' ? 'Vous êtes actuellement connecté' : 'You are currently logged in') : t.hero.ctaSub}</span>
                 </div>
               </Reveal>
             </div>

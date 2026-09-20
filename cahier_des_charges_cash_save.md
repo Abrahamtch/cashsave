@@ -113,6 +113,10 @@ Suivi quotidien structuré en 14 indicateurs clés de performance personnelle :
 ### 5.1 Accès & Routing
 - **Visiteur non connecté :** La route `/` affiche la Landing Page marketing.
 - **Utilisateur connecté :** La route `/` redirige automatiquement vers `/dashboard`.
+- **Accès direct & Navigation :**
+  - **Route dédiée `/landing` :** Permet à quiconque (visiteur ou utilisateur connecté) d'accéder directement à la Landing Page vitrine à tout moment.
+  - **Lien Sidebar :** Pour les utilisateurs connectés, un lien *"Voir le Site"* (`/landing`) est accessible directement depuis le menu latéral de l'application.
+  - **Adaptation d'état :** Quand un utilisateur connecté consulte la Landing Page, les boutons d'action s'adaptent dynamiquement pour afficher *"Mon Dashboard"* (`/dashboard`).
 - **Composant principal :** [`LandingPage.tsx`](file:///f:/Digital%20Influence%20Marketing%20SARL%20U/Cash%20Save/src/components/LandingPage.tsx) (composant client).
 - **Styles dédiés :** [`landing.css`](file:///f:/Digital%20Influence%20Marketing%20SARL%20U/Cash%20Save/src/app/landing.css).
 
