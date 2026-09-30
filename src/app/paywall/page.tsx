@@ -272,6 +272,10 @@ export default function PaywallPage() {
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check size={14} className="text-[#0E9F6E] shrink-0" />
+                    <span><strong>Coach Abraham IA</strong> — Coach financier &amp; discipline en temps réel</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check size={14} className="text-[#0E9F6E] shrink-0" />
                     <span><strong>Kanban illimité</strong> avec glisser-déposer intuitif</span>
                   </li>
                   <li className="flex items-center gap-2.5">

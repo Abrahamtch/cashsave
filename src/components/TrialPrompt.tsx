@@ -133,6 +133,7 @@ export default function TrialPrompt({ profile, onDismiss, onActivate }: TrialPro
           <ul className="space-y-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
             {[
               'Transactions illimitées',
+              'Coach Abraham IA — coach financier personnel',
               'Graphiques détaillés & analyses',
               'Objectifs financiers avec barre de progression',
               'Habitudes numériques avancées',

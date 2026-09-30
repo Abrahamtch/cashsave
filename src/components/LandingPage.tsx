@@ -158,6 +158,7 @@ const content = {
         discount: '-20%',
         features: [
           'Transactions illimitées',
+          'Coach Abraham IA — Assistant financier & discipline',
           'Kanban illimité avec drag & drop',
           'Objectifs financiers avec allocation',
           'Habitudes numériques avancées',

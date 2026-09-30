@@ -11,6 +11,7 @@ import { syncUserDataFromSupabase, subscribeToUserRealtimeChanges } from '@/lib/
 import OnboardingFlow from '@/components/OnboardingFlow';
 import TrialPrompt from '@/components/TrialPrompt';
 import ReminderSettingsModal from '@/components/ReminderSettingsModal';
+import CoachWidget from '@/components/coach/CoachWidget';
 import { Profile } from '@/types';
 import { isPremiumActive, isTrialActive, shouldTrigger7DayTrialPrompt } from '@/lib/plans';
 import { registerServiceWorker, subscribeToPush } from '@/lib/pushSubscription';
@@ -380,6 +381,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
+
+      {/* Coach Abraham AI Widget */}
+      <CoachWidget />
 
       {/* Onboarding Flow Overlay */}
       {showOnboarding && (
