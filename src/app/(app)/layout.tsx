@@ -30,6 +30,7 @@ const SIDEBAR_ITEMS = [
   { href: '/cash', label: 'My Cash', icon: Wallet },
   { href: '/tasks', label: 'To-Do List', icon: ListTodo },
   { href: '/objectives', label: 'Objectifs', icon: Target },
+  { href: '#coach', label: 'Coach Abraham', icon: Sparkles, isCoach: true },
   { href: '/settings', label: 'Paramètres', icon: Settings },
   { href: '/landing', label: 'Voir le Site', icon: Globe },
 ];
@@ -225,8 +226,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Nav Items */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {SIDEBAR_ITEMS.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            const isCoach = (item as { isCoach?: boolean }).isCoach;
+            const isActive = !isCoach && (pathname === item.href || pathname.startsWith(item.href + '/'));
             const Icon = item.icon;
+
+            if (isCoach) {
+              return (
+                <button
+                  key={item.href}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-coach'))}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
+                  style={{
+                    color: '#0E9F6E',
+                    background: 'rgba(14, 159, 110, 0.08)',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(14, 159, 110, 0.16)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(14, 159, 110, 0.08)';
+                  }}
+                >
+                  <Icon className="w-[18px] h-[18px] shrink-0 text-[#0E9F6E] animate-pulse" />
+                  <span>{item.label}</span>
+                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#0E9F6E]/20 text-[#0E9F6E]">
+                    IA
+                  </span>
+                </button>
+              );
+            }
+
             return (
               <Link
                 key={item.href}

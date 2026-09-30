@@ -434,40 +434,40 @@ select option {
   position: fixed;
   bottom: 84px;
   right: 20px;
-  z-index: 60;
+  z-index: 99999 !important;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: var(--accent);
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #0E9F6E, #057A55);
   color: #FFFFFF;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50px;
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(14, 159, 110, 0.35);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 25px rgba(14, 159, 110, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .coach-fab:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(14, 159, 110, 0.45);
+  background: linear-gradient(135deg, #10B981, #0E9F6E);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(14, 159, 110, 0.6);
 }
 .coach-fab:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 .coach-fab-label {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   letter-spacing: -0.01em;
 }
 
 @media (min-width: 1024px) {
   .coach-fab {
-    bottom: 28px;
-    right: 28px;
+    bottom: 32px;
+    right: 32px;
   }
 }
 

@@ -66,6 +66,13 @@ export default function CoachWidget() {
     }
   }, [isOpen]);
 
+  // Listen for global open-coach event (e.g. from sidebar menu)
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-coach', handleOpen);
+    return () => window.removeEventListener('open-coach', handleOpen);
+  }, []);
+
   // Get user's first name from localStorage
   const firstName = (() => {
     if (typeof window === 'undefined') return '';
