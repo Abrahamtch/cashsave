@@ -139,7 +139,7 @@ export function canShowProgressBar(
 }
 
 // ─── Current Price Calculation ──────────────────
-export function getCurrentPrice(profile: Profile | null): number {
+export function getCurrentPrice(profile: Partial<Profile> | null): number {
   if (!profile?.first_premium_date) return PRICING.BONUS_MONTHLY; // First time = bonus price
   const monthsPaid = profile.subscription_months_count || 0;
   if (monthsPaid < PRICING.BONUS_MONTHS) return PRICING.BONUS_MONTHLY;
