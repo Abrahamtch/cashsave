@@ -167,7 +167,7 @@ const content = {
         ],
         cta: 'Passer au Premium',
       },
-      security: 'Paiement sécurisé via Maketou (Flooz, TMoney, MoMo, Carte)',
+      security: 'Paiement sécurisé via SasPay (Mobile Money & Carte bancaire)',
       cancel: 'Sans engagement · Annulation à tout moment',
     },
     final: {
@@ -333,7 +333,7 @@ const content = {
         ],
         cta: 'Go Premium',
       },
-      security: 'Secure payment via Maketou (Flooz, TMoney, MoMo, Card)',
+      security: 'Secure payment via SasPay (Mobile Money & Card)',
       cancel: 'No commitment · Cancel anytime',
     },
     final: {

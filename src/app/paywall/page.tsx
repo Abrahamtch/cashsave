@@ -340,7 +340,7 @@ export default function PaywallPage() {
         {/* Footer info */}
         <div className="text-center space-y-1.5 pt-2">
           <p className="text-[11px] flex items-center justify-center gap-1.5" style={{ color: 'var(--text-tertiary)' }}>
-            <Lock size={12} className="text-[#0E9F6E]" /> Paiement sécurisé via Maketou (Flooz, TMoney, MoMo, Carte bancaire)
+            <Lock size={12} className="text-[#0E9F6E]" /> Paiement sécurisé via SasPay (Mobile Money & Carte bancaire)
           </p>
           <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
             Abonnement sans engagement · Annulation simple à tout moment

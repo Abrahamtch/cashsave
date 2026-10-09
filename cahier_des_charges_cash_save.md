@@ -86,6 +86,7 @@ Suivi quotidien structuré en 14 indicateurs clés de performance personnelle :
 - **Langage :** TypeScript strict (Interfaces typées sans usage d'`any`).
 - **Styles :** Vanilla CSS3 (Variables dynamiques `globals.css`) + TailwindCSS.
 - **Backend / DB :** Supabase (PostgreSQL, Authentification JWT, RLS Row Level Security).
+- **Service de Paiement :** SasPay API REST (Mobile Money & Carte bancaire, sessions de checkout hébergées, webhooks HMAC-SHA256).
 - **Iconographie & Effets :** Lucide Icons, Recharts, Canvas Confetti.
 
 ### 4.2 Architecture de Persistance Hybride (Offline-First)
