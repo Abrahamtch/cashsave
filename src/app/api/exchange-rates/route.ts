@@ -7,6 +7,9 @@ import {
 } from '@/lib/currency';
 import { SupportedCurrency } from '@/types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 43200; // 12 heures
+
 // Cache mémoire serveur avec TTL 12 heures
 let cachedRates: ExchangeRatesPayload | null = null;
 let lastFetchTime = 0;
