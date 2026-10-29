@@ -8,9 +8,10 @@ import {
   HABIT_LABELS,
   NUMERIC_HABIT_LABELS,
 } from '@/types';
-import { formatCFA } from '@/lib/stats';
 import { createClient } from '@/lib/supabase/client';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
+import { usePreferences } from '@/contexts/PreferencesContext';
+import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 import {
   Wallet,
   Sparkles,
@@ -91,6 +92,7 @@ export default function OnboardingFlow({
 }: OnboardingFlowProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const { currency, format: formatPreferred } = usePreferences();
 
   // Step 1 State: Initial Balances
   const [selectedSources, setSelectedSources] = useState<InitialBalanceSource[]>([]);
@@ -198,6 +200,7 @@ export default function OnboardingFlow({
       source_type: src,
       source_label: src === 'autre' ? customSourceLabel : '',
       amount: parseFloat(sourceAmounts[src] || '0') || 0,
+      currency: currency,
       created_at: new Date().toISOString(),
     }));
 
@@ -427,7 +430,7 @@ export default function OnboardingFlow({
                             {labelName}
                           </span>
                           <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                            FCFA
+                            {SUPPORTED_CURRENCIES[currency]?.symbol || currency}
                           </span>
                         </div>
 
@@ -460,7 +463,7 @@ export default function OnboardingFlow({
                       Solde net de départ
                     </span>
                     <span className="text-base font-extrabold" style={{ color: 'var(--accent)' }}>
-                      {formatCFA(totalStartingBalance)}
+                      {formatPreferred(totalStartingBalance)}
                     </span>
                   </div>
                 </div>
@@ -665,7 +668,7 @@ export default function OnboardingFlow({
                         Solde net de départ
                       </p>
                       <p className="text-sm font-bold mt-0.5" style={{ color: 'var(--text-primary)' }}>
-                        {formatCFA(totalStartingBalance)}
+                        {formatPreferred(totalStartingBalance)}
                       </p>
                     </div>
                   </div>

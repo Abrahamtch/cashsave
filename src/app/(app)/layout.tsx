@@ -15,28 +15,30 @@ import CoachWidget from '@/components/coach/CoachWidget';
 import { Profile } from '@/types';
 import { isPremiumActive, isTrialActive, shouldTrigger7DayTrialPrompt } from '@/lib/plans';
 import { registerServiceWorker, subscribeToPush } from '@/lib/pushSubscription';
+import { usePreferences } from '@/contexts/PreferencesContext';
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/habits', label: 'Habitudes', icon: CheckSquare },
-  { href: '/cash', label: 'Cash', icon: Wallet },
-  { href: '/tasks', label: 'Tâches', icon: ListTodo },
-  { href: '/settings', label: 'Réglages', icon: Settings },
+  { href: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
+  { href: '/habits', key: 'nav.habits', icon: CheckSquare },
+  { href: '/cash', key: 'nav.cash', icon: Wallet },
+  { href: '/tasks', key: 'nav.tasks', icon: ListTodo },
+  { href: '/settings', key: 'nav.settings', icon: Settings },
 ];
 
 const SIDEBAR_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/habits', label: 'My Habits', icon: CheckSquare },
-  { href: '/cash', label: 'My Cash', icon: Wallet },
-  { href: '/tasks', label: 'To-Do List', icon: ListTodo },
-  { href: '/objectives', label: 'Objectifs', icon: Target },
-  { href: '#coach', label: 'Coach Abraham', icon: Sparkles, isCoach: true },
-  { href: '/settings', label: 'Paramètres', icon: Settings },
-  { href: '/landing', label: 'Voir le Site', icon: Globe },
+  { href: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
+  { href: '/habits', key: 'nav.habits', icon: CheckSquare },
+  { href: '/cash', key: 'nav.cash', icon: Wallet },
+  { href: '/tasks', key: 'nav.tasks', icon: ListTodo },
+  { href: '/objectives', key: 'nav.objectives', icon: Target },
+  { href: '#coach', key: 'nav.coach', icon: Sparkles, isCoach: true },
+  { href: '/settings', key: 'nav.settings', icon: Settings },
+  { href: '/landing', key: 'nav.view_site', icon: Globe },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { t } = usePreferences();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isReconfiguring, setIsReconfiguring] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -248,7 +250,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   <Icon className="w-[18px] h-[18px] shrink-0 text-[#0E9F6E] animate-pulse" />
-                  <span>{item.label}</span>
+                  <span>{t(item.key)}</span>
                   <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#0E9F6E]/20 text-[#0E9F6E]">
                     IA
                   </span>
@@ -282,7 +284,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   className="w-[18px] h-[18px] shrink-0"
                   style={{ color: isActive ? 'var(--accent)' : undefined }}
                 />
-                {item.label}
+                {t(item.key)}
                 {isActive && (
                   <div
                     className="ml-auto w-1.5 h-1.5 rounded-full"
@@ -398,7 +400,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 style={{ color: isActive ? 'var(--accent)' : 'var(--text-tertiary)' }}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-[0_0_6px_rgba(99,102,241,0.5)]' : ''}`} />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <span className="text-[10px] font-medium">{t(item.key)}</span>
                 {isActive && (
                   <div
                     className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"

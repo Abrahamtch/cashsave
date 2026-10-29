@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Transaction, Profile, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
-import { calculateFinancialSummary, formatCFA } from '@/lib/stats';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { Transaction, Profile, INCOME_CATEGORIES, EXPENSE_CATEGORIES, SupportedCurrency } from '@/types';
+import { format as formatDate } from 'date-fns';
+import { fr, enUS, es, pt, de, arSA } from 'date-fns/locale';
 import {
   Plus, Minus, TrendingUp, TrendingDown, Wallet, Activity,
   X, Check, ThumbsUp, ThumbsDown, SlidersHorizontal, ArrowUpRight, ArrowDownRight,
-  Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles, Lock, Crown
+  Camera, FileImage, Pencil, Trash2, Eye, Image as ImageIcon, Sparkles, Lock, Crown, Coins
 } from 'lucide-react';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
 import { broadcastDataUpdate, markLocalSelfMutation, safeMergeAndPersist } from '@/lib/syncUser';
@@ -19,6 +18,9 @@ import { isPremiumActive, isTrialActive, getTransactionQuota, hasFeature } from 
 import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 import PremiumLimitPopup from '@/components/PremiumLimitPopup';
+import { usePreferences } from '@/contexts/PreferencesContext';
+import { SUPPORTED_CURRENCIES, formatMoney } from '@/lib/currency';
+import Decimal from 'decimal.js';
 
 export default function CashPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -29,10 +31,13 @@ export default function CashPage() {
   const [filterCategory, setFilterCategory] = useState('');
   const supabase = createClient();
 
+  const { currency, language, format: formatPreferred, convert, t, translateCategory } = usePreferences();
+
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [amount, setAmount] = useState('');
+  const [txCurrency, setTxCurrency] = useState<SupportedCurrency>(currency);
   const [category, setCategory] = useState('');
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = useState(formatDate(new Date(), 'yyyy-MM-dd'));
   const [note, setNote] = useState('');
   const [isSatisfied, setIsSatisfied] = useState<boolean | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -40,7 +45,9 @@ export default function CashPage() {
   const [savingTx, setSavingTx] = useState(false);
   const [initialBalanceTotal, setInitialBalanceTotal] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [quotaWarning, setQuotaWarning] = useState('');
+
+  const dateLocales = { fr, en: enUS, es, pt, de, ar: arSA };
+  const currentLocale = dateLocales[language] || fr;
 
   useEffect(() => {
     loadTransactions();
@@ -50,6 +57,13 @@ export default function CashPage() {
     window.addEventListener('cashsave_data_updated', handleUpdate);
     return () => window.removeEventListener('cashsave_data_updated', handleUpdate);
   }, []);
+
+  // Synchroniser la devise de saisie par défaut avec la devise active de consultation
+  useEffect(() => {
+    if (!editingTx) {
+      setTxCurrency(currency);
+    }
+  }, [currency, editingTx]);
 
   function loadProfile() {
     const localUser = JSON.parse(localStorage.getItem('cashsave_user') || '{}');
@@ -81,7 +95,7 @@ export default function CashPage() {
           const [txRes, profileRes, initBalRes] = await Promise.all([
             supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
             supabase.from('profiles').select('initial_balance_total').eq('id', user.id).single(),
-            supabase.from('initial_balances').select('amount').eq('user_id', user.id),
+            supabase.from('initial_balances').select('amount, currency').eq('user_id', user.id),
           ]);
           
           const { merged } = safeMergeAndPersist('cashsave_transactions', txRes.data, user.id, 'id');
@@ -108,7 +122,7 @@ export default function CashPage() {
     if (!userIsPremium) {
       const quota = getTransactionQuota(profile, transactions, type);
       if (quota.reached) {
-        const typeLabel = type === 'EXPENSE' ? 'dépenses' : 'revenus';
+        const typeLabel = type === 'EXPENSE' ? t('cash.expense').toLowerCase() : t('cash.income').toLowerCase();
         setLimitPopup({
           isOpen: true,
           title: 'Limite quotidienne atteinte',
@@ -121,8 +135,9 @@ export default function CashPage() {
     setModalType(type);
     const defaultCats = type === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
     setAmount('');
+    setTxCurrency(currency);
     setCategory(defaultCats[0] || 'Autre');
-    setDate(format(new Date(), 'yyyy-MM-dd'));
+    setDate(formatDate(new Date(), 'yyyy-MM-dd'));
     setNote('');
     setIsSatisfied(true);
     setImageUrl(null);
@@ -133,8 +148,9 @@ export default function CashPage() {
     setEditingTx(tx);
     setModalType(tx.type);
     setAmount(String(tx.amount));
+    setTxCurrency(tx.original_currency || 'XOF');
     setCategory(tx.category);
-    setDate(tx.date || format(new Date(), 'yyyy-MM-dd'));
+    setDate(tx.date || formatDate(new Date(), 'yyyy-MM-dd'));
     setNote(tx.note || '');
     setIsSatisfied(tx.is_satisfied);
     setImageUrl(tx.image_url || null);
@@ -171,8 +187,9 @@ export default function CashPage() {
         id: validId,
         type: modalType,
         amount: numAmount,
+        original_currency: txCurrency,
         category: finalCategory,
-        date: date || format(new Date(), 'yyyy-MM-dd'),
+        date: date || formatDate(new Date(), 'yyyy-MM-dd'),
         note: note || '',
         is_satisfied: modalType === 'EXPENSE' ? (isSatisfied ?? true) : null,
         image_url: imageUrl,
@@ -191,6 +208,7 @@ export default function CashPage() {
             const { error } = await supabase.from('transactions').update({
               type: updatedTx.type,
               amount: updatedTx.amount,
+              original_currency: updatedTx.original_currency,
               category: updatedTx.category,
               date: updatedTx.date,
               note: updatedTx.note,
@@ -210,11 +228,12 @@ export default function CashPage() {
       const newId = generateUUID();
       const newTx: Transaction = {
         id: newId,
-        user_id: 'demo-user',
+        user_id: profile?.id || 'demo-user',
         type: modalType,
         amount: numAmount,
+        original_currency: txCurrency,
         category: finalCategory,
-        date: date || format(new Date(), 'yyyy-MM-dd'),
+        date: date || formatDate(new Date(), 'yyyy-MM-dd'),
         note: note || '',
         is_satisfied: modalType === 'EXPENSE' ? (isSatisfied ?? true) : null,
         image_url: imageUrl,
@@ -231,7 +250,11 @@ export default function CashPage() {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             await ensureUserProfileExists(supabase, user);
-            const { error } = await supabase.from('transactions').insert({ ...newTx, id: newId, user_id: user.id });
+            const { error } = await supabase.from('transactions').insert({
+              ...newTx,
+              id: newId,
+              user_id: user.id,
+            });
             if (error) console.error('Supabase transaction insert error:', error);
           }
         } catch (e) {}
@@ -244,6 +267,7 @@ export default function CashPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm(t('cash.delete_confirm'))) return;
     setTransactions(prev => prev.filter(t => t.id !== id));
     const localTx = JSON.parse(localStorage.getItem('cashsave_transactions') || '[]');
     localStorage.setItem('cashsave_transactions', JSON.stringify(localTx.filter((t: any) => t.id !== id)));
@@ -251,7 +275,34 @@ export default function CashPage() {
     try { await supabase.from('transactions').delete().eq('id', id); } catch (e) {}
   };
 
-  const summary = calculateFinancialSummary(transactions, initialBalanceTotal);
+  // CALCULS FINANCIERS HAUTE PRÉCISION EN DEVISE PRÉFÉRÉE
+  const financialSummary = useMemo(() => {
+    let decIncome = new Decimal(0);
+    let decExpense = new Decimal(0);
+
+    for (const tx of transactions) {
+      const txCurr = tx.original_currency || 'XOF';
+      const convertedVal = convert(tx.amount || 0, txCurr);
+      if (tx.type === 'INCOME') {
+        decIncome = decIncome.plus(convertedVal);
+      } else {
+        decExpense = decExpense.plus(convertedVal);
+      }
+    }
+
+    const convertedInitialBalance = new Decimal(convert(initialBalanceTotal || 0, 'XOF'));
+    const netProfit = decIncome.minus(decExpense);
+    const balance = convertedInitialBalance.plus(netProfit);
+
+    return {
+      totalIncome: decIncome.toNumber(),
+      totalExpense: decExpense.toNumber(),
+      netProfit: netProfit.toNumber(),
+      balance: balance.toNumber(),
+      initialBalance: convertedInitialBalance.toNumber(),
+    };
+  }, [transactions, initialBalanceTotal, convert]);
+
   const categories = modalType === 'INCOME' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
   const filtered = transactions.filter(t => {
     if (filterMonth && !t.date.startsWith(filterMonth)) return false;
@@ -273,10 +324,10 @@ export default function CashPage() {
   }
 
   const summaryCards = [
-    { label: 'Revenus', value: summary.totalIncome, color: '#0E9F6E', bg: 'rgba(14,159,110,0.09)', icon: TrendingUp },
-    { label: 'Dépenses', value: summary.totalExpense, color: '#F43F5E', bg: 'rgba(244,63,94,0.09)', icon: TrendingDown },
-    { label: 'Bénéfice', value: summary.netProfit, color: summary.netProfit >= 0 ? '#0E9F6E' : '#F43F5E', bg: summary.netProfit >= 0 ? 'rgba(14,159,110,0.09)' : 'rgba(244,63,94,0.09)', icon: Activity },
-    { label: 'Solde', value: summary.balance, color: summary.balance >= 0 ? '#0E9F6E' : '#F43F5E', bg: summary.balance >= 0 ? 'rgba(14,159,110,0.09)' : 'rgba(244,63,94,0.09)', icon: Wallet },
+    { label: t('cash.income'), value: financialSummary.totalIncome, color: '#0E9F6E', bg: 'rgba(14,159,110,0.09)', icon: TrendingUp },
+    { label: t('cash.expense'), value: financialSummary.totalExpense, color: '#F43F5E', bg: 'rgba(244,63,94,0.09)', icon: TrendingDown },
+    { label: t('cash.net_profit'), value: financialSummary.netProfit, color: financialSummary.netProfit >= 0 ? '#0E9F6E' : '#F43F5E', bg: financialSummary.netProfit >= 0 ? 'rgba(14,159,110,0.09)' : 'rgba(244,63,94,0.09)', icon: Activity },
+    { label: t('cash.balance'), value: financialSummary.balance, color: financialSummary.balance >= 0 ? '#0E9F6E' : '#F43F5E', bg: financialSummary.balance >= 0 ? 'rgba(14,159,110,0.09)' : 'rgba(244,63,94,0.09)', icon: Wallet },
   ];
 
   return (
@@ -288,10 +339,10 @@ export default function CashPage() {
             className="text-2xl font-semibold tracking-tight"
             style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
           >
-            Trésorerie
+            {t('cash.title')}
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            Suivi de vos revenus et dépenses
+            {t('cash.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -306,7 +357,7 @@ export default function CashPage() {
             }}
           >
             <Minus size={13} strokeWidth={2} />
-            Dépense
+            {t('cash.add_expense')}
           </button>
           <button
             onClick={() => openCreateModal('INCOME')}
@@ -319,7 +370,7 @@ export default function CashPage() {
             }}
           >
             <Plus size={13} strokeWidth={2} />
-            Revenu
+            {t('cash.add_income')}
           </button>
         </div>
       </div>
@@ -345,7 +396,7 @@ export default function CashPage() {
                 className="text-xl font-bold tracking-tight"
                 style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}
               >
-                {formatCFA(card.value)}
+                {formatPreferred(card.value)}
               </p>
             </div>
           );
@@ -356,7 +407,7 @@ export default function CashPage() {
       <div className="glass-card p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-            <SlidersHorizontal size={14} /> Transactions ({filtered.length})
+            <SlidersHorizontal size={14} /> {t('cash.transactions_count')} ({filtered.length})
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -366,10 +417,10 @@ export default function CashPage() {
                 onChange={(e) => setFilterMonth(e.target.value)}
                 className="input-field py-1 px-2.5 text-xs w-auto"
               >
-                <option value="">Tous les mois</option>
+                <option value="">{t('cash.all_months')}</option>
                 {months.map(m => (
                   <option key={m} value={m}>
-                    {format(new Date(m + '-01'), 'MMMM yyyy', { locale: fr })}
+                    {formatDate(new Date(m + '-01'), 'MMMM yyyy', { locale: currentLocale })}
                   </option>
                 ))}
               </select>
@@ -381,8 +432,8 @@ export default function CashPage() {
                 onChange={(e) => setFilterCategory(e.target.value)}
                 className="input-field py-1 px-2.5 text-xs w-auto"
               >
-                <option value="">Toutes catégories</option>
-                {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="">{t('cash.all_categories')}</option>
+                {allCategories.map(c => <option key={c} value={c}>{translateCategory(c)}</option>)}
               </select>
             )}
           </div>
@@ -393,146 +444,195 @@ export default function CashPage() {
             <div className="w-12 h-12 rounded-2xl bg-[var(--bg-card-hover)] flex items-center justify-center mx-auto" style={{ color: 'var(--text-tertiary)' }}>
               <Wallet size={20} />
             </div>
-            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Aucune transaction trouvée</p>
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Ajoutez un revenu ou une dépense pour commencer le suivi.</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{t('cash.no_transactions')}</p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('cash.no_transactions_desc')}</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map(tx => (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between p-3.5 rounded-xl transition-all duration-150 group hover:bg-[var(--bg-card-hover)] border"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{
-                      background: tx.type === 'INCOME' ? 'rgba(14,159,110,0.1)' : 'rgba(244,63,94,0.1)',
-                    }}
-                  >
-                    {tx.type === 'INCOME'
-                      ? <ArrowUpRight size={15} strokeWidth={1.5} style={{ color: '#0E9F6E' }} />
-                      : <ArrowDownRight size={15} strokeWidth={1.5} style={{ color: '#F43F5E' }} />
-                    }
+            {filtered.map(tx => {
+              const txOrigCurrency = tx.original_currency || 'XOF';
+              const isDifferentCurrency = txOrigCurrency !== currency;
+              const convertedAmount = convert(tx.amount, txOrigCurrency);
+
+              return (
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between p-3.5 rounded-xl transition-all duration-150 group hover:bg-[var(--bg-card-hover)] border"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: tx.type === 'INCOME' ? 'rgba(14,159,110,0.1)' : 'rgba(244,63,94,0.1)',
+                      }}
+                    >
+                      {tx.type === 'INCOME'
+                        ? <ArrowUpRight size={15} strokeWidth={1.5} style={{ color: '#0E9F6E' }} />
+                        : <ArrowDownRight size={15} strokeWidth={1.5} style={{ color: '#F43F5E' }} />
+                      }
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                          {translateCategory(tx.category)}
+                        </p>
+                        {tx.is_satisfied !== null && (
+                          tx.is_satisfied
+                            ? <ThumbsUp size={11} strokeWidth={1.5} style={{ color: '#0E9F6E', flexShrink: 0 }} />
+                            : <ThumbsDown size={11} strokeWidth={1.5} style={{ color: '#F43F5E', flexShrink: 0 }} />
+                        )}
+                        {tx.image_url && (
+                          <button
+                            type="button"
+                            onClick={() => setViewingReceiptUrl(tx.image_url || null)}
+                            className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-border)] hover:opacity-80 cursor-pointer shrink-0"
+                            title="Voir le justificatif"
+                          >
+                            <ImageIcon size={11} /> Reçu
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        {tx.note || formatDate(new Date(tx.date), 'd MMM yyyy', { locale: currentLocale })}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                        {tx.category}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <p
+                        className="text-sm font-semibold tracking-tight"
+                        style={{
+                          color: tx.type === 'INCOME' ? '#0E9F6E' : '#F43F5E',
+                          letterSpacing: '-0.02em',
+                        }}
+                      >
+                        {tx.type === 'INCOME' ? '+' : '-'}{formatPreferred(convertedAmount)}
                       </p>
-                      {tx.is_satisfied !== null && (
-                        tx.is_satisfied
-                          ? <ThumbsUp size={11} strokeWidth={1.5} style={{ color: '#0E9F6E', flexShrink: 0 }} />
-                          : <ThumbsDown size={11} strokeWidth={1.5} style={{ color: '#F43F5E', flexShrink: 0 }} />
-                      )}
-                      {tx.image_url && (
-                        <button
-                          type="button"
-                          onClick={() => setViewingReceiptUrl(tx.image_url || null)}
-                          className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-border)] hover:opacity-80 cursor-pointer shrink-0"
-                          title="Voir le justificatif"
-                        >
-                          <ImageIcon size={11} /> Reçu
-                        </button>
+                      {/* Affichage du montant d'origine si la devise native diffère */}
+                      {isDifferentCurrency && (
+                        <p className="text-[10px] font-medium opacity-70" style={{ color: 'var(--text-tertiary)' }}>
+                          {t('cash.original_amount')}: {formatMoney(tx.amount, txOrigCurrency, language)}
+                        </p>
                       )}
                     </div>
-                    <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {tx.note || format(new Date(tx.date), 'd MMM yyyy', { locale: fr })}
-                    </p>
+
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => openEditModal(tx)}
+                        className="p-1 rounded hover:bg-[var(--bg-input)] cursor-pointer text-gray-400 hover:text-white"
+                        title={t('common.edit')}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(tx.id)}
+                        className="p-1 rounded hover:bg-[var(--bg-input)] cursor-pointer text-rose-400 hover:text-rose-300"
+                        title={t('common.delete')}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <p
-                    className="text-sm font-semibold tracking-tight"
-                    style={{
-                      color: tx.type === 'INCOME' ? '#0E9F6E' : '#F43F5E',
-                      letterSpacing: '-0.01em',
-                    }}
-                  >
-                    {tx.type === 'INCOME' ? '+' : '−'}{formatCFA(tx.amount)}
-                  </p>
-
-                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(tx)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer"
-                      style={{ color: 'var(--text-secondary)' }}
-                      title="Modifier la transaction"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(tx.id)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-rose-500/10 transition-colors cursor-pointer"
-                      style={{ color: 'var(--color-danger)' }}
-                      title="Supprimer la transaction"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Modal Transaction (Création & Édition) */}
+      {/* Modal Reçu plein écran */}
+      {viewingReceiptUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative max-w-lg w-full bg-[var(--bg-card)] rounded-2xl p-4 border border-white/10 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Justificatif de dépense</h3>
+              <button
+                type="button"
+                onClick={() => setViewingReceiptUrl(null)}
+                className="p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-auto rounded-xl flex items-center justify-center bg-black/40">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={viewingReceiptUrl} alt="Reçu complet" className="w-full h-auto object-contain rounded-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajout / Modification Transaction */}
       {showModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowModal(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div
-            className="modal-content p-6 max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
+            className="glass-card max-w-md w-full p-6 space-y-5 rounded-2xl shadow-2xl relative"
+            style={{ border: '1px solid var(--border)' }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {editingTx
-                    ? 'Modifier la transaction'
-                    : (modalType === 'INCOME' ? 'Nouveau revenu' : 'Nouvelle dépense')}
-                </h2>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                  {modalType === 'INCOME' ? 'Enregistrez vos revenus' : 'Enregistrez vos dépenses & justificatifs'}
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: modalType === 'INCOME' ? 'rgba(14,159,110,0.1)' : 'rgba(244,63,94,0.1)',
+                  }}
+                >
+                  {modalType === 'INCOME'
+                    ? <ArrowUpRight size={16} style={{ color: '#0E9F6E' }} />
+                    : <ArrowDownRight size={16} style={{ color: '#F43F5E' }} />
+                  }
+                </div>
+                <h3 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+                  {editingTx ? t('cash.modal_edit_title') : modalType === 'INCOME' ? t('cash.modal_income_title') : t('cash.modal_expense_title')}
+                </h3>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer"
-                style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
-                aria-label="Fermer"
+                className="p-1 rounded-lg transition-colors cursor-pointer"
+                style={{ color: 'var(--text-tertiary)' }}
               >
-                <X size={15} strokeWidth={1.5} />
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Montant + Choix de la devise de la transaction */}
               <div>
                 <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Montant (FCFA)
+                  {t('cash.amount_label')} &amp; {t('cash.currency_label')}
                 </label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                  required min="1"
-                  className="input-field text-2xl font-semibold text-center"
-                  style={{ letterSpacing: '-0.02em' }}
-                  id="tx-amount"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="any"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    required min="0.01"
+                    className="input-field flex-1 text-2xl font-semibold text-center"
+                    style={{ letterSpacing: '-0.02em' }}
+                    id="tx-amount"
+                  />
+                  <select
+                    value={txCurrency}
+                    onChange={(e) => setTxCurrency(e.target.value as SupportedCurrency)}
+                    className="input-field w-32 text-xs font-bold"
+                  >
+                    {Object.values(SUPPORTED_CURRENCIES).map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.code} ({c.symbol})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Catégorie
+                  {t('cash.category_label')}
                 </label>
                 <select
                   value={category}
@@ -542,33 +642,33 @@ export default function CashPage() {
                   id="tx-category"
                 >
                   <option value="">Sélectionner...</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  {categories.map(c => <option key={c} value={c}>{translateCategory(c)}</option>)}
                 </select>
               </div>
 
               <FuturisticDatePicker
-                label="Date"
+                label={t('cash.date_label')}
                 value={date}
                 onChange={setDate}
               />
 
               <div>
                 <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Note / Description
+                  {t('cash.note_label')}
                 </label>
                 <input
                   type="text"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Description optionnelle..."
+                  placeholder={t('cash.note_placeholder')}
                   className="input-field"
                 />
               </div>
 
-              {/* Attachement de Photo / Reçu / Justificatif */}
+              {/* Justificatif / Reçu */}
               <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
                 <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                  Justificatif / Reçu de la transaction
+                  {t('cash.receipt_label')}
                 </label>
 
                 {imageUrl ? (
@@ -576,7 +676,7 @@ export default function CashPage() {
                     <div className="flex items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={imageUrl} alt="Aperçu reçu" className="w-12 h-12 object-cover rounded-lg border border-white/20" />
-                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Photo de justificatif jointe</span>
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Reçu joint</span>
                     </div>
                     <button
                       type="button"
@@ -584,7 +684,7 @@ export default function CashPage() {
                       className="btn-secondary py-1 px-2.5 text-xs"
                       style={{ color: 'var(--color-danger)' }}
                     >
-                      Supprimer
+                      {t('common.delete')}
                     </button>
                   </div>
                 ) : (
@@ -657,7 +757,7 @@ export default function CashPage() {
               {modalType === 'EXPENSE' && (
                 <div>
                   <label className="block text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Satisfait de cette dépense ?
+                    {t('cash.satisfaction_label')}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -681,7 +781,7 @@ export default function CashPage() {
                       }}
                     >
                       <ThumbsUp size={14} strokeWidth={1.5} />
-                      Oui
+                      {t('cash.satisfied_yes')}
                     </button>
                     <button
                       type="button"
@@ -704,7 +804,7 @@ export default function CashPage() {
                       }}
                     >
                       <ThumbsDown size={14} strokeWidth={1.5} />
-                      Non
+                      {t('cash.satisfied_no')}
                     </button>
                   </div>
                 </div>
@@ -717,57 +817,19 @@ export default function CashPage() {
                 id="tx-submit"
                 style={modalType === 'INCOME'
                   ? { background: 'linear-gradient(135deg, #0E9F6E, #087A56)', boxShadow: '0 2px 8px rgba(14,159,110,0.3)' }
-                  : { background: 'linear-gradient(135deg, #F43F5E, #E11D48)', boxShadow: '0 2px 8px rgba(244,63,94,0.3)' }
-                }
+                  : { background: 'linear-gradient(135deg, #F43F5E, #E11D48)', boxShadow: '0 2px 8px rgba(244,63,94,0.3)' }}
               >
-                {savingTx ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
-                ) : (
-                  editingTx ? 'Enregistrer les modifications' : (modalType === 'INCOME' ? 'Ajouter ce revenu' : 'Ajouter cette dépense')
-                )}
+                {savingTx ? t('common.loading') : editingTx ? t('common.save') : modalType === 'INCOME' ? t('cash.add_income') : t('cash.add_expense')}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Lightbox Reçu Photo Modal */}
-      {viewingReceiptUrl && (
-        <div
-          className="modal-overlay z-50 backdrop-blur-xl"
-          onClick={() => setViewingReceiptUrl(null)}
-        >
-          <div
-            className="modal-content max-w-2xl p-4 flex flex-col items-center gap-4 relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="w-full flex justify-end">
-              <button
-                type="button"
-                onClick={() => setViewingReceiptUrl(null)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer"
-                style={{ background: 'var(--bg-card-hover)', color: 'var(--text-secondary)' }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="w-full flex items-center justify-center p-2 rounded-xl border bg-black/40 overflow-hidden" style={{ borderColor: 'var(--border)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={viewingReceiptUrl}
-                alt="Justificatif grand format"
-                className="max-h-[70vh] object-contain rounded-lg shadow-2xl"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Premium Limit Backdrop Blur Popup */}
+      {/* Popup Limite Forfait Gratuit */}
       <PremiumLimitPopup
         isOpen={limitPopup.isOpen}
-        onClose={() => setLimitPopup({ ...limitPopup, isOpen: false })}
+        onClose={() => setLimitPopup({ isOpen: false, message: '' })}
         title={limitPopup.title}
         message={limitPopup.message}
       />

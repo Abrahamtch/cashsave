@@ -3,9 +3,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Objective, ObjectiveStatus, Transaction, Profile } from '@/types';
-import { calculateFinancialSummary, formatCFA } from '@/lib/stats';
+import { calculateFinancialSummary } from '@/lib/stats';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS, es, pt, de, arSA } from 'date-fns/locale';
 import { Target, Plus, Calendar, CheckCircle, Clock, Trash2, Edit3, X, Wallet, AlertCircle, DollarSign, Crown, Lock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { isLiveSupabaseConfigured } from '@/lib/isLiveSupabase';
@@ -16,14 +16,19 @@ import { isPremiumActive, isTrialActive, getCountQuota, canShowProgressBar, hasF
 import PremiumGate from '@/components/PremiumGate';
 import FuturisticDatePicker from '@/components/FuturisticDatePicker';
 import PremiumLimitPopup from '@/components/PremiumLimitPopup';
+import { usePreferences } from '@/contexts/PreferencesContext';
 
 export default function ObjectivesPage() {
+  const { format: formatPreferred, convert, currency, language, t } = usePreferences();
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
   const [limitPopup, setLimitPopup] = useState<{ isOpen: boolean; title?: string; message: string }>({ isOpen: false, message: '' });
+
+  const dateLocales = { fr, en: enUS, es, pt, de, ar: arSA };
+  const currentLocale = dateLocales[language] || fr;
 
   // Form states
   const [title, setTitle] = useState('');
@@ -106,7 +111,7 @@ export default function ObjectivesPage() {
   }
 
   // Calcul du solde trésorerie actuel (incluant le solde initial de départ)
-  const cashSummary = useMemo(() => calculateFinancialSummary(transactions, initialBalanceTotal), [transactions, initialBalanceTotal]);
+  const cashSummary = useMemo(() => calculateFinancialSummary(transactions, initialBalanceTotal, convert), [transactions, initialBalanceTotal, convert]);
   const cashBalance = Math.max(0, cashSummary.balance);
 
   // Somme des budgets alloués sur les AUTRES objectifs actifs
@@ -287,20 +292,20 @@ export default function ObjectivesPage() {
           </div>
           <div>
             <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Solde Trésorerie disponible</p>
-            <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatCFA(cashBalance)}</p>
+            <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatPreferred(cashBalance)}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs">
           <div>
             <p style={{ color: 'var(--text-tertiary)' }}>Budgets déjà alloués</p>
-            <p className="font-semibold" style={{ color: 'var(--accent)' }}>{formatCFA(allocatedByOthers)}</p>
+            <p className="font-semibold" style={{ color: 'var(--accent)' }}>{formatPreferred(allocatedByOthers)}</p>
           </div>
           <div className="w-px h-8" style={{ background: 'var(--border)' }} />
           <div>
             <p style={{ color: 'var(--text-tertiary)' }}>Reste attribuable</p>
             <p className="font-semibold" style={{ color: maxAvailableBudgetForThis > 0 ? 'var(--text-primary)' : 'var(--color-danger)' }}>
-              {formatCFA(maxAvailableBudgetForThis)}
+              {formatPreferred(maxAvailableBudgetForThis)}
             </p>
           </div>
         </div>
@@ -345,7 +350,7 @@ export default function ObjectivesPage() {
                     {obj.deadline && (
                       <p className="text-xs flex items-center gap-1 mt-1 font-medium" style={{ color: 'var(--text-tertiary)' }}>
                         <Calendar size={13} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
-                        Échéance : {format(new Date(obj.deadline), 'dd MMMM yyyy', { locale: fr })}
+                        Échéance : {format(new Date(obj.deadline), 'dd MMMM yyyy', { locale: currentLocale })}
                       </p>
                     )}
                   </div>
@@ -376,11 +381,11 @@ export default function ObjectivesPage() {
                 <div className="flex items-center justify-between text-xs p-3 rounded-xl" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border)' }}>
                   <div>
                     <p style={{ color: 'var(--text-tertiary)' }}>Budget alloué</p>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{formatCFA(obj.allocated_budget || 0)}</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{formatPreferred(obj.allocated_budget || 0)}</p>
                   </div>
                   <div className="text-right">
                     <p style={{ color: 'var(--text-tertiary)' }}>Coût total visé</p>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--accent)' }}>{formatCFA(obj.target_amount || 0)}</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--accent)' }}>{formatPreferred(obj.target_amount || 0)}</p>
                   </div>
                 </div>
 
@@ -452,7 +457,7 @@ export default function ObjectivesPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    Coût total de l&apos;objectif (FCFA)
+                    Coût total de l&apos;objectif ({currency})
                   </label>
                   <input
                     type="number"
@@ -468,10 +473,10 @@ export default function ObjectivesPage() {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Budget actuellement alloué (FCFA)
+                      Budget actuellement alloué ({currency})
                     </label>
                     <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                      Max dispo : <strong style={{ color: 'var(--text-primary)' }}>{formatCFA(maxAvailableBudgetForThis)}</strong>
+                      Max dispo : <strong style={{ color: 'var(--text-primary)' }}>{formatPreferred(maxAvailableBudgetForThis)}</strong>
                     </span>
                   </div>
                   <input
@@ -489,7 +494,7 @@ export default function ObjectivesPage() {
                   <div className="flex items-start gap-2 p-3 rounded-xl text-xs" style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)' }}>
                     <AlertCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" />
                     <p>
-                      Le budget alloué total dépasserait votre solde Trésorerie disponible ({formatCFA(cashBalance)}). Vous pouvez allouer au maximum <strong>{formatCFA(maxAvailableBudgetForThis)}</strong>.
+                      Le budget alloué total dépasserait votre solde Trésorerie disponible ({formatPreferred(cashBalance)}). Vous pouvez allouer au maximum <strong>{formatPreferred(maxAvailableBudgetForThis)}</strong>.
                     </p>
                   </div>
                 )}

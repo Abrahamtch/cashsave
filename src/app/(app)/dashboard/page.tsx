@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { DailyHabit, Transaction, Profile } from '@/types';
 import {
@@ -10,7 +10,6 @@ import {
   getScoreChartData,
   getExpensesByCategory,
   getMonthlyRevenueVsExpenses,
-  formatCFA,
 } from '@/lib/stats';
 import { isPremiumActive, isTrialActive, getMaxChartPeriod } from '@/lib/plans';
 import PremiumGate from '@/components/PremiumGate';
@@ -26,6 +25,9 @@ import {
   TrendingUp, TrendingDown, Crown, Timer,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { usePreferences } from '@/contexts/PreferencesContext';
+import { fr, enUS, es, pt, de, arSA } from 'date-fns/locale';
+import Decimal from 'decimal.js';
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -35,6 +37,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const supabase = createClient();
+
+  const { format, convert, language, t, translateCategory } = usePreferences();
+
+  const dateLocales = { fr, en: enUS, es, pt, de, ar: arSA };
+  const currentLocale = dateLocales[language] || fr;
 
   useEffect(() => {
     handlePaymentSuccessCheck();
@@ -120,10 +127,35 @@ export default function DashboardPage() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
-    setHabits(JSON.parse(localStorage.getItem('cashsave_habits') || '[]'));
-    setTransactions(JSON.parse(localStorage.getItem('cashsave_transactions') || '[]'));
     setLoading(false);
   }
+
+  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
+  const maxPeriod = getMaxChartPeriod(profile);
+  const currentStreak = calculateCurrentStreak(habits);
+  const recordStreak = calculateRecordStreak(habits);
+  const weeklyAvg = calculateWeeklyAverage(habits);
+  const scoreData = getScoreChartData(habits, chartPeriod);
+
+  // Conversion des dépenses pour le graphique camembert
+  const rawExpenseCategories = getExpensesByCategory(transactions, convert);
+  const expenseCategories = rawExpenseCategories.map(c => ({
+    ...c,
+    name: translateCategory(c.name),
+  }));
+
+  // Conversion mensuelle pour l'histogramme bicolore
+  const monthlyData = getMonthlyRevenueVsExpenses(transactions, 6, convert, currentLocale);
+
+  // Calculs consolidés en devise préférée
+  const initialStartingBalance = convert(profile?.initial_balance_total || 0, 'XOF');
+  const totalIncome = transactions
+    .filter(t => t.type === 'INCOME')
+    .reduce((s, t) => s + convert(t.amount, t.original_currency || 'XOF'), 0);
+  const totalExpense = transactions
+    .filter(t => t.type === 'EXPENSE')
+    .reduce((s, t) => s + convert(t.amount, t.original_currency || 'XOF'), 0);
+  const netBalance = initialStartingBalance + (totalIncome - totalExpense);
 
   if (loading) {
     return (
@@ -137,45 +169,31 @@ export default function DashboardPage() {
     );
   }
 
-  const userIsPremium = isPremiumActive(profile) || isTrialActive(profile);
-  const maxPeriod = getMaxChartPeriod(profile);
-  const currentStreak = calculateCurrentStreak(habits);
-  const recordStreak = calculateRecordStreak(habits);
-  const weeklyAvg = calculateWeeklyAverage(habits);
-  const scoreData = getScoreChartData(habits, chartPeriod);
-  const expenseCategories = getExpensesByCategory(transactions);
-  const monthlyData = getMonthlyRevenueVsExpenses(transactions);
-  
-  const initialStartingBalance = profile?.initial_balance_total || 0;
-  const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
-  const netBalance = initialStartingBalance + (totalIncome - totalExpense);
-
   const statCards = [
     {
-      label: 'Série en cours',
+      label: t('dashboard.streak'),
       value: `${currentStreak}j`,
       icon: Zap,
       accent: 'var(--color-warning)',
       accentBg: 'rgba(245,158,11,0.1)',
     },
     {
-      label: 'Record historique',
+      label: t('dashboard.record_streak'),
       value: `${recordStreak}j`,
       icon: Trophy,
       accent: 'var(--accent-gold)',
       accentBg: 'rgba(214,179,106,0.1)',
     },
     {
-      label: 'Moyenne hebdomadaire',
+      label: t('dashboard.weekly_avg'),
       value: `${weeklyAvg}/100`,
       icon: BarChart2,
       accent: 'var(--accent)',
       accentBg: 'var(--accent-subtle)',
     },
     {
-      label: 'Solde Trésorerie',
-      value: formatCFA(netBalance),
+      label: t('cash.balance'),
+      value: format(netBalance),
       icon: Wallet,
       accent: 'var(--accent)',
       accentBg: 'var(--accent-subtle)',
@@ -191,11 +209,14 @@ export default function DashboardPage() {
     boxShadow: 'var(--shadow-md)',
   };
 
-  const periodLabels: Record<number, string> = { 7: '7j', 30: '30j', 365: '1an' };
+  const periodLabels: Record<number, string> = {
+    7: t('dashboard.days_7'),
+    30: t('dashboard.days_30'),
+    365: t('dashboard.days_365'),
+  };
 
   return (
     <div className="space-y-8">
-
       {/* Payment success banner */}
       {showPaymentSuccess && (
         <div
@@ -232,7 +253,7 @@ export default function DashboardPage() {
             Bonjour, {(profile?.full_name || 'Utilisateur').split(' ')[0]}
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            Voici un aperçu de votre progression
+            {t('dashboard.subtitle')}
           </p>
         </div>
 
@@ -246,7 +267,7 @@ export default function DashboardPage() {
           >
             <Crown size={13} strokeWidth={1.5} style={{ color: '#D6B36A' }} />
             <span className="text-xs font-medium" style={{ color: '#D6B36A' }}>
-              Forfait gratuit
+              {t('settings.free_tier')}
             </span>
           </div>
         )}
@@ -260,7 +281,7 @@ export default function DashboardPage() {
           >
             <Timer size={13} strokeWidth={1.5} style={{ color: '#0E9F6E' }} />
             <span className="text-xs font-medium" style={{ color: '#0E9F6E' }}>
-              Essai Premium actif
+              {t('settings.trial_active')}
             </span>
           </div>
         )}
@@ -299,10 +320,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              Score de productivité
+              {t('dashboard.productivity_score')}
             </h2>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-              Évolution sur la période sélectionnée
+              {t('dashboard.score_evolution')}
             </p>
           </div>
           <div
@@ -370,9 +391,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="glass-card p-6">
           <h2 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-            Répartition des dépenses
+            {t('dashboard.expense_breakdown')}
           </h2>
-          <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>Par catégorie</p>
+          <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.by_category')}</p>
           <PremiumGate isPremium={userIsPremium} blurred={true} message="Graphique Premium">
             {expenseCategories.length > 0 ? (
               <div className="h-52">
@@ -391,7 +412,7 @@ export default function DashboardPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: any) => formatCFA(Number(value) || 0)}
+                      formatter={(value: any) => format(Number(value) || 0)}
                       contentStyle={tooltipStyle}
                     />
                   </PieChart>
@@ -403,7 +424,7 @@ export default function DashboardPage() {
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 <BarChart2 size={24} strokeWidth={1.5} />
-                <p className="text-xs">Aucune dépense enregistrée</p>
+                <p className="text-xs">{t('dashboard.no_data')}</p>
               </div>
             )}
           </PremiumGate>
@@ -411,9 +432,9 @@ export default function DashboardPage() {
 
         <div className="glass-card p-6">
           <h2 className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-            Revenus vs Dépenses
+            {t('dashboard.revenue_vs_expense')}
           </h2>
-          <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>Par mois</p>
+          <p className="text-xs mb-5" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.monthly_comparison')}</p>
           <PremiumGate isPremium={userIsPremium} blurred={true} message="Graphique Premium">
             {monthlyData.length > 0 ? (
               <div className="h-52">
@@ -430,14 +451,14 @@ export default function DashboardPage() {
                       tickLine={false} axisLine={false} width={30}
                     />
                     <Tooltip
-                      formatter={(value: any) => formatCFA(Number(value) || 0)}
+                      formatter={(value: any) => format(Number(value) || 0)}
                       contentStyle={tooltipStyle}
                     />
                     <Legend
                       wrapperStyle={{ fontSize: '11px', color: 'var(--text-secondary)' }}
                     />
-                    <Bar dataKey="revenus" name="Revenus" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32} />
-                    <Bar dataKey="depenses" name="Dépenses" fill="#F43F5E" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                    <Bar dataKey="revenus" name={t('cash.income')} fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                    <Bar dataKey="depenses" name={t('cash.expense')} fill="#F43F5E" radius={[4, 4, 0, 0]} maxBarSize={32} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -447,7 +468,7 @@ export default function DashboardPage() {
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 <TrendingUp size={24} strokeWidth={1.5} />
-                <p className="text-xs">Aucune transaction enregistrée</p>
+                <p className="text-xs">{t('dashboard.no_data')}</p>
               </div>
             )}
           </PremiumGate>
@@ -456,9 +477,7 @@ export default function DashboardPage() {
 
       {/* Finance summary */}
       <div className="grid grid-cols-2 gap-4">
-        <div
-          className="glass-card p-5 flex items-center gap-4"
-        >
+        <div className="glass-card p-5 flex items-center gap-4">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'rgba(16,185,129,0.1)' }}
@@ -466,12 +485,12 @@ export default function DashboardPage() {
             <TrendingUp size={16} strokeWidth={1.5} style={{ color: '#10B981' }} />
           </div>
           <div>
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Revenus totaux</p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('cash.income')}</p>
             <p
               className="text-base font-semibold mt-0.5 tracking-tight"
               style={{ color: '#10B981', letterSpacing: '-0.01em' }}
             >
-              {formatCFA(totalIncome)}
+              {format(totalIncome)}
             </p>
           </div>
         </div>
@@ -484,12 +503,12 @@ export default function DashboardPage() {
             <TrendingDown size={16} strokeWidth={1.5} style={{ color: '#F43F5E' }} />
           </div>
           <div>
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Dépenses totales</p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('cash.expense')}</p>
             <p
               className="text-base font-semibold mt-0.5 tracking-tight"
               style={{ color: '#F43F5E', letterSpacing: '-0.01em' }}
             >
-              {formatCFA(totalExpense)}
+              {format(totalExpense)}
             </p>
           </div>
         </div>

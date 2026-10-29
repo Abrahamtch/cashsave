@@ -57,7 +57,7 @@ La charte graphique est rigoureusement conforme à la directive de marque `cash-
 ### 3.2 Module 2 : Trésorerie & Registre Financier ("My Cash")
 - **Catégories de Revenus (Entrées) :** Salaire, Freelance, Investissement, Ventes, Divers.
 - **Catégories de Dépenses (Sorties) :** Alimentation, Logement, Transport, Loisirs, Santé, Éducation, Shopping, Services.
-- **Solde Net en Temps Réel :** Calculé automatiquement selon la formule `Total Revenus - Total Dépenses` avec formatage strict en Francs CFA (`XAF`).
+- **Solde Net en Temps Réel :** Calculé automatiquement selon la formule `Total Revenus - Total Dépenses` avec conversion automatique dans la devise préférée de l'utilisateur tout en préservant le montant et la devise d'origine de chaque transaction.
 
 ### 3.3 Module 3 : Objectifs Financiers & Allocations ("My Objectives")
 > [!WARNING]
@@ -76,6 +76,15 @@ Suivi quotidien structuré en 14 indicateurs clés de performance personnelle :
 - **Glisser-Déposer HTML5 (Drag & Drop) :** Déplacement fluide de n'importe quelle carte avec surbrillance lumineuse émeraude de la colonne de destination.
 - **Boutons de Statut Directs :** Badges tactiles `À faire`, `En cours`, `Terminé` intégrés à chaque carte pour un déplacement immédiat en 1 clic.
 - **Code Couleur des Priorités :** Haute (Rouge Danger), Moyenne (Ambre Warning), Basse (Neutre).
+
+### 3.6 Module 6 : Système International Multilingue & Multidevise
+- **14 Devises ISO 4217 supportées :** XOF, XAF, EUR, USD, GBP, CAD, CHF, MAD, NGN, GHS, JPY, CNY, INR, ZAR.
+- **Conversion Haute Précision via `decimal.js` :** Aucune utilisation de flottants JS approximatifs pour les calculs financiers. Respect strict des règles de décimales propres à chaque devise.
+- **Garantie d'Inviolabilité Comptable :** Une conversion d'affichage ne constitue jamais une opération de change réelle. Chaque transaction conserve son montant et sa devise native (`original_currency`). Le retour à la devise initiale restitue les montants exacts sans déperdition d'arrondis.
+- **Parités Fixes Officielles :** Parité légale stricte 1 EUR = 655.957 FCFA (XOF & XAF) et parité 1:1 entre XOF et XAF.
+- **Taux de Change Dynamiques avec Cache et Secours :** Route interne `/api/exchange-rates` avec mise en cache de 12 heures, affichage de la date d'actualisation et matrice de référence hors-ligne certifiée si l'API externe devient indisponible.
+- **6 Langues avec Support RTL :** Français (`fr`), English (`en`), Español (`es`), Português (`pt`), Deutsch (`de`), et Arabe (`ar`) avec inversion fluide du flux de lecture (`dir="rtl"`).
+- **Persistance par Utilisateur :** Sauvegarde dans `localStorage` (affichage instantané 0ms) synchronisée de manière asynchrone avec la table `profiles` de Supabase.
 
 ---
 
@@ -98,10 +107,10 @@ Suivi quotidien structuré en 14 indicateurs clés de performance personnelle :
 
 | Table | Champs Clés | Politiques de Sécurité (RLS) |
 |---|---|---|
-| `profiles` | `id, email, full_name, is_premium, scoring_settings` | Propriétaire uniquement (`auth.uid() = id`). |
-| `transactions` | `id, user_id, amount, type, category, date` | Accès isolé par utilisateur (`auth.uid() = user_id`). |
+| `profiles` | `id, email, full_name, is_premium, preferred_currency, preferred_language, scoring_settings` | Propriétaire uniquement (`auth.uid() = id`). |
+| `transactions` | `id, user_id, amount, original_currency, type, category, date` | Accès isolé par utilisateur (`auth.uid() = user_id`). |
 | `daily_habits` | `id, user_id, date, bible, prayer, sport, deep_work...` | Clé unique `(user_id, date)`. Isolement strict. |
-| `objectives` | `id, user_id, title, target_amount, allocated_budget` | Contrôle RLS + validation des plafonds. |
+| `objectives` | `id, user_id, title, target_amount, allocated_budget, currency` | Contrôle RLS + validation des plafonds. |
 | `tasks` | `id, user_id, title, priority, status, deadline` | Filtrage automatique par `user_id`. |
 
 ---

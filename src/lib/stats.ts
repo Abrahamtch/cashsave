@@ -1,6 +1,7 @@
-import { DailyHabit, Transaction } from '@/types';
+import { DailyHabit, Transaction, SupportedCurrency } from '@/types';
 import { format, subDays, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { formatMoney } from '@/lib/currency';
 
 /**
  * Calcul du streak actuel (jours consécutifs avec score > seuil)
@@ -42,6 +43,7 @@ export function calculateCurrentStreak(habits: DailyHabit[], threshold: number =
 export function calculateRecordStreak(habits: DailyHabit[], threshold: number = 50): number {
   if (!habits.length) return 0;
 
+  // Trier par date croissante
   const sorted = [...habits].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
   let maxStreak = 0;
@@ -49,79 +51,89 @@ export function calculateRecordStreak(habits: DailyHabit[], threshold: number = 
   let lastDate: Date | null = null;
 
   for (const habit of sorted) {
-    const currentDate = new Date(habit.date);
-    currentDate.setHours(0, 0, 0, 0);
+    const habitDate = new Date(habit.date);
+    habitDate.setHours(0, 0, 0, 0);
 
-    if (habit.total_score >= threshold) {
-      if (lastDate) {
-        const diffDays = Math.floor(
-          (currentDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        if (diffDays === 1) {
-          currentStreak++;
-        } else {
-          currentStreak = 1;
-        }
-      } else {
-        currentStreak = 1;
+    if (lastDate) {
+      const diffDays = Math.round((habitDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1 && habit.total_score >= threshold) {
+        currentStreak++;
+      } else if (diffDays > 1 || habit.total_score < threshold) {
+        currentStreak = habit.total_score >= threshold ? 1 : 0;
       }
-      maxStreak = Math.max(maxStreak, currentStreak);
     } else {
-      currentStreak = 0;
+      currentStreak = habit.total_score >= threshold ? 1 : 0;
     }
-    lastDate = currentDate;
+
+    lastDate = habitDate;
+    maxStreak = Math.max(maxStreak, currentStreak);
   }
 
   return maxStreak;
 }
 
 /**
- * Moyenne du score total sur les N derniers jours
+ * Moyenne hebdomadaire des scores
  */
-export function calculateWeeklyAverage(habits: DailyHabit[], days: number = 7): number {
-  const cutoffDate = subDays(new Date(), days);
-  const recent = habits.filter(h => new Date(h.date) >= cutoffDate);
+export function calculateWeeklyAverage(habits: DailyHabit[]): number {
+  if (!habits.length) return 0;
+
+  const today = new Date();
+  const sevenDaysAgo = subDays(today, 7);
   
-  if (recent.length === 0) return 0;
-  
-  const sum = recent.reduce((acc, h) => acc + h.total_score, 0);
-  return Math.round((sum / recent.length) * 100) / 100;
+  const recentHabits = habits.filter(h => {
+    const date = new Date(h.date);
+    return date >= sevenDaysAgo && date <= today;
+  });
+
+  if (!recentHabits.length) return 0;
+
+  const sum = recentHabits.reduce((acc, h) => acc + h.total_score, 0);
+  return Math.round(sum / recentHabits.length);
 }
 
 /**
- * Données pour le graphique d'évolution du score
+ * Données pour le graphique de score (7, 30, ou 365 jours)
  */
 export function getScoreChartData(habits: DailyHabit[], days: number = 30) {
-  const result: { date: string; label: string; total_score: number; habit_score: number; work_score: number; business_score: number; learning_score: number }[] = [];
-  
+  const today = new Date();
+  const habitMap = new Map(habits.map(h => [h.date, h]));
+  const data = [];
+
   for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(new Date(), i);
+    const date = subDays(today, i);
     const dateStr = format(date, 'yyyy-MM-dd');
-    const habit = habits.find(h => h.date === dateStr);
-    
-    result.push({
+    const habit = habitMap.get(dateStr);
+
+    data.push({
       date: dateStr,
-      label: format(date, 'dd/MM', { locale: fr }),
-      total_score: habit?.total_score || 0,
-      habit_score: habit?.habit_score || 0,
-      work_score: habit?.work_score || 0,
-      business_score: habit?.business_score || 0,
-      learning_score: habit?.learning_score || 0,
+      label: format(date, days <= 7 ? 'EEE' : 'dd/MM', { locale: fr }),
+      total_score: habit ? Math.round(habit.total_score) : 0,
+      habit_score: habit ? Math.round(habit.habit_score) : 0,
+      work_score: habit ? Math.round(habit.work_score) : 0,
+      business_score: habit ? Math.round(habit.business_score) : 0,
+      learning_score: habit ? Math.round(habit.learning_score) : 0,
     });
   }
-  
-  return result;
+
+  return data;
 }
 
 /**
  * Répartition des dépenses par catégorie (pour Pie Chart)
+ * Supporte une fonction de conversion optionnelle pour affichage multi-devises
  */
-export function getExpensesByCategory(transactions: Transaction[]) {
+export function getExpensesByCategory(
+  transactions: Transaction[],
+  convertFn?: (amount: number, currency?: SupportedCurrency) => number
+) {
   const expenses = transactions.filter(t => t.type === 'EXPENSE');
   const categoryMap: Record<string, number> = {};
   
   for (const expense of expenses) {
-    categoryMap[expense.category] = (categoryMap[expense.category] || 0) + expense.amount;
+    const val = convertFn ? convertFn(expense.amount, expense.original_currency || 'XOF') : expense.amount;
+    categoryMap[expense.category] = (categoryMap[expense.category] || 0) + val;
   }
   
   const colors = [
@@ -140,8 +152,14 @@ export function getExpensesByCategory(transactions: Transaction[]) {
 
 /**
  * Revenus vs Dépenses par mois (pour Bar Chart)
+ * Supporte une fonction de conversion et une locale optionnelles
  */
-export function getMonthlyRevenueVsExpenses(transactions: Transaction[], months: number = 6) {
+export function getMonthlyRevenueVsExpenses(
+  transactions: Transaction[],
+  months: number = 6,
+  convertFn?: (amount: number, currency?: SupportedCurrency) => number,
+  locale = fr
+) {
   const now = new Date();
   const startDate = subMonths(startOfMonth(now), months - 1);
   const monthIntervals = eachMonthOfInterval({ start: startDate, end: now });
@@ -157,14 +175,20 @@ export function getMonthlyRevenueVsExpenses(transactions: Transaction[], months:
     
     const income = monthTransactions
       .filter(t => t.type === 'INCOME')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        const val = convertFn ? convertFn(t.amount, t.original_currency || 'XOF') : t.amount;
+        return sum + val;
+      }, 0);
     
     const expense = monthTransactions
       .filter(t => t.type === 'EXPENSE')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => {
+        const val = convertFn ? convertFn(t.amount, t.original_currency || 'XOF') : t.amount;
+        return sum + val;
+      }, 0);
     
     return {
-      month: format(month, 'MMM yyyy', { locale: fr }),
+      month: format(month, 'MMM yyyy', { locale }),
       revenus: Math.round(income),
       depenses: Math.round(expense),
     };
@@ -172,38 +196,45 @@ export function getMonthlyRevenueVsExpenses(transactions: Transaction[], months:
 }
 
 /**
- * Calcul des totaux financiers
+ * Calcul des totaux financiers (avec support de conversion)
  */
-export function calculateFinancialSummary(transactions: Transaction[], initialBalanceTotal: number = 0) {
+export function calculateFinancialSummary(
+  transactions: Transaction[],
+  initialBalanceTotal: number = 0,
+  convertFn?: (amount: number, currency?: SupportedCurrency) => number
+) {
   const totalIncome = transactions
     .filter(t => t.type === 'INCOME')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => {
+      const val = convertFn ? convertFn(t.amount, t.original_currency || 'XOF') : t.amount;
+      return sum + val;
+    }, 0);
   
   const totalExpense = transactions
     .filter(t => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => {
+      const val = convertFn ? convertFn(t.amount, t.original_currency || 'XOF') : t.amount;
+      return sum + val;
+    }, 0);
   
+  const convertedInitial = convertFn ? convertFn(initialBalanceTotal || 0, 'XOF') : (initialBalanceTotal || 0);
   const netProfit = Math.round(totalIncome - totalExpense);
-  const balance = Math.round((initialBalanceTotal || 0) + netProfit);
+  const balance = Math.round(convertedInitial + netProfit);
 
   return {
     totalIncome: Math.round(totalIncome),
     totalExpense: Math.round(totalExpense),
     netProfit,
     balance,
-    initialBalance: Math.round(initialBalanceTotal || 0),
+    initialBalance: Math.round(convertedInitial),
   };
 }
 
 /**
- * Formater un montant en FCFA
+ * Formater un montant en FCFA (rétrocompatibilité)
  */
 export function formatCFA(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount) + ' FCFA';
+  return formatMoney(amount, 'XOF', 'fr');
 }
 
 /**

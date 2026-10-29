@@ -8,9 +8,9 @@ let isLocalSelfMutation = false;
 let selfMutationTimeout: NodeJS.Timeout | null = null;
 let lastSyncTime = 0;
 
-const ALLOWED_TX_FIELDS = ['id', 'user_id', 'type', 'amount', 'category', 'date', 'note', 'is_satisfied', 'image_url', 'created_at'];
+const ALLOWED_TX_FIELDS = ['id', 'user_id', 'type', 'amount', 'original_currency', 'category', 'date', 'note', 'is_satisfied', 'image_url', 'created_at'];
 const ALLOWED_TASK_FIELDS = ['id', 'user_id', 'title', 'deadline', 'priority', 'status', 'position', 'created_at', 'updated_at'];
-const ALLOWED_OBJ_FIELDS = ['id', 'user_id', 'title', 'deadline', 'target_amount', 'allocated_budget', 'progress', 'status', 'created_at', 'updated_at'];
+const ALLOWED_OBJ_FIELDS = ['id', 'user_id', 'title', 'deadline', 'target_amount', 'allocated_budget', 'currency', 'progress', 'status', 'created_at', 'updated_at'];
 const ALLOWED_CUSTOM_HABIT_FIELDS = ['id', 'user_id', 'title', 'axis', 'type', 'icon', 'target_quantity', 'is_active', 'created_at'];
 const ALLOWED_DAILY_HABIT_FIELDS = [
   'id', 'user_id', 'date', 'bible', 'prayer', 'meditation', 'reading', 'documentary', 'sport',

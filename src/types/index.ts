@@ -2,6 +2,24 @@
 // Cash Save — Types TypeScript
 // ============================================
 
+export type SupportedLanguage = 'fr' | 'en' | 'es' | 'pt' | 'de' | 'ar';
+
+export type SupportedCurrency =
+  | 'XOF'
+  | 'XAF'
+  | 'EUR'
+  | 'USD'
+  | 'GBP'
+  | 'CAD'
+  | 'CHF'
+  | 'MAD'
+  | 'NGN'
+  | 'GHS'
+  | 'JPY'
+  | 'CNY'
+  | 'INR'
+  | 'ZAR';
+
 export type OnboardingStatus = 'not_started' | 'skipped' | 'partial' | 'completed';
 export type RoutineStatus = 'regular' | 'irregular' | 'none';
 
@@ -17,6 +35,9 @@ export interface Profile {
   onboarding_status?: OnboardingStatus;
   routine_status?: RoutineStatus;
   initial_balance_total?: number;
+  // Multilingue & Multidevise
+  preferred_currency?: SupportedCurrency;
+  preferred_language?: SupportedLanguage;
   // Premium tier fields
   first_premium_date?: string | null;
   subscription_months_count?: number;
@@ -42,6 +63,7 @@ export interface InitialBalance {
   source_type: InitialBalanceSource;
   source_label?: string;
   amount: number;
+  currency?: SupportedCurrency;
   created_at: string;
 }
 
@@ -161,6 +183,7 @@ export interface Transaction {
   user_id: string;
   type: TransactionType;
   amount: number;
+  original_currency?: SupportedCurrency;
   category: string;
   date: string;
   note: string;
@@ -193,6 +216,7 @@ export interface Objective {
   deadline: string | null;
   target_amount?: number;
   allocated_budget?: number;
+  currency?: SupportedCurrency;
   progress: number;
   status: ObjectiveStatus;
   created_at: string;
